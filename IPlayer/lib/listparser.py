@@ -23,9 +23,11 @@ class listentries(object):
          self.entries = []
                   
 def parse(xmlSource):  
-    encoding = re.findall( "<\?xml version=\"[^\"]*\" encoding=\"([^\"]*)\"\?>", xmlSource )[ 0 ]
+    try:
+        encoding = re.findall( "<\?xml version=\"[^\"]*\" encoding=\"([^\"]*)\"\?>", xmlSource )[ 0 ]
+    except: return None
     elist=listentries()
-    # gather all list entries
+    # gather all list entries 
     entriesSrc = re.findall( "<entry>(.*?)</entry>", xmlSource, re.DOTALL)
     datematch = re.compile(':\s+([0-9]+)/([0-9]+)/([0-9]{4})')
     
@@ -46,4 +48,5 @@ def parse(xmlSource):
         e_categories=[]
         for c in categories: e_categories.append(xmlunescape(c))        
         elist.entries.append(listentry(xmlunescape(title), xmlunescape(id), xmlunescape(updated), xmlunescape(summary), e_categories))
+
     return elist   

@@ -1,11 +1,15 @@
 #!/usr/bin/python
 
 # Python libs
-import re, time, os, sys
+import re, time, os, string, sys
 import urllib2
 import logging
 from pprint import pformat
 from socket import timeout as SocketTimeoutError
+from time import time
+
+# XBMC libs
+import xbmcgui
 
 # external libs
 import httplib2
@@ -23,7 +27,7 @@ try:
         level=logging.DEBUG
     )
 except IOError:
-    print "iplayer2 logging to stdout"
+    #print "iplayer2 logging to stdout"
     logging.basicConfig(
         stream=sys.stdout,
         level=logging.DEBUG,
@@ -85,6 +89,7 @@ channels_national_radio_list = [
     ('bbc_asian_network', 'Asian Network'),
     ('bbc_radio_scotland', 'BBC Scotland'),
     ('bbc_radio_ulster', 'BBC Ulster'),
+    ('bbc_radio_foyle', 'Radio Foyle'),
     ('bbc_radio_wales', 'BBC Wales'),
     ('bbc_radio_cymru', 'BBC Cymru'),
     ('bbc_world_service', 'World Service'),
@@ -133,37 +138,23 @@ channels_local_radio_list = [
     ('bbc_radio_jersey', 'BBC Jersey')
 ]
 channels_logos = {
-    'bbc_one':    os.path.join(IMG_DIR, 'bbc_one.jpg'),                  
-    'bbc_two':    os.path.join(IMG_DIR, 'bbc_two.jpg'),
-    'bbc_three':  os.path.join(IMG_DIR, 'bbc_three.jpg'),
-    'bbc_four':   os.path.join(IMG_DIR, 'bbc_four.jpg'),
-    'cbbc':       os.path.join(IMG_DIR, 'cbbc.jpg'),
-    'cbeebies':   os.path.join(IMG_DIR, 'cbeebies.jpg'),
-    'bbc_news24': os.path.join(IMG_DIR, 'bbc_news24.jpg'),
-    'bbc_parliament':   os.path.join(IMG_DIR, 'bbc_parliament.jpg'),
-    'bbc_one_northern_ireland': os.path.join(IMG_DIR, 'bbc_one_northern_ireland.jpg'),
-    'bbc_one_scotland': os.path.join(IMG_DIR, 'bbc_one_scotland.png'),
-    'bbc_one_wales':    os.path.join(IMG_DIR, 'bbc_one_wales.jpg'),
-    'bbc_alba':         os.path.join(IMG_DIR, 'bbc_alba.jpg'),
-    'bbc_1xtra':        os.path.join(IMG_DIR, 'bbc_1xtra.gif'),
-    'bbc_world_service': os.path.join(IMG_DIR, 'bbc_world_service.gif'),
     'bbc_radio_cumbria': 'http://www.bbc.co.uk/englandcms/localradio/images/cumbria.gif',
     'bbc_radio_newcastle': 'http://www.bbc.co.uk/englandcms/localradio/images/newcastle.gif',
     'bbc_tees': 'http://www.bbc.co.uk/englandcms/localradio/images/tees.gif',
     'bbc_radio_lancashire': 'http://www.bbc.co.uk/englandcms/images/rh_nav170_lancs.gif',
     'bbc_radio_merseyside': 'http://www.bbc.co.uk/englandcms/localradio/images/merseyside.gif',
-    'bbc_radio_manchester': 'http://www.bbc.co.uk/radio/images/home/r-home-nation-regions.gif',
+    'bbc_radio_manchester': os.path.join(IMG_DIR, 'bbc_local_radio.png'),
     'bbc_radio_leeds': 'http://www.bbc.co.uk/englandcms/images/rh_nav170_leeds.gif',
     'bbc_radio_sheffield': 'http://www.bbc.co.uk/englandcms/images/rh_nav170_sheffield.gif',
     'bbc_radio_york': 'http://www.bbc.co.uk/englandcms/localradio/images/york.gif',
     'bbc_radio_humberside': 'http://www.bbc.co.uk/radio/images/home/r-home-nation-regions.gif',
     'bbc_radio_lincolnshire': 'http://www.bbc.co.uk/englandcms/localradio/images/lincs.gif',
-    'bbc_radio_nottingham': 'http://www.bbc.co.uk/radio/images/home/r-home-nation-regions.gif',
+    'bbc_radio_nottingham': os.path.join(IMG_DIR, 'bbc_local_radio.png'),
     'bbc_radio_leicester': 'http://www.bbc.co.uk/englandcms/localradio/images/leicester.gif',
     'bbc_radio_derby': 'http://www.bbc.co.uk/englandcms/derby/images/rh_nav170_derby.gif',
     'bbc_radio_stoke': 'http://www.bbc.co.uk/englandcms/localradio/images/stoke.gif',
     'bbc_radio_shropshire': 'http://www.bbc.co.uk/englandcms/localradio/images/shropshire.gif',
-    'bbc_wm': 'http://www.bbc.co.uk/radio/images/home/r-home-nation-regions.gif',
+    'bbc_wm': os.path.join(IMG_DIR, 'bbc_local_radio.png'),
     'bbc_radio_coventry_warwickshire': 'http://www.bbc.co.uk/englandcms/localradio/images/cov_warks.gif',
     'bbc_radio_hereford_worcester': 'http://www.bbc.co.uk/englandcms/localradio/images/hereford_worcester.gif',
     'bbc_radio_northampton': 'http://www.bbc.co.uk/englandcms/localradio/images/northampton.gif',
@@ -172,15 +163,15 @@ channels_logos = {
     'bbc_radio_norfolk': 'http://www.bbc.co.uk/englandcms/localradio/images/norfolk.gif',
     'bbc_radio_suffolk': 'http://www.bbc.co.uk/englandcms/localradio/images/suffolk.gif',
     'bbc_radio_essex': 'http://www.bbc.co.uk/englandcms/images/rh_nav170_essex.gif',
-    'bbc_london': 'http://www.bbc.co.uk/radio/images/home/r-home-nation-regions.gif',
+    'bbc_london': os.path.join(IMG_DIR, 'bbc_local_radio.png'),
     'bbc_radio_kent': 'http://www.bbc.co.uk/radio/images/home/r-home-nation-regions.gif',
-    'bbc_southern_counties_radio': 'http://www.bbc.co.uk/radio/images/home/r-home-nation-regions.gif',
+    'bbc_southern_counties_radio': os.path.join(IMG_DIR, 'bbc_local_radio.png'),
     'bbc_radio_oxford': 'http://www.bbc.co.uk/englandcms/images/rh_nav170_oxford.gif',
     'bbc_radio_berkshire': 'http://www.bbc.co.uk/englandcms/images/rh_nav170_berks.gif',
     'bbc_radio_solent': 'http://www.bbc.co.uk/englandcms/localradio/images/solent.gif',
     'bbc_radio_gloucestershire': 'http://www.bbc.co.uk/englandcms/localradio/images/gloucestershire.gif',
-    'bbc_radio_swindon': 'http://www.bbc.co.uk/radio/images/home/r-home-nation-regions.gif',
-    'bbc_radio_wiltshire': 'http://www.bbc.co.uk/radio/images/home/r-home-nation-regions.gif',
+    'bbc_radio_swindon': os.path.join(IMG_DIR, 'bbc_local_radio.png'),
+    'bbc_radio_wiltshire': os.path.join(IMG_DIR, 'bbc_local_radio.png'),
     'bbc_radio_bristol': 'http://www.bbc.co.uk/englandcms/localradio/images/bristol.gif',
     'bbc_radio_somerset_sound': 'http://www.bbc.co.uk/englandcms/images/rh_nav170_somerset.gif',
     'bbc_radio_devon': 'http://www.bbc.co.uk/englandcms/images/rh_nav170_devon.gif',
@@ -264,7 +255,7 @@ live_radio_stations = {'Radio 1': 'http://www.bbc.co.uk/radio1/wm_asx/aod/radio1
                        'BBC York': 'http://www.bbc.co.uk/england/realmedia/live/localradio/york.ram',
                        'BBC WM': 'http://www.bbc.co.uk/england/realmedia/live/localradio/wm.ram',
                        'BBC Cymru': 'http://www.bbc.co.uk/cymru/live/rc-live.ram',
-                       'BBC Foyle': 'http://www.bbc.co.uk/ni/realmedia/rf-live.ram',
+                       'Radio Foyle': 'http://www.bbc.co.uk/northernireland/realmedia/rf-live.ram',
                        'BBC Scotland': 'http://www.bbc.co.uk/scotland/radioscotland/media/radioscotland.ram',
                        'BBC nan Gaidheal': 'http://www.bbc.co.uk/scotland/alba/media/live/radio_ng.ram',
                        'BBC Ulster': 'http://www.bbc.co.uk/ni/realmedia/ru-live.ram',
@@ -328,7 +319,17 @@ def httpretrieve(url, filename):
     f.close() 
 
 def httpget(url):
-    _, data = http.request(url, 'GET')
+    resp = ''
+    data = ''
+    try:
+        resp, data = http.request(url, 'GET')
+    except:
+        #print "Response for status %s for %s" % (resp.status, data)
+        dialog = xbmcgui.Dialog()
+        dialog.ok('Network Error', 'Failed to fetch URL', url)
+        print 'Network Error. Failed to fetch URL %s' % url
+        raise
+    
     return data
 
 def parse_entry_id(entry_id):
@@ -345,7 +346,12 @@ class media(object):
         self.kind = None
         self.method = None
         self.width, self.height = None, None
+        self.bitrate = None
+        self.SWFPlayer = None
+        self.PlayPath = None
+        self.PageURL = None
         self.read_media_node(media_node)
+
     
     @property
     def url(self):
@@ -358,22 +364,26 @@ class media(object):
             return page.geturl()
         else:
             return self.connection_href
-        
+
+
     @property
     def application(self):
         """
         The type of stream represented as a string.
-        i.e. 'captions', 'flashhigh', 'flashmed', 'flashwii', 'mobile', 'mp3' or 'real'
+        i.e. 'captions', 'flashhd', 'flashhigh', 'flashmed', 'flashwii', 'mobile', 'mp3', 'real', 'aac'
         """
         tep = {}
-        tep['captions', 'application/ttaf+xml', None, 'http'] = 'captions'
-        tep['video', 'video/mp4', 'h264', 'rtmp'] = 'flashhigh'
-        tep['video', 'video/x-flv', 'vp6', 'rtmp'] = 'flashmed'
-        tep['video', 'video/x-flv', 'spark', 'rtmp'] = 'flashwii'
-        tep['video', 'video/mpeg', 'h264', 'http'] = 'mobile'
-        tep['audio', 'audio/mpeg', 'mp3', 'rtmp'] = 'mp3'
-        tep['audio', 'audio/real', 'real', 'http'] = 'real'
-        me = (self.kind, self.mimetype, self.encoding, self.connection_protocol)
+        tep['captions', 'application/ttaf+xml', None, 'http', None] = 'captions'
+        tep['video', 'video/mp4', 'h264', 'rtmp', 1500]   = 'flashhd'
+        tep['video', 'video/mp4', 'h264', 'rtmp', 796]    = 'flashhigh'
+        tep['video', 'video/x-flv', 'vp6', 'rtmp', 512]   = 'flashmed'
+        tep['video', 'video/x-flv', 'spark', 'rtmp', 800] = 'flashwii'
+        tep['video', 'video/mpeg', 'h264', 'http', 184]   = 'mobile'
+        tep['audio', 'audio/mpeg', 'mp3', 'rtmp', 128]    = 'mp3'
+        tep['audio', 'audio/real', 'real', 'http', 128]   = 'real'
+        tep['audio', 'audio/mp4',  'aac', 'rtmp', None]     = 'aac'
+        tep['video', 'video/mp4', 'h264', 'http', 516]    = 'iphonemp3'
+        me = (self.kind, self.mimetype, self.encoding, self.connection_protocol, self.bitrate)
         return tep.get(me, None)
 
     def read_media_node(self, media, resolve=False):
@@ -386,6 +396,12 @@ class media(object):
         self.encoding = media.get('encoding')
         self.width, self.height = media.get('width'), media.get('height')
         self.live = media.get('live') == 'true'
+        try:
+            self.bitrate = int(media.get('bitrate'))
+        except:
+            if media.get('bitrate') != None:
+                print "bitrate = " + '"' + media.get('bitrate') + '"'
+            self.bitrate = None
         
         conn = media.find('connection')
         self.connection_kind = conn.get('kind')
@@ -404,26 +420,69 @@ class media(object):
                 self.connection_method = None                
             else:
                 self.connection_method = 'resolve'
-        elif self.connection_kind in ['level3', 'akamai']: #rtmp
+        #elif self.kind == 'video' and self.mimetype == 'video/mp4' and self.encoding == 'h264': #rtmp
+        #    
+        #    # for h.264 content only level3 connections are supported currently
+        #    if self.connection_kind != 'level3':
+        #       conn = media.find(name = 'connection', kind="level3")
+        #        if not conn:
+        #            logging.error("No support for non level3 h264 streams!")  
+        #            return
+        #        self.connection_kind = conn.get('kind')
+        #        self.connection_live = conn.get('live') == 'true'                
+        #        
+        #    self.connection_protocol = 'rtmp'
+        #    hostname = conn.get('server')
+        #    application = conn.get('application')
+        #    identifier = conn.get('identifier')
+        #
+        #    if self.connection_live:
+        #        logging.error("No support for live streams!")                
+        #    else:
+        #       auth = conn.get('authstring')
+        #       params = dict(ip=hostname, application=application, auth=auth, identifier=identifier)
+        #       self.connection_href = "rtmp://%(ip)s:1935/%(application)s?authString=%(auth)s&aifp=v001&slist=%(identifier)s" % params                
+        elif self.connection_kind in ['level3', 'akamai', 'limelight']: #rtmp
             self.connection_protocol = 'rtmp'
             server = conn.get('server')
             identifier = conn.get('identifier')
+            auth = conn.get('authstring')
+            application = 'ondemand'
+            
+            if self.encoding == 'h264':                
+                # HD streams drop the leading mp4: in the identifier but not the playpath
+                self.PlayPath  = identifier
+                p = re.compile('^mp4:')
+                identifier = p.sub('', identifier)
+                self.SWFPlayer = 'http://www.bbc.co.uk/emp/9player.swf?revision=7978_8340'
+            elif self.connection_kind == 'limelight':
+                application    = conn.get('application')
+                self.PlayPath  = identifier
+                self.SWFPlayer = 'http://www.bbc.co.uk/emp/9player.swf?revision=7938'
+            elif self.encoding == 'mp3':
+                # mp3 streams drop the leading mp3: in the identifier but not the playpath
+                self.PlayPath  = identifier
+                p = re.compile('^mp3:')
+                identifier = p.sub('', identifier)
+                self.SWFPlayer = 'http://www.bbc.co.uk/emp/9player.swf?revision=7276'
+            else:
+                self.SWFPlayer = 'http://www.bbc.co.uk/emp/9player.swf?revision=7276'
+                self.PlayPath  = identifier                
 
+            params = dict(ip=server, server=server, auth=auth, identifier=identifier, application=application)
+            
             if self.connection_live:
                 logging.error("No support for live streams!")                
             else:
-                auth = conn.get('authstring')
-                params = dict(ip=server, server=server, auth=auth, identifier=identifier)
-                self.connection_href = "rtmp://%(ip)s:1935/ondemand?_fcs_vhost=%(server)s&auth=%(auth)s&aifp=v001&slist=%(identifier)s" % params
+                self.connection_href = "rtmp://%(ip)s:1935/%(application)s?_fcs_vhost=%(server)s&auth=%(auth)s&aifp=v001&slist=%(identifier)s" % params
         else:
             logging.error("connectionkind %s unknown", self.connection_kind)
         
         if self.connection_protocol:
-            logging.info("conn protocol: %s", self.connection_protocol)
-            logging.info("conn kind: %s", self.connection_kind)
+            logging.info("protocol: %s - kind: %s - type: %s - encoding: %s, - bitrate: %s" % 
+                         (self.connection_protocol, self.connection_kind, self.mimetype, self.encoding, self.bitrate))
             logging.info("conn href: %s", self.connection_href)
-            logging.info("media type: %s", self.mimetype)
-            logging.info("media encoding: %s", self.encoding)
+
     
     @property 
     def programme(self):
@@ -512,12 +571,16 @@ class item(object):
         """
         if self.medias: return self.medias
         url = self.mediaselector_url
-        logging.info("Stream XML URL: %s", str(url))
+        logging.info("Stream XML URL: %s", str(url+'a'))
         _, xml = http.request(url)
         soup = BeautifulStoneSoup(xml)
         medias = [media(self, m) for m in soup('media')]
         #logging.info('Found media: %s', pformat(medias, indent=8))
         self.medias = medias
+        if medias == None or len(medias) == 0:
+            d = xbmcgui.Dialog()
+            d.ok('Error fetching media info', 'Please check network access to IPlayer by playing iplayer content via a web browser')            
+            return
         return medias
     
     def get_media_for(self, application):
@@ -539,14 +602,6 @@ class item(object):
             d[m.application] = m
         return d
 
-    def get_subtitles_url(self):
-        """
-        Returns the subtitles url if available 
-        """
-        for m in self.media:
-            if m.mimetype == 'application/ttaf+xml':
-                return m.connection_href
-        
 class programme(object):
     """
     Represents an individual iPlayer programme, as identified by an 8-letter PID,
@@ -577,10 +632,12 @@ class programme(object):
             raise
 
     def parse_playlist(self, xml):
-        logging.info('Parsing playlist XML...')
+        #logging.info('Parsing playlist XML... %s', xml)
         #xml.replace('<summary/>', '<summary></summary>')
         #xml = fix_selfclosing(xml)
+        
         soup = BeautifulStoneSoup(xml, selfClosingTags=self_closing_tags)
+        
         self.meta = {}
         self._items = []
         self._related = []
@@ -596,7 +653,8 @@ class programme(object):
                         
         self._items = [item(self, i) for i in soup('item')]
         for i in self._items:
-            print i, i.alternate
+            print i, i.alternate , " ",
+        print
 
         rId = re.compile('concept_pid:([a-z0-9]{8})')
         for link in soup('relatedlink'):
@@ -607,7 +665,7 @@ class programme(object):
             i['programme'] = programme(i['pid'])
             self._related.append(i)
         
-    def get_thumbnail(self, size=None):
+    def get_thumbnail(self, size='large', tvradio='tv'):
         """
         Returns the URL of a thumbnail.
         size: '640x360'/'biggest'/'largest' or '512x288'/'big'/'large' or None
@@ -616,15 +674,13 @@ class programme(object):
             return "http://www.bbc.co.uk/iplayer/images/episode/%s_640_360.jpg" % (self.pid)
         elif size in ['512x288', '512x', 'x288', 'big', 'large']:
             return "http://www.bbc.co.uk/iplayer/images/episode/%s_512_288.jpg" % (self.pid)
-        elif size in ['178x100', '178x', 'x100']:
+        elif size in ['178x100', '178x', 'x100', 'small']:
             return "http://www.bbc.co.uk/iplayer/images/episode/%s_178_100.jpg" % (self.pid)
+        elif size in ['150x84', '150x', 'x84', 'smallest']:
+            return "http://www.bbc.co.uk/iplayer/images/episode/%s_150_84.jpg" % (self.pid)
         else:
-            return "http://www.bbc.co.uk/iplayer/images/episode/%s_150_84.jpg" % (self.pid)        
-
-
-    def retrieve_thumbnail(self, filename, size=None):
-        url = self.get_thumbnail(size=size)
-        httpretrieve(url, filename)
+            return os.path.join(IMG_DIR, '%s.png' % tvradio)
+       
 
     def get_url(self):
         """
@@ -707,24 +763,23 @@ class programme_simple(object):
     def parse_playlist(self, xml):
         pass
         
-    def get_thumbnail(self, size=None):
+    def get_thumbnail(self, size='large', tvradio='tv'):
         """
         Returns the URL of a thumbnail.
         size: '640x360'/'biggest'/'largest' or '512x288'/'big'/'large' or None
         """
+        
         if size in ['640x360', '640x', 'x360', 'biggest', 'largest']:
             return "http://www.bbc.co.uk/iplayer/images/episode/%s_640_360.jpg" % (self.pid)
         elif size in ['512x288', '512x', 'x288', 'big', 'large']:
             return "http://www.bbc.co.uk/iplayer/images/episode/%s_512_288.jpg" % (self.pid)
-        elif size in ['178x100', '178x', 'x100']:
+        elif size in ['178x100', '178x', 'x100', 'small']:
             return "http://www.bbc.co.uk/iplayer/images/episode/%s_178_100.jpg" % (self.pid)
+        elif size in ['150x84', '150x', 'x84', 'smallest']:
+            return "http://www.bbc.co.uk/iplayer/images/episode/%s_150_84.jpg" % (self.pid)
         else:
-            return "http://www.bbc.co.uk/iplayer/images/episode/%s_150_84.jpg" % (self.pid)        
+            return os.path.join(IMG_DIR, '%s.png' % tvradio)
 
-
-    def retrieve_thumbnail(self, filename, size=None):
-        url = self.get_thumbnail(size=size)
-        httpretrieve(url, filename)
 
     def get_url(self):
         """
@@ -963,6 +1018,7 @@ class feed(object):
             logging.info('Feed URL not in cache, requesting...')
             xml = httpget(url)
             progs = listparser.parse(xml)
+            if not progs: return []
             d = []
             for entry in progs.entries: 
                 pid = parse_entry_id(entry.id)
