@@ -180,15 +180,6 @@ def list_feeds(feeds, tvradio='tv'):
             listitem=listitem,
             isFolder=True,
         )
-    """
-    listitem = xbmcgui.ListItem(label='BBC Three Live (test)')
-    url = iplayer.programme('bbc_three').items[0].get_media_for('flashmed').url
-    ok = xbmcplugin.addDirectoryItem(
-        handle=handle,
-        url=url,
-        listitem=listitem
-    )
-    """
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
 
@@ -212,10 +203,29 @@ def list_live_feeds(feeds, tvradio='tv'):
         else:
             listitem.setThumbnailImage(get_feed_thumbnail(f))
         listitem.setProperty('tracknumber', str(i + j))
-        url = make_url(url=iplayer.live_radio_stations[f.name], label=f.name)
+        
+        # Real & ASX url's are just redirects that are not always well
+        # handled by XBMC so if present load and process redirect
+        radio_url   = iplayer.live_radio_stations[f.name]
+        stream_asx  = re.compile('\.asx$', re.IGNORECASE)
+        stream_mms  = re.compile('href\="(mms.*?)"', re.IGNORECASE)
+        stream_real = re.compile('\.ram$', re.IGNORECASE)
+               
+        match_asx   = stream_mms.search(radio_url) 
+        match_real  = stream_mms.search(radio_url)
+        
+        if match_real:
+            stream_url = iplayer.httpget(radio_url)
+        elif match_asx:
+            txt = iplayer.httpget(radio_url)
+            match_mms  = stream_mms.search(txt) 
+            stream_url = matchmms.group(1)
+        else:
+            stream_url = radio_url
+                          
         ok = xbmcplugin.addDirectoryItem(
             handle=handle,
-            url=url,
+            url=stream_url,
             listitem=listitem,
             isFolder=False,
         )
