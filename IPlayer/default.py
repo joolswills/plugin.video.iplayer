@@ -261,16 +261,16 @@ def list_tvradio():
 
 def get_setting_videostream(default='flashmed'):
     videostream = xbmcplugin.getSetting('video_stream')
-    #Auto|Flash VP6|Flash Wii|Flash H.264 SD|Flash H.264 HD(1500Kps)
+    #Auto|Flash VP6|H.264 (800kb)|H.264 (1500kb)|H.264 (3200kb)
     if videostream:
-        if videostream == 'Flash VP6' or videostream == '1':
+        if videostream == 'Flash (512kb)' or videostream == '1':
             return 'flashmed'
-        elif videostream == 'Flash Wii' or videostream == '2':
-            return 'flashwii'
-        elif videostream == 'Flash H.264 SD' or videostream == '3':
-            return 'flashhigh'
-        elif videostream == 'Flash H.264 HD(1500Kps)' or videostream == '4':
-            return 'flashhd'        
+        elif videostream == 'H.264 (800kb)' or videostream == '2':
+            return 'h264 800'
+        elif videostream == 'H.264 (1500kb)' or videostream == '3':
+            return 'h264 1500'        
+        elif videostream == 'H.264 (3200kb)' or videostream == '4':
+            return 'h264 3200'        
     return default
 
 def get_setting_audiostream(default='mp3'):
@@ -690,6 +690,25 @@ def watch(pid):
         # TV Stream
         pref = get_setting_videostream()
         media = item.get_media_for(pref)
+
+        if not media and pref == 'h264 3200':
+            # fallback to 'h264 1500' as 'h264 3200' is not always available
+            logging.info('Steam %s not available, falling back to flash h264 1500 stream' % pref)
+            pref = 'h264 1500'
+            media = item.get_media_for(pref)
+            
+        if not media and pref == 'h264 1500':
+            # fallback to 'h264 800' as 'h264 1500' is not always available
+            logging.info('Steam %s not available, falling back to flash h264 800 stream' % pref)
+            pref = 'h264 800'
+            media = item.get_media_for(pref)
+        
+        if not media and pref == 'h264 800':
+            # fallback to 'flash 512' as 'h264 800' is not always available
+            logging.info('Steam %s not available, falling back to flash 512 stream' % pref)
+            pref = 'flashmed'
+            media = item.get_media_for(pref)
+        
         if not media:
             d = xbmcgui.Dialog()
             d.ok('Stream Error', 'Can\'t locate tv stream for' + pref)            
@@ -730,25 +749,29 @@ def watch(pid):
             # else use the direct link
             url = media.url
             
-        logging.info('listening to url=%s' % url)
+        logging.info('Listening to url=%s' % url)
   
         play=xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
 
-    item = xbmcgui.ListItem(label=item.programme.title)
+    logging.info('Playing preference %s' % pref)
+    listitem = xbmcgui.ListItem(label=item.programme.title)
     
     if media.connection_protocol == 'rtmp':
         if media.SWFPlayer:
-            item.setProperty("SWFPlayer", media.SWFPlayer)
+            listitem.setProperty("SWFPlayer", media.SWFPlayer)
             print "SWFPlayer : " + media.SWFPlayer
         if media.PlayPath:
-            item.setProperty("PlayPath", media.PlayPath)
+            listitem.setProperty("PlayPath", media.PlayPath)
             print "PlayPath  : " + media.PlayPath
         if media.PageURL:
-            item.setProperty("PageURL", media.PageURL)
+            listitem.setProperty("PageURL", media.PageURL)
             print "PageURL  : " + media.PageURL
     
+    del item
+    del media
+    
     play.clear()
-    play.add(url,item)
+    play.add(url,listitem)
     player = xbmc.Player(xbmc.PLAYER_CORE_AUTO)
     player.play(play)
     

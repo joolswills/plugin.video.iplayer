@@ -375,14 +375,15 @@ class media(object):
         """
         tep = {}
         tep['captions', 'application/ttaf+xml', None, 'http', None] = 'captions'
-        tep['video', 'video/mp4', 'h264', 'rtmp', 1500]   = 'flashhd'
-        tep['video', 'video/mp4', 'h264', 'rtmp', 796]    = 'flashhigh'
+        tep['video', 'video/mp4', 'h264', 'rtmp', 3200]   = 'h264 3200'
+        tep['video', 'video/mp4', 'h264', 'rtmp', 1500]   = 'h264 1500'
+        tep['video', 'video/mp4', 'h264', 'rtmp', 796]    = 'h264 800'
         tep['video', 'video/x-flv', 'vp6', 'rtmp', 512]   = 'flashmed'
         tep['video', 'video/x-flv', 'spark', 'rtmp', 800] = 'flashwii'
         tep['video', 'video/mpeg', 'h264', 'http', 184]   = 'mobile'
         tep['audio', 'audio/mpeg', 'mp3', 'rtmp', 128]    = 'mp3'
         tep['audio', 'audio/real', 'real', 'http', 128]   = 'real'
-        tep['audio', 'audio/mp4',  'aac', 'rtmp', None]     = 'aac'
+        tep['audio', 'audio/mp4',  'aac', 'rtmp', None]   = 'aac'
         tep['video', 'video/mp4', 'h264', 'http', 516]    = 'iphonemp3'
         me = (self.kind, self.mimetype, self.encoding, self.connection_protocol, self.bitrate)
         return tep.get(me, None)
