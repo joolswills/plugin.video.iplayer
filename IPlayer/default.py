@@ -328,11 +328,16 @@ def add_programme(programme, totalItems=None, tracknumber=None, thumbnail_size='
     datestr = programme.updated[:10]
     date=datestr[8:10] + '/' + datestr[5:7] + '/' +datestr[:4]#date ==dd/mm/yyyy
 
+    if programme.categories and len(programme.categories) > 0:
+        genre = programme.categories[-1]
+    else: 
+        genre = ''
+
     listitem.setInfo('video', {
         'Title': programme.title,
         'Plot': programme.summary,
         'PlotOutline': programme.summary,
-        'Genre': programme.categories[-1],
+        'Genre': genre,
         "Date": date,
     })
     listitem.setProperty('Title', str(title))

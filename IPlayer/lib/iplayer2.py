@@ -68,6 +68,7 @@ channels_tv_list = [
     ('bbc_four', 'BBC Four'),
     ('cbbc', 'CBBC'),
     ('cbeebies', 'CBeebies'),
+    ('bbc_hd', 'BBC HD'), 
     ('bbc_news24', 'BBC News Channel'),
     ('bbc_parliament', 'BBC Parliament'),
     ('bbc_one_northern_ireland', 'BBC One Northern Ireland'), 
