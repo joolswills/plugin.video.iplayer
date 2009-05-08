@@ -71,9 +71,6 @@ channels_tv_list = [
     ('bbc_hd', 'BBC HD'), 
     ('bbc_news24', 'BBC News Channel'),
     ('bbc_parliament', 'BBC Parliament'),
-    ('bbc_one_northern_ireland', 'BBC One Northern Ireland'), 
-    ('bbc_one_scotland', 'BBC One Scotland'),
-    ('bbc_one_wales', 'BBC One Wales'),
     ('bbc_alba', 'BBC Alba'),
 ]
 channels_tv = dict(channels_tv_list)
@@ -751,8 +748,8 @@ class programme_simple(object):
         self.meta['updated'] = entry.updated
         self.categories = [] 
         for c in entry.categories:
-            if c != 'TV':
-                self.categories.append(c.rstrip())
+            #if c != 'TV':
+            self.categories.append(c.rstrip())
         self._items = []
         self._related = []
 
@@ -1049,9 +1046,9 @@ class feed(object):
         cat    = re.findall( "<category .*term=\"(.*?)\"", xml )
         categories = {}
         for c in cat:
-            if c != 'TV':
-                if not categories.has_key(c): categories[c] = 0
-                categories[c] += 1
+            #if c != 'TV':
+            if not categories.has_key(c): categories[c] = 0
+            categories[c] += 1
         alist=[]
         k = categories.keys()
         k.sort()

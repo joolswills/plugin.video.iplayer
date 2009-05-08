@@ -8,11 +8,12 @@ from time import time
 import traceback
 import md5
 import logging
+import xbmc, xbmcgui, xbmcplugin
 
-try:
-    import xbmc, xbmcgui, xbmcplugin
-except ImportError:
-    pass # for PC debugging
+# Script constants
+__scriptname__ = "IPlayer"
+__author__     = 'Dink [dink12345@googlemail.com]'
+__svn_url__    = "http://xbmc-iplayerv2.googlecode.com/svn/trunk/IPlayer"
 
 sys.path.insert(0, os.path.join(os.getcwd(), 'lib'))
 
@@ -41,7 +42,6 @@ except IOError:
         format='iplayer2.py: %(asctime)s %(levelname)4s %(message)s',
     )
 
-__scriptname__  = 'IPlayer'
 DIR_USERDATA = xbmc.translatePath(os.path.join( "T:"+os.sep,"plugin_data", __scriptname__ ))    
 HTTP_CACHE_DIR = os.path.join(DIR_USERDATA, 'iplayer_http_cache')
 CACHE_DIR = os.path.join(DIR_USERDATA, 'iplayer_cache')
@@ -271,7 +271,14 @@ def get_setting_videostream(default='flashmed'):
         elif videostream == 'H.264 (1500kb)' or videostream == '3':
             return 'h264 1500'        
         elif videostream == 'H.264 (3200kb)' or videostream == '4':
-            return 'h264 3200'        
+            return 'h264 3200'   
+
+    # SVN 20015 supports H.264 of which H.264 800 can play on all platforms
+    xbmc_version = xbmc.getInfoLabel( "System.BuildVersion" )
+    xbmc_rev = int( xbmc_version.split( " " )[ 1 ].replace( "r", "" ) )
+    if xbmc_rev > 20015:
+        return 'h264 800' 
+    
     return default
 
 def get_setting_audiostream(default='mp3'):
