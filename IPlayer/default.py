@@ -245,6 +245,7 @@ def list_tvradio():
     folders = []
     folders.append(('TV', os.path.join(iplayer.IMG_DIR, 'tv.png'), make_url(tvradio='tv')))
     folders.append(('Radio', os.path.join(iplayer.IMG_DIR, 'radio.png'), make_url(tvradio='radio')))
+    folders.append(('Settings', os.path.join(iplayer.IMG_DIR, 'settings.png'), make_url(tvradio='Settings')))
         
     for i, (label, tn, url) in enumerate(folders):
         listitem = xbmcgui.ListItem(label=label)
@@ -862,6 +863,8 @@ if __name__ == "__main__":
     elif not (feed or listing):
         if not tvradio:
             list_tvradio()
+        elif tvradio == 'Settings':
+            xbmcplugin.openSettings(sys.argv[ 0 ])  
         elif tvradio:
             feed = iplayer.feed(tvradio).channels_feed()
             list_feeds(feed, tvradio)
