@@ -260,7 +260,26 @@ def list_tvradio():
     
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
-def get_setting_videostream(default='flashmed'):
+def get_setting_videostream(feed=None,default='flashmed'):
+    
+    # SVN 20015 supports H.264 of which H.264 800 can play on all platforms
+    xbmc_version = xbmc.getInfoLabel( "System.BuildVersion" )
+    xbmc_rev = int( xbmc_version.split( " " )[ 1 ].replace( "r", "" ) )
+    
+    # check for xbox as it can't do HD
+    environment = os.environ.get( "OS", "xbox" )
+    
+    # If viewing BBC HD on an xbmc build that supports it play full HD if the screen is large enough 
+    if environment != 'xbox' and xbmc_rev > 20015 and feed and feed == 'BBC HD':   
+        Y = int(xbmc.getInfoLabel('System.ScreenHeight'))
+        X = int(xbmc.getInfoLabel('System.ScreenWidth'))
+        if Y > 576 and X > 720:
+            # The screen is large enough for HD
+            return 'h264 3200'
+        else:
+            # The screen is not large enough for HD
+            return 'h264 1500'
+        
     videostream = xbmcplugin.getSetting('video_stream')
     #Auto|Flash VP6|H.264 (800kb)|H.264 (1500kb)|H.264 (3200kb)
     if videostream:
@@ -273,9 +292,6 @@ def get_setting_videostream(default='flashmed'):
         elif videostream == 'H.264 (3200kb)' or videostream == '4':
             return 'h264 3200'   
 
-    # SVN 20015 supports H.264 of which H.264 800 can play on all platforms
-    xbmc_version = xbmc.getInfoLabel( "System.BuildVersion" )
-    xbmc_rev = int( xbmc_version.split( " " )[ 1 ].replace( "r", "" ) )
     if xbmc_rev > 20015:
         return 'h264 800' 
     
@@ -324,7 +340,7 @@ def get_setting_subtitles():
     # default
     return None
 
-def add_programme(programme, totalItems=None, tracknumber=None, thumbnail_size='large', tvradio='tv'):
+def add_programme(feed, programme, totalItems=None, tracknumber=None, thumbnail_size='large', tvradio='tv'):
     handle = int(sys.argv[1])
 
     title = programme.title
@@ -353,7 +369,7 @@ def add_programme(programme, totalItems=None, tracknumber=None, thumbnail_size='
         
     #print "Getting URL for %s ..." % (programme.title)
 
-    url=make_url(pid=programme.pid)
+    url=make_url(feed=feed, pid=programme.pid)
     xbmcplugin.addDirectoryItem(
         handle=handle, 
         url=url,
@@ -559,7 +575,7 @@ def list_feed_listings(feed, listing, category=None, series=None, channels=None)
     thumbnail_size = get_setting_thumbnail_size()
     for p in programmes:
         try:
-            if not add_programme(p, total, count, thumbnail_size, feed.tvradio):
+            if not add_programme(feed, p, total, count, thumbnail_size, feed.tvradio):
                 total = total - 1
         except:
             traceback.print_exc()
@@ -690,18 +706,21 @@ def download_subtitles(url):
     fw.close()    
     return outfile
 
-def watch(pid):
+def watch(feed, pid):
 
     subtitles_file = None
     item = get_item(pid)
-    logging.info('watching pid=%s' % pid)
+    channel = None
+    if feed and feed.name:
+        channel = feed.name
+    logging.info('watching feed=%s pid=%s' % (channel, pid))
 
     listitem = xbmcgui.ListItem(label=item.programme.title, label2=item.programme.summary)
     subtitles = get_setting_subtitles()
 
     if item.is_tv:
         # TV Stream
-        pref = get_setting_videostream()
+        pref = get_setting_videostream(channel)
         media = item.get_media_for(pref)
 
         if not media and pref == 'h264 3200':
@@ -864,7 +883,7 @@ if __name__ == "__main__":
 
     # state engine
     if pid:
-        watch(pid)
+        watch(feed,pid)
     elif url:
         watch_live(label, url)
     elif not (feed or listing):
