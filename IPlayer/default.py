@@ -267,8 +267,11 @@ def list_tvradio():
 def get_setting_videostream(feed=None,default='flashmed'):
     
     # SVN 20015 supports H.264 of which H.264 800 can play on all platforms
-    xbmc_version = xbmc.getInfoLabel( "System.BuildVersion" )
-    xbmc_rev = int( xbmc_version.split( " " )[ 1 ].replace( "r", "" ) )
+    try:
+        xbmc_version = xbmc.getInfoLabel( "System.BuildVersion" )
+        xbmc_rev = int( xbmc_version.split( " " )[ 1 ].replace( "r", "" ) )
+    except:
+        xbmc_rev = 0
     
     # check for xbox as it can't do HD
     environment = os.environ.get( "OS", "xbox" )
