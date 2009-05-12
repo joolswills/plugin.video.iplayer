@@ -45,11 +45,15 @@ except IOError:
 DIR_USERDATA = xbmc.translatePath(os.path.join( "T:"+os.sep,"plugin_data", __scriptname__ ))    
 HTTP_CACHE_DIR = os.path.join(DIR_USERDATA, 'iplayer_http_cache')
 CACHE_DIR = os.path.join(DIR_USERDATA, 'iplayer_cache')
-MP3_CACHE = os.path.join(CACHE_DIR, 'bbc.mp3')
 SUBTITLES_DIR = os.path.join(DIR_USERDATA, 'Subtitles')
 THUMB_DIR = os.path.join(os.getcwd(), 'resources', 'media')
 
 print "SUBTITLES DIR: %s" % SUBTITLES_DIR
+
+if not os.path.isdir(CACHE_DIR):
+    d = xbmcgui.Dialog()
+    d.ok('Welcome to BBC IPlayer plugin.', 'Please be aware this plugin only works in the UK.', 'The IPlayer service checks to ensure UK IP addresses.')            
+    
 
 for d in [CACHE_DIR, HTTP_CACHE_DIR, SUBTITLES_DIR]:
     if not os.path.isdir(d):
@@ -292,7 +296,7 @@ def get_setting_videostream(feed=None,default='flashmed'):
         elif videostream == 'H.264 (3200kb)' or videostream == '4':
             return 'h264 3200'   
 
-    if xbmc_rev > 20015:
+    if xbmc_rev > 20015 and environment != 'xbox':
         return 'h264 800' 
     
     return default
