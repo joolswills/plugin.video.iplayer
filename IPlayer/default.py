@@ -42,11 +42,12 @@ except IOError:
         format='iplayer2.py: %(asctime)s %(levelname)4s %(message)s',
     )
 
-DIR_USERDATA = xbmc.translatePath(os.path.join( "T:"+os.sep,"plugin_data", __scriptname__ ))    
+DIR_USERDATA   = xbmc.translatePath(os.path.join( "T:"+os.sep,"plugin_data", __scriptname__ ))    
 HTTP_CACHE_DIR = os.path.join(DIR_USERDATA, 'iplayer_http_cache')
-CACHE_DIR = os.path.join(DIR_USERDATA, 'iplayer_cache')
-SUBTITLES_DIR = os.path.join(DIR_USERDATA, 'Subtitles')
-THUMB_DIR = os.path.join(os.getcwd(), 'resources', 'media')
+CACHE_DIR      = os.path.join(DIR_USERDATA, 'iplayer_cache')
+SUBTITLES_DIR  = os.path.join(DIR_USERDATA, 'Subtitles')
+THUMB_DIR      = os.path.join(os.getcwd(), 'resources', 'media')
+TMP_THUMB      = os.path.join(CACHE_DIR, 'tmp_thumb')
 
 print "SUBTITLES DIR: %s" % SUBTITLES_DIR
 
@@ -107,14 +108,14 @@ def make_url(feed=None, listing=None, pid=None, tvradio=None, category=None, ser
 def read_url():
     args = cgi.parse_qs(sys.argv[2][1:])
     feed_channel = args.get('feed_channel', [None])[0]
-    feed_atoz = args.get('feed_atoz', [None])[0]
-    listing = args.get('listing', [None])[0]
-    pid = args.get('pid', [None])[0]
-    tvradio = args.get('tvradio', [None])[0]
-    category = args.get('category', [None])[0]
-    series = args.get('series', [None])[0]    
-    url = args.get('url', [None])[0]
-    label = args.get('label', [None])[0]
+    feed_atoz    = args.get('feed_atoz', [None])[0]
+    listing      = args.get('listing', [None])[0]
+    pid          = args.get('pid', [None])[0]
+    tvradio      = args.get('tvradio', [None])[0]
+    category     = args.get('category', [None])[0]
+    series       = args.get('series', [None])[0]    
+    url          = args.get('url', [None])[0]
+    label        = args.get('label', [None])[0]
     
     feed = None
     if feed_channel:
@@ -271,6 +272,7 @@ def get_setting_videostream(feed=None,default='flashmed'):
         xbmc_version = xbmc.getInfoLabel( "System.BuildVersion" )
         xbmc_rev = int( xbmc_version.split( " " )[ 1 ].replace( "r", "" ) )
     except:
+        print "Revision info not available: %s" % xbmc_version
         xbmc_rev = 0
     
     # check for xbox as it can't do HD
@@ -350,17 +352,23 @@ def get_setting_subtitles():
 def add_programme(feed, programme, totalItems=None, tracknumber=None, thumbnail_size='large', tvradio='tv'):
     handle = int(sys.argv[1])
 
-    title = programme.title
+    title     = programme.title
+    thumbnail = programme.get_thumbnail(thumbnail_size, tvradio)
+    summary   = programme.summary
+    
     listitem = xbmcgui.ListItem(label=title, 
-                                label2=programme.summary,
+                                label2=summary,
                                 iconImage='defaultVideo.png', 
-                                thumbnailImage=programme.get_thumbnail(thumbnail_size, tvradio))
+                                thumbnailImage=thumbnail)
 
     datestr = programme.updated[:10]
     date=datestr[8:10] + '/' + datestr[5:7] + '/' +datestr[:4]#date ==dd/mm/yyyy
 
     if programme.categories and len(programme.categories) > 0:
-        genre = programme.categories[-1]
+        genre = ''
+        for cat in programme.categories:
+            genre += cat + ' / '
+        genre=genre[:-2]
     else: 
         genre = ''
 
@@ -716,17 +724,28 @@ def download_subtitles(url):
 def watch(feed, pid):
 
     subtitles_file = None
-    item = get_item(pid)
-    channel = None
+    item      = get_item(pid)
+    thumbnail = item.programme.thumbnail
+    title     = item.programme.title
+    summary   = item.programme.summary
+    updated   = item.programme.updated
+    channel   = None
     if feed and feed.name:
         channel = feed.name
-    logging.info('watching feed=%s pid=%s' % (channel, pid))
-
-    listitem = xbmcgui.ListItem(label=item.programme.title, label2=item.programme.summary)
+    logging.info('watching channel=%s pid=%s' % (channel, pid))
+    logging.info('thumb =%s   summary=%s' % (thumbnail, summary))
+    listitem = xbmcgui.ListItem(title)
     subtitles = get_setting_subtitles()
 
     if item.is_tv:
         # TV Stream
+        listitem.setIconImage('DefaultVideo.png')
+        listitem.setInfo('video', {
+        'Title': title,
+        'Plot': summary + ' ' + updated,
+        'PlotOutline': summary,
+        "Date": updated,})
+        
         pref = get_setting_videostream(channel)
         media = item.get_media_for(pref)
 
@@ -765,6 +784,7 @@ def watch(feed, pid):
         
     else:
         # Radio stream
+        listitem.setIconImage('defaultAudio.png')
         pref = get_setting_audiostream()
         media = item.get_media_for(pref)
         if not media and pref == 'aac':
@@ -793,7 +813,6 @@ def watch(feed, pid):
         play=xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
 
     logging.info('Playing preference %s' % pref)
-    listitem = xbmcgui.ListItem(label=item.programme.title)
     
     if media.connection_protocol == 'rtmp':
         if media.SWFPlayer:
@@ -805,6 +824,19 @@ def watch(feed, pid):
         if media.PageURL:
             listitem.setProperty("PageURL", media.PageURL)
             print "PageURL  : " + media.PageURL
+
+    if thumbnail: 
+        try:
+            # The thumbnail needs to accessed via the local filesystem
+            # for "Media Info" to display it when playing a video 
+            ext = os.path.splitext(thumbnail)[1]
+            thumbfile = TMP_THUMB + ext
+            iplayer.httpretrieve(thumbnail, thumbfile)
+            listitem.setIconImage(thumbfile)
+            listitem.setThumbnailImage(thumbfile)
+        except:
+            pass
+
     
     del item
     del media
@@ -825,7 +857,7 @@ def watch_live(label='', url=None):
     if not url:
         return
     
-    logging.info('watching live station=%s url=%s' % (label,url))
+    logging.info('watching live station=%s url=%s' % (label, url))
 
     txt = iplayer.httpget(url)
     
@@ -839,7 +871,8 @@ def watch_live(label='', url=None):
         # pass it to xbmc and see if it is directly supported 
         stream_url = url
         
-    listitem = xbmcgui.ListItem(label=label, label2='Live %s' % label)
+    listitem = xbmcgui.ListItem(label=label, label2=label)
+    if thumbnail: listitem.setThumbnailImage(thumbnail)
     
     play=xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
 
@@ -890,7 +923,7 @@ if __name__ == "__main__":
 
     # state engine
     if pid:
-        watch(feed,pid)
+        watch(feed, pid)
     elif url:
         watch_live(label, url)
     elif not (feed or listing):

@@ -644,7 +644,7 @@ class programme(object):
 
         logging.info('  Found programme: %s', soup.playlist.title.string)
         self.meta['title'] = soup.playlist.title.string
-        self.meta['summary'] = soup.playlist.summary.string
+        self.meta['summary'] = string.lstrip(soup.playlist.summary.string, ' ')
         self.meta['updated'] = soup.playlist.updated.string
         
         if soup.playlist.noitems:
@@ -744,7 +744,7 @@ class programme_simple(object):
         self.pid = pid
         self.meta = {}
         self.meta['title'] = entry.title
-        self.meta['summary'] = entry.summary
+        self.meta['summary'] = string.lstrip(entry.summary, ' ')
         self.meta['updated'] = entry.updated
         self.categories = [] 
         for c in entry.categories:
