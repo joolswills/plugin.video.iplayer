@@ -301,7 +301,9 @@ def get_setting_videostream(feed=None,default='flashmed'):
         elif videostream == 'H.264 (3200kb)' or videostream == '4':
             return 'h264 3200'   
 
-    if xbmc_rev > 20015 and environment != 'xbox':
+    # Linux & Windows from SVN:20015 support H.264
+    # XBox from SVN:20262 supports H.264
+    if xbmc_rev >= 20015 and (environment != 'xbox' or xbmc_rev >= 20262):
         return 'h264 800' 
     
     return default
