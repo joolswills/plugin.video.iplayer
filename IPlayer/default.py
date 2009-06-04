@@ -14,6 +14,7 @@ import xbmc, xbmcgui, xbmcplugin
 __scriptname__ = "IPlayer"
 __author__     = 'Dink [dink12345@googlemail.com]'
 __svn_url__    = "http://xbmc-iplayerv2.googlecode.com/svn/trunk/IPlayer"
+__version__    = "1.0.1"
 
 sys.path.insert(0, os.path.join(os.getcwd(), 'lib'))
 
@@ -441,9 +442,6 @@ def list_categories(feed=None, channels=None, progcount=True):
 
 def list_series(feed, listing, category=None, progcount=True):
     handle = int(sys.argv[1])
-    #xbmcplugin.addSortMethod(handle=handle, sortMethod=xbmcplugin.SORT_METHOD_NONE)
-    #xbmcplugin.addSortMethod(handle=handle, sortMethod=xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE)
-    #xbmc.executebuiltin('XBMC.activatewindow(MyVideoLibrary,%s?feed=%s&listing=list)' % (sys.argv[0], feed.channel))
 
     c = 0
     name = feed.name
@@ -545,7 +543,6 @@ def search(tvradio = 'tv'):
 def list_feed_listings(feed, listing, category=None, series=None, channels=None):
     handle = int(sys.argv[1])
     if channels or listing == 'popular' or listing == 'highlights': 
-        #xbmcplugin.addSortMethod(handle=handle, sortMethod=xbmcplugin.SORT_METHOD_TRACKNUM)
         xbmcplugin.addSortMethod(handle=handle, sortMethod=xbmcplugin.SORT_METHOD_NONE)
     else:
         xbmcplugin.addSortMethod(handle=handle, sortMethod=xbmcplugin.SORT_METHOD_LABEL)
@@ -627,10 +624,7 @@ def list_feed_listings(feed, listing, category=None, series=None, channels=None)
                 isFolder=True,
             )
 
-    #if feed.is_tv:
     xbmcplugin.setContent(handle=handle, content='episodes')
-    #elif feed.is_radio:
-    #    xbmcplugin.setContent(handle=handle, content='songs')
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
 
@@ -743,10 +737,10 @@ def watch(feed, pid):
         # TV Stream
         listitem.setIconImage('DefaultVideo.png')
         listitem.setInfo('video', {
-        'Title': title,
-        'Plot': summary + ' ' + updated,
-        'PlotOutline': summary,
-        "Date": updated,})
+                                   "TVShowTitle": title,
+                                   'Plot': summary + ' ' + updated,
+                                   'PlotOutline': summary,
+                                   "Date": updated,})
         
         pref = get_setting_videostream(channel)
         media = item.get_media_for(pref)
