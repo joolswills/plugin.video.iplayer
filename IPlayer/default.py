@@ -256,12 +256,16 @@ def list_tvradio():
     for i, (label, tn, url) in enumerate(folders):
         listitem = xbmcgui.ListItem(label=label)
         listitem.setIconImage('defaultFolder.png')
-        listitem.setThumbnailImage(tn)        
+        listitem.setThumbnailImage(tn)
+        folder=True
+        if label == 'Settings':
+            # fix for reported bug where loading dialog would overlay settings dialog 
+            folder = False        
         ok = xbmcplugin.addDirectoryItem(
             handle=handle, 
             url=url,
             listitem=listitem,
-            isFolder=True,
+            isFolder=folder,
         )
     
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
@@ -303,8 +307,8 @@ def get_setting_videostream(feed=None,default='flashmed'):
             return 'h264 3200'   
 
     # Linux & Windows from SVN:20015 support H.264
-    # XBox from SVN:20262 supports H.264
-    if xbmc_rev >= 20015 and (environment != 'xbox' or xbmc_rev >= 20262):
+    # XBox from SVN:20810 supports H.264
+    if xbmc_rev >= 20015 and (environment != 'xbox' or xbmc_rev >= 20810):
         return 'h264 800' 
     
     return default
