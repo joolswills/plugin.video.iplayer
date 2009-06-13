@@ -8,6 +8,8 @@ from time import time
 import traceback
 import md5
 import logging
+import operator
+
 import xbmc, xbmcgui, xbmcplugin
 
 # Script constants
@@ -65,6 +67,12 @@ for d in [CACHE_DIR, HTTP_CACHE_DIR, SUBTITLES_DIR]:
         except IOError, e:
             print "Couldn't create %s, %s" % (d, str(e))
             raise
+
+def sort_by_attr(seq, attr):
+    intermed = map(None, map(getattr, seq, (attr,)*len(seq)), xrange(len(seq)), seq)
+    intermed.sort()
+    return map(operator.getitem, intermed, (-1,) * len(intermed))
+
 
 def get_feed_thumbnail(feed):
     thumbfn = ''
@@ -402,38 +410,18 @@ def add_programme(feed, programme, totalItems=None, tracknumber=None, thumbnail_
     return True
 
 
-def list_categories(feed=None, channels=None, progcount=True):
+def list_categories(tvradio='tv', feed=None, channels=None, progcount=True):
     handle = int(sys.argv[1])
 
-    if not feed:
-        xbmcplugin.addSortMethod(handle=handle, sortMethod=xbmcplugin.SORT_METHOD_TRACKNUM)
-        # top level list of channels
-        for j, f in enumerate(channels):
-            listitem = xbmcgui.ListItem(label=f.name)
-            listitem.setIconImage('defaultFolder.png')
-            listitem.setThumbnailImage(get_feed_thumbnail(f))
-            listitem.setProperty('tracknumber', str(j))
-            url = make_url(feed=f, listing='categories')
-            ok = xbmcplugin.addDirectoryItem(
-                handle=handle,
-                url=url,
-                listitem=listitem,
-                isFolder=True,
-            )
-                
-        xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
-        return
-        
     # list of categories within a channel
     xbmcplugin.addSortMethod(handle=handle, sortMethod=xbmcplugin.SORT_METHOD_NONE)
-    for category, count in feed.categories():
-        url = make_url(feed=feed, listing='list', category=category)
-        if progcount:
-            label = "%s (%s)" % (category, count)
-        else :
-            label = category
+    for label, category in feed.categories():
+        url = make_url(feed=feed, listing='list', category=category, tvradio=tvradio)
         listitem = xbmcgui.ListItem(label=label)
-        listitem.setThumbnailImage(get_feed_thumbnail(feed))
+        if tvradio == 'tv':
+            listitem.setThumbnailImage(os.path.join(iplayer.IMG_DIR, 'tv.png'))
+        else:
+            listitem.setThumbnailImage(os.path.join(iplayer.IMG_DIR, 'radio.png'))
         ok = xbmcplugin.addDirectoryItem(            
             handle=handle, 
             url=url,
@@ -543,6 +531,7 @@ def search(tvradio = 'tv'):
     feed = iplayer.feed(tvradio, searchterm=searchterm)
     list_feed_listings(feed, 'list')
     
+
         
 def list_feed_listings(feed, listing, category=None, series=None, channels=None):
     handle = int(sys.argv[1])
@@ -556,18 +545,6 @@ def list_feed_listings(feed, listing, category=None, series=None, channels=None)
     d['popular'] = feed.popular
     d['highlights'] = feed.highlights
     programmes = d[listing]()
-
-    ## filter by category
-    if category:
-        temp_prog = []
-        # if a category filter has been specified then only parse programmes
-        # in that category
-        for p in programmes:
-            for c in p.categories:
-                if c == category: 
-                    temp_prog.append(p)
-                    continue
-        programmes = temp_prog
 
     ## filter by series
     if series:
@@ -585,6 +562,9 @@ def list_feed_listings(feed, listing, category=None, series=None, channels=None)
             if series == matchagainst: 
                 temp_prog.append(p)
         programmes = temp_prog
+    
+    programmes = sort_by_attr(programmes, 'title')
+    
         
     # add each programme
     total = len(programmes)
@@ -620,7 +600,7 @@ def list_feed_listings(feed, listing, category=None, series=None, channels=None)
             listitem.setThumbnailImage(get_feed_thumbnail(f))
             listitem.setProperty('tracknumber', str(count))
             count = count + 1
-            url = make_url(feed=f, listing=listing, tvradio=feed.tvradio)
+            url = make_url(feed=f, listing=listing, tvradio=feed.tvradio, category=category)
             ok = xbmcplugin.addDirectoryItem(
                 handle=handle,
                 url=url,
@@ -921,6 +901,10 @@ if __name__ == "__main__":
     #else:
     #    print "no feed"
 
+    # update feed category
+    if feed and category:
+        feed.category = category
+
     # state engine
     if pid:
         watch(feed, pid)
@@ -936,8 +920,8 @@ if __name__ == "__main__":
             list_feeds(feed, tvradio)
     elif listing == 'categories':
         channels = None
-        if not feed: channels = iplayer.feed(tvradio or 'tv').channels_feed()
-        list_categories(feed, channels, progcount=progcount)
+        feed = feed or iplayer.feed(tvradio or 'tv',  searchcategory=True, category=category)
+        list_categories(tvradio, feed)
     elif listing == 'search':
         search(tvradio)
     elif listing == 'atoz':
@@ -945,13 +929,13 @@ if __name__ == "__main__":
     elif listing == 'livefeeds':
         channels = iplayer.feed(tvradio or 'tv').channels_feed()
         list_live_feeds(channels, tvradio)
-    elif listing == 'list' and not series:
-        feed = feed or iplayer.feed(tvradio or 'tv')
+    elif listing == 'list' and not series and not category:
+        feed = feed or iplayer.feed(tvradio or 'tv', category=category)
         list_series(feed, listing, category=category, progcount=progcount)
     elif listing:
         channels=None
         if not feed:
-            feed = feed or iplayer.feed(tvradio or 'tv')
+            feed = feed or iplayer.feed(tvradio or 'tv', category=category)
             channels=feed.channels_feed()
         list_feed_listings(feed, listing, category=category, series=series, channels=channels)
     

@@ -4,9 +4,11 @@
 import re, time, os, string, sys
 import urllib2
 import logging
+import xml.dom.minidom as dom
 from pprint import pformat
 from socket import timeout as SocketTimeoutError
 from time import time
+
 
 # XBMC libs
 import xbmcgui
@@ -337,6 +339,33 @@ def parse_entry_id(entry_id):
     matches = r.findall(entry_id)
     if not matches: return None
     return matches[0]
+
+
+def categories_list(tvradio='tv'):
+    """
+    'categories'/<category>(/<subcategory>)(/['tv'/'radio'])/list']
+    """
+    url = 'http://feeds.bbc.co.uk/iplayer/categories/' + tvradio +'/list'
+    xml = httpget(url)
+    categories = []
+    doc = dom.parseString(xml)
+    root = doc.documentElement
+    for entry in root.getElementsByTagName( "entry" ):
+        summary = root.getElementsByTagName( "summary" )[0].firstChild.nodeValue
+        url = None
+        
+        # search for the url for this entry
+        for link in entry.getElementsByTagName( "link" ):
+            if link.hasAttribute( "rel" ):
+                rel = ref.getAttribute( "rel" )
+                if rel == 'self':
+                    url = ref.getAttribute( "href" )
+                    break
+                
+        if url:#
+            categories.append([summary, url])
+    
+    return categories
 
 class media(object):
     def __init__(self, item, media_node):
@@ -832,7 +861,7 @@ class programme_simple(object):
 
 
 class feed(object):
-    def __init__(self, tvradio=None, channel=None, category=None, subcategory=None, atoz=None, searchterm=None):
+    def __init__(self, tvradio=None, channel=None, category=None, searchcategory=None, atoz=None, searchterm=None):
         """
         Creates a feed for the specified channel/category/whatever.
         tvradio: type of channel - 'tv' or 'radio'. If a known channel is specified, use 'auto'.
@@ -857,7 +886,7 @@ class feed(object):
             self.tvradio = None
         self.channel = channel
         self.category = category            
-        self.subcategory = subcategory
+        self.searchcategory = searchcategory
         self.atoz = atoz
         self.searchterm = searchterm      
         
@@ -867,7 +896,20 @@ class feed(object):
         'categories'/<category>(/<subcategory>)(/['tv'/'radio'])/['list'|'popular'|'highlights']
         """
         assert listing in ['list', 'popular', 'highlights'], "Unknown listing type"
-        if self.searchterm:
+        if self.searchcategory:            
+            path = ['categories']
+            if self.category:
+                path += [self.category]
+            if self.tvradio:
+                path += [self.tvradio]
+            path += ['list']
+        elif self.category:
+            if self.channel:
+                path = [self.channel, 'categories', self.category]
+            else:
+                path = ['categories', self.category, self.tvradio]
+            path += ['list']
+        elif self.searchterm:
             path = ['search']
             if self.tvradio:
                 path += [self.tvradio]
@@ -884,7 +926,7 @@ class feed(object):
         else:
             assert listing != 'list', "Can't list at tv/radio level'"
             path = [listing, self.tvradio]
-          
+        
         return "http://feeds.bbc.co.uk/iplayer/" + '/'.join(path)
 
        
@@ -911,11 +953,13 @@ class feed(object):
                     
         if self.searchterm:
             path += ['Search results for %s' % self.searchterm]
-                    
-        if self.category:
-            assert self.category in categories, 'Unknown category'
-            path.append(categories.get(self.category, '(Category)'))
-            
+
+        if self.searchcategory:
+            if self.category:
+                path += ['Category %s' % self.category]
+            else:                    
+                path += ['Categories']
+                          
         if self.atoz:
             path.append("beginning with %s" % self.atoz.upper())
         
@@ -1041,25 +1085,31 @@ class feed(object):
     
     def categories(self):
         # quick and dirty category extraction and count
-        xmlURL = self.create_url('list')
-        xml    = httpget(xmlURL)
-        cat    = re.findall( "<category .*term=\"(.*?)\"", xml )
-        categories = {}
-        for c in cat:
-            #if c != 'TV':
-            if not categories.has_key(c): categories[c] = 0
-            categories[c] += 1
-        alist=[]
-        k = categories.keys()
-        k.sort()
-        for c in k:
-            n = categories[c]
-            c = c.replace('&amp;', '&')
-            c = c.replace('&gt;', '>')
-            c = c.replace('&lt;', '<')
-            alist.append((c, n))
-        return alist    
+        url = self.create_url('list')
 
+        xml = httpget(url)
+        categories = []
+        doc = dom.parseString(xml)
+        root = doc.documentElement
+        for entry in root.getElementsByTagName( "entry" ):
+            summary = entry.getElementsByTagName( "summary" )[0].firstChild.nodeValue
+            title = re.sub('programmes currently available from BBC iPlayer', '', summary, 1)
+            url = None
+            
+            # search for the url for this entry
+            for link in entry.getElementsByTagName( "link" ):
+                if link.hasAttribute( "rel" ):
+                    rel = link.getAttribute( "rel" )
+                    if rel == 'self':
+                        url = link.getAttribute( "href" )
+                        #break
+                    
+            if url:
+                category = re.findall( "iplayer/categories/(.*?)/list", url, re.DOTALL )[0]
+                categories.append([title, category])
+        
+        return categories
+        
     @property
     def is_radio(self):
         """ True if this feed is for radio. """
