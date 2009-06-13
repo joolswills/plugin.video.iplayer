@@ -16,7 +16,7 @@ import xbmc, xbmcgui, xbmcplugin
 __scriptname__ = "IPlayer"
 __author__     = 'Dink [dink12345@googlemail.com]'
 __svn_url__    = "http://xbmc-iplayerv2.googlecode.com/svn/trunk/IPlayer"
-__version__    = "1.0.1"
+__version__    = "1.0.2"
 
 sys.path.insert(0, os.path.join(os.getcwd(), 'lib'))
 
