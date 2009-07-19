@@ -23,6 +23,7 @@ sys.path.insert(0, os.path.join(os.getcwd(), 'lib'))
 try: 
     import iplayer2 as iplayer
     import httplib2
+    import live_tv
 except ImportError, error:
     print error
     print sys.path
@@ -162,7 +163,9 @@ def list_feeds(feeds, tvradio='tv'):
     folders.append(('Categories', 'categories.png', make_url(listing='categories', tvradio=tvradio)))    
     folders.append(('Highlights', 'highlights.png', make_url(listing='highlights', tvradio=tvradio)))
     if tvradio == 'radio':
-        folders.append(('Listen Live', 'listenlive.png', make_url(listing='livefeeds', tvradio=tvradio)))    
+        folders.append(('Listen Live', 'listenlive.png', make_url(listing='livefeeds', tvradio=tvradio)))
+    else:
+        folders.append(('Watch Live', 'tv.png', make_url(listing='livefeeds', tvradio=tvradio)))    
     folders.append(('Popular', 'popular.png', make_url(listing='popular', tvradio=tvradio)))
     folders.append(('Search', 'search.png', make_url(listing='search', tvradio=tvradio)))
 
@@ -832,12 +835,12 @@ def watch(feed, pid):
         player.setSubtitles(subtitles_file)
 
 
-def watch_live(label='', url=None):
+def listen_live(label='', url=None):
     
     if not url:
         return
     
-    logging.info('watching live station=%s url=%s' % (label, url))
+    logging.info('live radio station=%s url=%s' % (label, url))
 
     txt = iplayer.httpget(url)
     
@@ -907,9 +910,12 @@ if __name__ == "__main__":
 
     # state engine
     if pid:
-        watch(feed, pid)
+        if not label:
+            watch(feed, pid)
+        else:
+            live_tv.play_stream(label)
     elif url:
-        watch_live(label, url)
+        listen_live(label, url)
     elif not (feed or listing):
         if not tvradio:
             list_tvradio()
@@ -927,8 +933,12 @@ if __name__ == "__main__":
     elif listing == 'atoz':
         list_atoz(feed)
     elif listing == 'livefeeds':
-        channels = iplayer.feed(tvradio or 'tv').channels_feed()
-        list_live_feeds(channels, tvradio)
+        tvradio = tvradio or 'tv'
+        if tvradio == 'radio':
+            channels = iplayer.feed(tvradio or 'tv').channels_feed()
+            list_live_feeds(channels, tvradio)
+        else:
+            live_tv.list_channels()
     elif listing == 'list' and not series and not category:
         feed = feed or iplayer.feed(tvradio or 'tv', category=category)
         list_series(feed, listing, category=category, progcount=progcount)

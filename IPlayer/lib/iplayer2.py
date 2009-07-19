@@ -341,32 +341,6 @@ def parse_entry_id(entry_id):
     return matches[0]
 
 
-def categories_list(tvradio='tv'):
-    """
-    'categories'/<category>(/<subcategory>)(/['tv'/'radio'])/list']
-    """
-    url = 'http://feeds.bbc.co.uk/iplayer/categories/' + tvradio +'/list'
-    xml = httpget(url)
-    categories = []
-    doc = dom.parseString(xml)
-    root = doc.documentElement
-    for entry in root.getElementsByTagName( "entry" ):
-        summary = root.getElementsByTagName( "summary" )[0].firstChild.nodeValue
-        url = None
-        
-        # search for the url for this entry
-        for link in entry.getElementsByTagName( "link" ):
-            if link.hasAttribute( "rel" ):
-                rel = ref.getAttribute( "rel" )
-                if rel == 'self':
-                    url = ref.getAttribute( "href" )
-                    break
-                
-        if url:#
-            categories.append([summary, url])
-    
-    return categories
-
 class media(object):
     def __init__(self, item, media_node):
         self.item = item
