@@ -406,7 +406,11 @@ class media(object):
                 print "bitrate = " + '"' + media.get('bitrate') + '"'
             self.bitrate = None
         
-        conn = media.find('connection')
+        # find an akamai stream in preference
+        conn = media.find('connection', { "kind" : "akamai" })
+        if not conn:
+            conn = media.find('connection')
+            
         self.connection_kind = conn.get('kind')
         self.connection_live = conn.get('live') == 'true'
         self.connection_protocol = None
@@ -457,7 +461,8 @@ class media(object):
                 self.PlayPath  = identifier
                 p = re.compile('^mp4:')
                 identifier = p.sub('', identifier)
-                self.SWFPlayer = 'http://www.bbc.co.uk/emp/9player.swf?revision=7978_8340'
+                #self.SWFPlayer = 'http://www.bbc.co.uk/emp/9player.swf?revision=7978_8340'
+                self.SWFPlayer = 'http://www.bbc.co.uk/emp/9player.swf?revision=10344_10753'
             elif self.connection_kind == 'limelight':
                 application    = conn.get('application')
                 self.PlayPath  = identifier
