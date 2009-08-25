@@ -16,7 +16,7 @@ import xbmc, xbmcgui, xbmcplugin
 __scriptname__ = "IPlayer"
 __author__     = 'Dink [dink12345@googlemail.com]'
 __svn_url__    = "http://xbmc-iplayerv2.googlecode.com/svn/trunk/IPlayer"
-__version__    = "2009-08-17"
+__version__    = "2009-08-25"
 
 sys.path.insert(0, os.path.join(os.getcwd(), 'lib'))
 
@@ -732,6 +732,8 @@ def watch(feed, pid):
         pref = get_setting_videostream(channel)
         media = item.get_media_for(pref)
 
+        # fall down to find a supported stream. 
+
         if not media and pref == 'h264 3200':
             # fallback to 'h264 1500' as 'h264 3200' is not always available
             logging.info('Steam %s not available, falling back to flash h264 1500 stream' % pref)
@@ -745,14 +747,21 @@ def watch(feed, pid):
             media = item.get_media_for(pref)
         
         if not media and pref == 'h264 800':
-            # fallback to 'flash 512' as 'h264 800' is not always available
-            logging.info('Steam %s not available, falling back to flash 512 stream' % pref)
+            # fallback to 'flashmed' as 'h264 800' is not always available
+            logging.info('Steam %s not available, falling back to flashmed stream' % pref)
             pref = 'flashmed'
             media = item.get_media_for(pref)
+
+        if not media and pref == 'flashmed':
+            # fallback to 'flashwii' as 'flashmed' is not always available
+            logging.info('Steam %s not available, falling back to flash wii stream' % pref)
+            pref = 'flashwii'
+            media = item.get_media_for(pref)      
+                            
         
         if not media:
             d = xbmcgui.Dialog()
-            d.ok('Stream Error', 'Can\'t locate tv stream for' + pref)            
+            d.ok('Stream Error', 'Can\'t locate a tv stream.')            
             return False            
             
         url = media.url
