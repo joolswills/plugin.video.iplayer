@@ -2,7 +2,7 @@
 
 # Python libs
 import re, time, os, string, sys
-import urllib2
+import urllib, urllib2
 import logging
 import xml.dom.minidom as dom
 from pprint import pformat
@@ -325,11 +325,18 @@ def httpget(url):
     try:
         resp, data = http.request(url, 'GET')
     except:
-        #print "Response for status %s for %s" % (resp.status, data)
-        dialog = xbmcgui.Dialog()
-        dialog.ok('Network Error', 'Failed to fetch URL', url)
-        print 'Network Error. Failed to fetch URL %s' % url
-        raise
+        try:
+            # fallback to urllib to avoid a bug in httplib which often
+            # occurs during searches
+            f = urllib.urlopen(url)
+            data = f.read()
+            f.close()
+        except:
+            #print "Response for status %s for %s" % (resp.status, data)
+            dialog = xbmcgui.Dialog()
+            dialog.ok('Network Error', 'Failed to fetch URL', url)
+            print 'Network Error. Failed to fetch URL %s' % url
+            raise
     
     return data
 
@@ -343,15 +350,16 @@ def parse_entry_id(entry_id):
 
 class media(object):
     def __init__(self, item, media_node):
-        self.item = item
-        self.href = None
-        self.kind = None
-        self.method = None
+        self.item      = item
+        self.href      = None
+        self.kind      = None
+        self.method    = None
         self.width, self.height = None, None
-        self.bitrate = None
+        self.bitrate   = None
         self.SWFPlayer = None
-        self.PlayPath = None
-        self.PageURL = None
+        self.PlayPath  = None
+        #self.tcUrl     = None
+        self.PageURL   = None
         self.read_media_node(media_node)
 
     
@@ -461,12 +469,11 @@ class media(object):
                 self.PlayPath  = identifier
                 p = re.compile('^mp4:')
                 identifier = p.sub('', identifier)
-                #self.SWFPlayer = 'http://www.bbc.co.uk/emp/9player.swf?revision=7978_8340'
                 self.SWFPlayer = 'http://www.bbc.co.uk/emp/9player.swf?revision=10344_10753'
             elif self.connection_kind == 'limelight':
                 application    = conn.get('application')
-                self.PlayPath  = identifier
-                self.SWFPlayer = 'http://www.bbc.co.uk/emp/9player.swf?revision=7938'
+                self.PlayPath  = auth
+                self.SWFPlayer = 'http://www.bbc.co.uk/emp/9player.swf?revision=10344_10753'
             elif self.encoding == 'mp3':
                 # mp3 streams drop the leading mp3: in the identifier but not the playpath
                 self.PlayPath  = identifier
@@ -483,6 +490,7 @@ class media(object):
                 logging.error("No support for live streams!")                
             else:
                 self.connection_href = "rtmp://%(ip)s:1935/%(application)s?_fcs_vhost=%(server)s&auth=%(auth)s&aifp=v001&slist=%(identifier)s" % params
+                #self.tcUrl = "rtmp://%(server)s:1935/%(application)s" % params
         else:
             logging.error("connectionkind %s unknown", self.connection_kind)
         

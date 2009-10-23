@@ -24,6 +24,7 @@ try:
     import iplayer2 as iplayer
     import httplib2
     import live_tv
+    import iplayer_search
 except ImportError, error:
     print error
     print sys.path
@@ -52,6 +53,7 @@ CACHE_DIR      = os.path.join(DIR_USERDATA, 'iplayer_cache')
 SUBTITLES_DIR  = os.path.join(DIR_USERDATA, 'Subtitles')
 THUMB_DIR      = os.path.join(os.getcwd(), 'resources', 'media')
 TMP_THUMB      = os.path.join(CACHE_DIR, 'tmp_thumb')
+SEARCH_FILE    = os.path.join(DIR_USERDATA, 'search.txt')
 
 print "SUBTITLES DIR: %s" % SUBTITLES_DIR
 
@@ -68,6 +70,14 @@ for d in [CACHE_DIR, HTTP_CACHE_DIR, SUBTITLES_DIR]:
         except IOError, e:
             print "Couldn't create %s, %s" % (d, str(e))
             raise
+
+if not os.path.isfile(SEARCH_FILE):
+    try:
+        open(SEARCH_FILE, 'wb').close() 
+    except IOError, e:
+        print "Couldn't create %s, %s" % (d, str(e))
+        raise
+
 
 def sort_by_attr(seq, attr):
     intermed = map(None, map(getattr, seq, (attr,)*len(seq)), xrange(len(seq)), seq)
@@ -126,13 +136,14 @@ def read_url():
     series       = args.get('series', [None])[0]    
     url          = args.get('url', [None])[0]
     label        = args.get('label', [None])[0]
+    deletesearch = args.get('deletesearch', [None])[0]
     
     feed = None
     if feed_channel:
         feed = iplayer.feed('auto', channel=feed_channel, atoz=feed_atoz)
     elif feed_atoz:
         feed = iplayer.feed(tvradio or 'auto', atoz=feed_atoz)
-    return (feed, listing, pid, tvradio, category, series, url, label)
+    return (feed, listing, pid, tvradio, category, series, url, label, deletesearch)
 
 def list_atoz(feed=None):
     handle = int(sys.argv[1])
@@ -167,7 +178,7 @@ def list_feeds(feeds, tvradio='tv'):
     else:
         folders.append(('Watch Live', 'tv.png', make_url(listing='livefeeds', tvradio=tvradio)))    
     folders.append(('Popular', 'popular.png', make_url(listing='popular', tvradio=tvradio)))
-    folders.append(('Search', 'search.png', make_url(listing='search', tvradio=tvradio)))
+    folders.append(('Search', 'search.png', make_url(listing='searchlist', tvradio=tvradio)))
 
     total = len(folders) + len(feeds) + 1
 
@@ -521,20 +532,56 @@ def list_series(feed, listing, category=None, progcount=True):
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
     
     
-def search(tvradio = 'tv'):
+def search(tvradio, searchterm):
     handle = int(sys.argv[1])
     
-    kb = xbmc.Keyboard('', 'Search for')
-    kb.doModal()
-    if not kb.isConfirmed():
-        xbmcplugin.endOfDirectory(handle=handle, succeeded=False)
-
-    searchterm = kb.getText()
+    if not searchterm:
+        searchterm = iplayer_search.prompt_for_search()
+        iplayer_search.save_search(SEARCH_FILE, tvradio, searchterm)
     
+    print "searchterm=" + searchterm
     feed = iplayer.feed(tvradio, searchterm=searchterm)
     list_feed_listings(feed, 'list')
-    
 
+def search_delete(tvradio, searchterm):
+    handle = int(sys.argv[1])
+    iplayer_search.delete_search(SEARCH_FILE, tvradio, searchterm)
+    xbmc.executebuiltin("Container.Refresh")
+    
+def search_list(tvradio):
+    # provide a list of saved search terms
+    handle = int(sys.argv[1])
+    xbmcplugin.addSortMethod(handle=handle, sortMethod=xbmcplugin.SORT_METHOD_NONE)
+    searchimg = os.path.join(THUMB_DIR, 'search.png')
+    
+    # First item allows a new search to be created
+    listitem = xbmcgui.ListItem(label='New Search...')
+    listitem.setThumbnailImage(searchimg)
+    url = make_url(listing='search', tvradio=tvradio)
+    ok = xbmcplugin.addDirectoryItem(            
+          handle=handle, 
+          url=url,
+          listitem=listitem,
+          isFolder=True) 
+    
+    # Now list all the saved searches
+    for searchterm in iplayer_search.load_search(SEARCH_FILE, tvradio):
+        listitem = xbmcgui.ListItem(label=searchterm)
+        listitem.setThumbnailImage(searchimg)
+        url = make_url(listing='search', tvradio=tvradio, label=searchterm)
+        
+        # change the context menu to an entry for deleting the search
+        cmd = "XBMC.RunPlugin(%s?deletesearch=%s&tvradio=%s)" % (sys.argv[0], urllib.quote_plus(searchterm), urllib.quote_plus(tvradio))
+        listitem.addContextMenuItems( [ ('Delete saved search', cmd) ] )
+        
+        ok = xbmcplugin.addDirectoryItem(            
+            handle=handle, 
+            url=url,
+            listitem=listitem,
+            isFolder=True,
+        )        
+         
+    xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
         
 def list_feed_listings(feed, listing, category=None, series=None, channels=None):
     handle = int(sys.argv[1])
@@ -816,6 +863,9 @@ def watch(feed, pid):
         if media.PageURL:
             listitem.setProperty("PageURL", media.PageURL)
             print "PageURL  : " + media.PageURL
+        #if media.tcUrl:
+        #    listitem.setProperty("tcUrl", media.tcUrl)
+        #    print "tcUrl  : " + media.tcUrl
 
     if thumbnail: 
         try:
@@ -906,13 +956,9 @@ if __name__ == "__main__":
     if xbmcplugin.getSetting('progcount') == 'false':  progcount = False
   
     # get current state parameters
-    (feed, listing, pid, tvradio, category, series, url, label) = read_url()
-    print (feed, listing, pid, tvradio, category, series, url, label)
-    #if feed:
-    #    print feed.name
-    #else:
-    #    print "no feed"
-
+    (feed, listing, pid, tvradio, category, series, url, label, deletesearch) = read_url()
+    print (feed, listing, pid, tvradio, category, series, url, label, deletesearch)
+    
     # update feed category
     if feed and category:
         feed.category = category
@@ -925,6 +971,8 @@ if __name__ == "__main__":
             live_tv.play_stream(label)
     elif url:
         listen_live(label, url)
+    elif deletesearch:
+        search_delete(tvradio or 'tv', deletesearch)        
     elif not (feed or listing):
         if not tvradio:
             list_tvradio()
@@ -937,8 +985,10 @@ if __name__ == "__main__":
         channels = None
         feed = feed or iplayer.feed(tvradio or 'tv',  searchcategory=True, category=category)
         list_categories(tvradio, feed)
+    elif listing == 'searchlist':
+        search_list(tvradio or 'tv')
     elif listing == 'search':
-        search(tvradio)
+        search(tvradio or 'tv', label)   
     elif listing == 'atoz':
         list_atoz(feed)
     elif listing == 'livefeeds':
