@@ -15,28 +15,40 @@ live_tv_channels = [
                     ('bbc_parliament','BBC Parliament', 'bbc_parliament.png')
                     ]
 
-def fetch_stream_info(channel):
+def fetch_stream_info(channel, bitrate):
 
     # read the simulcast xml
     cxml = 'http://www.bbc.co.uk/emp/simulcast/' + channel + '.xml'
     f = urllib.urlopen(cxml)
     cstr = f.read()
-    print cstr
     f.close()
 
     # parse the simulcast xml
     doc = dom.parseString(cstr)
     root = doc.documentElement
-    media = root.getElementsByTagName( "media" )[0]
-    connection = media.getElementsByTagName( "connection" )[0]
-    simulcast   = connection.attributes['identifier'].nodeValue
-    server      = connection.attributes['server'].nodeValue
-    kind        = connection.attributes['kind'].nodeValue
-    application = connection.attributes['application'].nodeValue
-
+    surl = ''
+    mbitrate = 0
+    
+    for media in root.getElementsByTagName( "media" ):
+        mbitrate    = media.attributes['bitrate'].nodeValue
+        connection  = media.getElementsByTagName( "connection" )[0]
+        simulcast   = connection.attributes['identifier'].nodeValue
+        server      = connection.attributes['server'].nodeValue
+        kind        = connection.attributes['kind'].nodeValue
+        application = connection.attributes['application'].nodeValue
+        
+        surl = 'http://www.bbc.co.uk/mediaselector/4/gtis/?server=%s&identifier=%s&kind=%s&application=%s&cb=62605' % (server , simulcast, kind, application)        
+        
+        print "bitrates: Found %s Searching for %s" % (mbitrate, bitrate)
+        if int(mbitrate) <= int(bitrate):
+            # select the current bitrate if it equals or is less than the desired bitrate.
+            # as the xml file lists streams in descending order of bit rate this ensures that the 
+            # nearest bitrate to the desired one is selected
+            break
+    
+    print 'Live Video Stream. Preference bitrate = %s,actual = %s' % (bitrate, mbitrate)
     
     # read the media selector xml
-    surl = 'http://www.bbc.co.uk/mediaselector/4/gtis/?server=%s&identifier=%s&kind=%s&application=%s&cb=62605' % (server , simulcast, kind, application)
     print surl
     f    = urllib.urlopen(surl)
     xstr = f.read()
@@ -57,8 +69,9 @@ def fetch_stream_info(channel):
     return (url, playpath)
 
 
-def play_stream(channel):
-    (url, playpath) = fetch_stream_info(channel)
+def play_stream(channel, bitrate, pDialog):
+    (url, playpath) = fetch_stream_info(channel, bitrate)
+    pDialog.update(50, 'Starting Stream')
     item = xbmcgui.ListItem("BBC Live video")
     item.setProperty("SWFPlayer", 'http://www.bbc.co.uk/emp/9player.swf?revision=8812_8903')
     item.setProperty("PlayPath", playpath) 
@@ -69,6 +82,7 @@ def play_stream(channel):
     play.add(url,item)
     player = xbmc.Player(xbmc.PLAYER_CORE_AUTO)
     player.play(play) 
+    pDialog.close()
     
     
 def make_url(channel=None):
@@ -104,6 +118,6 @@ if __name__ == '__main__':
     args = cgi.parse_qs(sys.argv[2][1:])
     channel = args.get('label', [None])[0]
     if channel and channel != '':
-        play_stream(channel)
+        play_stream(channel, 800)
     else:
         list_channels()

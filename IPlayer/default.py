@@ -317,12 +317,12 @@ def get_setting_videostream(feed=None,default='flashmed'):
             return 'h264 1500'
         
     videostream = xbmcplugin.getSetting('video_stream')
-    #Auto|Flash VP6|H.264 (800kb)|H.264 (1500kb)|H.264 (3200kb)
+    #Auto|H.264 (480kb)|H.264 (800kb)|H.264 (1500kb)|H.264 (3200kb)
     if videostream:
-        if videostream == 'Flash (512kb)' or videostream == '1':
-            return 'flashmed'
+        if videostream == 'H.264 (480kb)' or videostream == '1':
+            return 'h264 480'
         elif videostream == 'H.264 (800kb)' or videostream == '2':
-            return 'h264 800'
+            return 'h264 800'        
         elif videostream == 'H.264 (1500kb)' or videostream == '3':
             return 'h264 1500'        
         elif videostream == 'H.264 (3200kb)' or videostream == '4':
@@ -751,7 +751,7 @@ def download_subtitles(url):
     fw.close()    
     return outfile
 
-def watch(feed, pid):
+def watch(feed, pid, pDialog):
 
     subtitles_file = None
     item      = get_item(pid)
@@ -775,12 +775,17 @@ def watch(feed, pid):
                                    'Plot': summary + ' ' + updated,
                                    'PlotOutline': summary,
                                    "Date": updated,})
-        
+        pDialog.update(30, 'Fetching video stream info')
+        if pDialog.iscanceled(): raise
         pref = get_setting_videostream(channel)
+        pDialog.update(50, 'Selecting video stream')
+        if pDialog.iscanceled(): raise
+        
         media = item.get_media_for(pref)
 
         # fall down to find a supported stream. 
 
+        
         if not media and pref == 'h264 3200':
             # fallback to 'h264 1500' as 'h264 3200' is not always available
             logging.info('Steam %s not available, falling back to flash h264 1500 stream' % pref)
@@ -794,13 +799,13 @@ def watch(feed, pid):
             media = item.get_media_for(pref)
         
         if not media and pref == 'h264 800':
-            # fallback to 'flashmed' as 'h264 800' is not always available
+            # fallback to 'h264 480' as 'h264 800' is not always available
             logging.info('Steam %s not available, falling back to flashmed stream' % pref)
-            pref = 'flashmed'
+            pref = 'h264 480'
             media = item.get_media_for(pref)
 
-        if not media and pref == 'flashmed':
-            # fallback to 'flashwii' as 'flashmed' is not always available
+        if not media and pref == 'h264 480':
+            # fallback to 'flashwii' as 'h264 480' is not always available
             logging.info('Steam %s not available, falling back to flash wii stream' % pref)
             pref = 'flashwii'
             media = item.get_media_for(pref)      
@@ -814,6 +819,8 @@ def watch(feed, pid):
         url = media.url
         logging.info('watching url=%s' % url)
 
+        pDialog.update(70, 'Selecting subtitles')
+        if pDialog.iscanceled(): raise
         if subtitles:
             subtitles_media = item.get_media_for('captions')
             if subtitles_media:
@@ -824,7 +831,11 @@ def watch(feed, pid):
     else:
         # Radio stream
         listitem.setIconImage('defaultAudio.png')
+        pDialog.update(30, 'Fetching radio stream info')
+        if pDialog.iscanceled(): raise
         pref = get_setting_audiostream()
+        pDialog.update(50, 'Selecting radio stream')
+        if pDialog.iscanceled(): raise
         media = item.get_media_for(pref)
         if not media and pref == 'aac':
             # fallback to mp3 as aac is not always available
@@ -870,7 +881,9 @@ def watch(feed, pid):
     if thumbnail: 
         try:
             # The thumbnail needs to accessed via the local filesystem
-            # for "Media Info" to display it when playing a video 
+            # for "Media Info" to display it when playing a video
+            pDialog.update(70, 'Fetching thumbnail')
+            if pDialog.iscanceled(): raise 
             ext = os.path.splitext(thumbnail)[1]
             thumbfile = TMP_THUMB + ext
             iplayer.httpretrieve(thumbnail, thumbfile)
@@ -883,6 +896,8 @@ def watch(feed, pid):
     del item
     del media
     
+    pDialog.update(80, 'Playing')
+    if pDialog.iscanceled(): raise
     play.clear()
     play.add(url,listitem)
     player = xbmc.Player(xbmc.PLAYER_CORE_AUTO)
@@ -965,10 +980,24 @@ if __name__ == "__main__":
 
     # state engine
     if pid:
-        if not label:
-            watch(feed, pid)
-        else:
-            live_tv.play_stream(label)
+        pDialog = xbmcgui.DialogProgress()
+        pDialog.update(0)
+        try:
+            if not label:
+                pDialog.create('IPlayer', 'Loading catchup stream info')
+                xbmc.sleep(50)
+                watch(feed, pid, pDialog)
+            else:
+                pDialog.create('IPlayer', 'Loading live stream info')
+                xbmc.sleep(50)
+                pref = get_setting_videostream(label)
+                bitrate = pref.split(' ')[1]
+                live_tv.play_stream(label, bitrate, pDialog)
+            pDialog.close()
+
+        except:
+            pDialog.close()
+
     elif url:
         listen_live(label, url)
     elif deletesearch:

@@ -387,6 +387,7 @@ class media(object):
         tep['video', 'video/mp4', 'h264', 'rtmp', 3200]   = 'h264 3200'
         tep['video', 'video/mp4', 'h264', 'rtmp', 1500]   = 'h264 1500'
         tep['video', 'video/mp4', 'h264', 'rtmp', 796]    = 'h264 800'
+        tep['video', 'video/mp4', 'h264', 'rtmp', 480]    = 'h264 480'
         tep['video', 'video/x-flv', 'vp6', 'rtmp', 512]   = 'flashmed'
         tep['video', 'video/x-flv', 'spark', 'rtmp', 800] = 'flashwii'
         tep['video', 'video/mpeg', 'h264', 'http', 184]   = 'mobile'
