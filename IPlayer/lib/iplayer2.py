@@ -21,20 +21,12 @@ from BeautifulSoup import BeautifulStoneSoup
 
 IMG_DIR = os.path.join(os.getcwd(), 'resources', 'media')
 
-try:
-    logging.basicConfig(
-        filename='iplayer2.log', 
-        filemode='w',
-        format='%(asctime)s %(levelname)4s %(message)s',
-        level=logging.DEBUG
-    )
-except IOError:
-    #print "iplayer2 logging to stdout"
-    logging.basicConfig(
-        stream=sys.stdout,
-        level=logging.DEBUG,
-        format='iplayer2.py: %(asctime)s %(levelname)4s %(message)s',
-    )    
+#print "iplayer2 logging to stdout"
+logging.basicConfig(
+    stream=sys.stdout,
+    level=logging.DEBUG,
+    format='iplayer2.py: %(levelname)4s %(message)s',
+)    
 # me want 2.5!!!
 def any(iterable):
      for element in iterable:
@@ -335,7 +327,7 @@ def httpget(url):
             #print "Response for status %s for %s" % (resp.status, data)
             dialog = xbmcgui.Dialog()
             dialog.ok('Network Error', 'Failed to fetch URL', url)
-            print 'Network Error. Failed to fetch URL %s' % url
+            logging.error( 'Network Error. Failed to fetch URL %s' % url )
             raise
     
     return data
@@ -412,7 +404,7 @@ class media(object):
             self.bitrate = int(media.get('bitrate'))
         except:
             if media.get('bitrate') != None:
-                print "bitrate = " + '"' + media.get('bitrate') + '"'
+                logging.info("bitrate = " + '"' + media.get('bitrate') + '"')
             self.bitrate = None
         
         # find an akamai stream in preference
@@ -670,8 +662,8 @@ class programme(object):
                         
         self._items = [item(self, i) for i in soup('item')]
         for i in self._items:
-            print i, i.alternate , " ",
-        print
+            logging.info((i, i.alternate , " ",))
+        
 
         rId = re.compile('concept_pid:([a-z0-9]{8})')
         for link in soup('relatedlink'):

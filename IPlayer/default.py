@@ -32,19 +32,11 @@ except ImportError, error:
     d.ok(str(error), 'Please check you installed this plugin correctly.')
     raise
 
-try:
-    logging.basicConfig(
-        filename='iplayer2.log', 
-        filemode='w',
-        format='%(asctime)s %(levelname)4s %(message)s',
-        level=logging.DEBUG
-    )
-except IOError:
-    print "iplayer2 logging to stdout"
-    logging.basicConfig(
-        stream=sys.stdout,
-        level=logging.DEBUG,
-        format='iplayer2.py: %(asctime)s %(levelname)4s %(message)s',
+
+logging.basicConfig(
+    stream=sys.stdout,
+    level=logging.DEBUG,
+    format='iplayer2.py: %(levelname)4s %(message)s',
     )
 
 DIR_USERDATA   = xbmc.translatePath(os.path.join( "T:"+os.sep,"plugin_data", __scriptname__ ))    
@@ -55,7 +47,8 @@ THUMB_DIR      = os.path.join(os.getcwd(), 'resources', 'media')
 TMP_THUMB      = os.path.join(CACHE_DIR, 'tmp_thumb')
 SEARCH_FILE    = os.path.join(DIR_USERDATA, 'search.txt')
 
-print "SUBTITLES DIR: %s" % SUBTITLES_DIR
+logging.info("IPlayer: version: %s" % __version__)
+logging.info("IPlayer: Subtitles dir: %s" % SUBTITLES_DIR)
 
 if not os.path.isdir(CACHE_DIR):
     d = xbmcgui.Dialog()
@@ -65,17 +58,17 @@ if not os.path.isdir(CACHE_DIR):
 for d in [CACHE_DIR, HTTP_CACHE_DIR, SUBTITLES_DIR]:
     if not os.path.isdir(d):
         try:
-            print "%s doesn't exist, creating" % d
+            logging.info("%s doesn't exist, creating" % d)
             os.makedirs(d)
         except IOError, e:
-            print "Couldn't create %s, %s" % (d, str(e))
+            logging.info("Couldn't create %s, %s" % (d, str(e)))
             raise
 
 if not os.path.isfile(SEARCH_FILE):
     try:
         open(SEARCH_FILE, 'wb').close() 
     except IOError, e:
-        print "Couldn't create %s, %s" % (d, str(e))
+        logging.error("Couldn't create %s, %s" % (d, str(e)))
         raise
 
 
@@ -137,13 +130,14 @@ def read_url():
     url          = args.get('url', [None])[0]
     label        = args.get('label', [None])[0]
     deletesearch = args.get('deletesearch', [None])[0]
+    externalcmd  = args.get('externalcmd', [None])[0]
     
     feed = None
     if feed_channel:
         feed = iplayer.feed('auto', channel=feed_channel, atoz=feed_atoz)
     elif feed_atoz:
         feed = iplayer.feed(tvradio or 'auto', atoz=feed_atoz)
-    return (feed, listing, pid, tvradio, category, series, url, label, deletesearch)
+    return (feed, listing, pid, tvradio, category, series, url, label, deletesearch, externalcmd)
 
 def list_atoz(feed=None):
     handle = int(sys.argv[1])
@@ -299,7 +293,7 @@ def get_setting_videostream(feed=None,default='flashmed'):
         xbmc_version = xbmc.getInfoLabel( "System.BuildVersion" )
         xbmc_rev = int( xbmc_version.split( " " )[ 1 ].replace( "r", "" ) )
     except:
-        print "Revision info not available: %s" % xbmc_version
+        logging.info("Revision info not available: %s" % xbmc_version)
         xbmc_rev = 0
     
     # check for xbox as it can't do HD
@@ -412,6 +406,10 @@ def add_programme(feed, programme, totalItems=None, tracknumber=None, thumbnail_
     if tracknumber: listitem.setProperty('tracknumber', str(tracknumber))
         
     #print "Getting URL for %s ..." % (programme.title)
+
+    # change the context menu adding an external app command
+    #cmd = "XBMC.RunPlugin(%s?externalcmd=launch&pid=%s&tvradio=%s)" % (sys.argv[0], urllib.quote_plus(programme.pid), urllib.quote_plus(tvradio))
+    #listitem.addContextMenuItems( [ ('External Application' , cmd) ] )
 
     url=make_url(feed=feed, pid=programme.pid)
     xbmcplugin.addDirectoryItem(
@@ -539,7 +537,7 @@ def search(tvradio, searchterm):
         searchterm = iplayer_search.prompt_for_search()
         iplayer_search.save_search(SEARCH_FILE, tvradio, searchterm)
     
-    print "searchterm=" + searchterm
+    logging.info("searchterm=" + searchterm)
     feed = iplayer.feed(tvradio, searchterm=searchterm)
     list_feed_listings(feed, 'list')
 
@@ -778,6 +776,7 @@ def watch(feed, pid, pDialog):
         pDialog.update(30, 'Fetching video stream info')
         if pDialog.iscanceled(): raise
         pref = get_setting_videostream(channel)
+        opref = pref
         pDialog.update(50, 'Selecting video stream')
         if pDialog.iscanceled(): raise
         
@@ -785,7 +784,6 @@ def watch(feed, pid, pDialog):
 
         # fall down to find a supported stream. 
 
-        
         if not media and pref == 'h264 3200':
             # fallback to 'h264 1500' as 'h264 3200' is not always available
             logging.info('Steam %s not available, falling back to flash h264 1500 stream' % pref)
@@ -804,17 +802,30 @@ def watch(feed, pid, pDialog):
             pref = 'h264 480'
             media = item.get_media_for(pref)
 
-        if not media and pref == 'h264 480':
-            # fallback to 'flashwii' as 'h264 480' is not always available
+        if not media:
+            # And finally fallback to 'flashwii'
             logging.info('Steam %s not available, falling back to flash wii stream' % pref)
             pref = 'flashwii'
             media = item.get_media_for(pref)      
                             
-        
         if not media:
-            d = xbmcgui.Dialog()
-            d.ok('Stream Error', 'Can\'t locate a tv stream.')            
-            return False            
+            # find the first available stream in ascending order
+            for apref in ['h264 480', 'h264 800', 'h264 1500', 'h264 3200']:
+                media = item.get_media_for(apref)
+                if media:
+                    pref=apref
+                    break
+
+            # A potentially usable stream was found (higher bitrate than the default) offer it to the user
+            if media:
+                d = xbmcgui.Dialog()
+                if d.yesno('Default %s Stream Not Available' % opref, 'Play higher bitrate %s stream ?' % pref ) == False:
+                   return False
+            else:
+                # Nothing usable was found
+                d = xbmcgui.Dialog()
+                d.ok('Stream Error', 'Can\'t locate any usable TV streams.')            
+                return False
             
         url = media.url
         logging.info('watching url=%s' % url)
@@ -867,13 +878,13 @@ def watch(feed, pid, pDialog):
     if media.connection_protocol == 'rtmp':
         if media.SWFPlayer:
             listitem.setProperty("SWFPlayer", media.SWFPlayer)
-            print "SWFPlayer : " + media.SWFPlayer
+            logging.info("SWFPlayer : " + media.SWFPlayer)
         if media.PlayPath:
             listitem.setProperty("PlayPath", media.PlayPath)
-            print "PlayPath  : " + media.PlayPath
+            logging.info("PlayPath  : " + media.PlayPath)
         if media.PageURL:
             listitem.setProperty("PageURL", media.PageURL)
-            print "PageURL  : " + media.PageURL
+            logging.info("PageURL  : " + media.PageURL)
         #if media.tcUrl:
         #    listitem.setProperty("tcUrl", media.tcUrl)
         #    print "tcUrl  : " + media.tcUrl
@@ -904,7 +915,7 @@ def watch(feed, pid, pDialog):
     player.play(play)
     
     # Auto play subtitles if they have downloaded 
-    print "subtitles: %s   - subtitles_file %s " % (subtitles,subtitles_file)
+    logging.info("subtitles: %s   - subtitles_file %s " % (subtitles,subtitles_file))
     if subtitles == 'autoplay' and subtitles_file: 
         player.setSubtitles(subtitles_file)
 
@@ -946,95 +957,94 @@ def listen_live(label='', url=None):
 
     player.play(play)
 
-
     
 if __name__ == "__main__":
-    #print sys.argv
-    
-    #print "Settings:"
-    #for s in ['video_stream', 'thumbnails', 'thumbnail_life', 'socket_timeout']:
-    #    print "    %s: %s" % (s, xbmcplugin.getSetting(s))
-   
-    # setup and check script environment 
-    cache = httplib2.FileCache(HTTP_CACHE_DIR, safe=lambda x: md5.new(x).hexdigest())
-    iplayer.set_http_cache(cache)
-
-    environment = os.environ.get( "OS", "xbox" )
     try:
-        timeout = int(xbmcplugin.getSetting('socket_timeout'))
-    except:
-        timeout = 5
-    if environment in ['Linux', 'xbox'] and timeout > 0:
-        setdefaulttimeout(timeout)
-
-    progcount = True
-    if xbmcplugin.getSetting('progcount') == 'false':  progcount = False
-  
-    # get current state parameters
-    (feed, listing, pid, tvradio, category, series, url, label, deletesearch) = read_url()
-    print (feed, listing, pid, tvradio, category, series, url, label, deletesearch)
     
-    # update feed category
-    if feed and category:
-        feed.category = category
-
-    # state engine
-    if pid:
-        pDialog = xbmcgui.DialogProgress()
-        pDialog.update(0)
+        # setup and check script environment 
+        cache = httplib2.FileCache(HTTP_CACHE_DIR, safe=lambda x: md5.new(x).hexdigest())
+        iplayer.set_http_cache(cache)
+    
+        environment = os.environ.get( "OS", "xbox" )
         try:
-            if not label:
-                pDialog.create('IPlayer', 'Loading catchup stream info')
-                xbmc.sleep(50)
-                watch(feed, pid, pDialog)
-            else:
-                pDialog.create('IPlayer', 'Loading live stream info')
-                xbmc.sleep(50)
-                pref = get_setting_videostream(label)
-                bitrate = pref.split(' ')[1]
-                live_tv.play_stream(label, bitrate, pDialog)
-            pDialog.close()
-
+            timeout = int(xbmcplugin.getSetting('socket_timeout'))
         except:
-            pDialog.close()
-
-    elif url:
-        listen_live(label, url)
-    elif deletesearch:
-        search_delete(tvradio or 'tv', deletesearch)        
-    elif not (feed or listing):
-        if not tvradio:
-            list_tvradio()
-        elif tvradio == 'Settings':
-            xbmcplugin.openSettings(sys.argv[ 0 ])  
-        elif tvradio:
-            feed = iplayer.feed(tvradio).channels_feed()
-            list_feeds(feed, tvradio)
-    elif listing == 'categories':
-        channels = None
-        feed = feed or iplayer.feed(tvradio or 'tv',  searchcategory=True, category=category)
-        list_categories(tvradio, feed)
-    elif listing == 'searchlist':
-        search_list(tvradio or 'tv')
-    elif listing == 'search':
-        search(tvradio or 'tv', label)   
-    elif listing == 'atoz':
-        list_atoz(feed)
-    elif listing == 'livefeeds':
-        tvradio = tvradio or 'tv'
-        if tvradio == 'radio':
-            channels = iplayer.feed(tvradio or 'tv').channels_feed()
-            list_live_feeds(channels, tvradio)
-        else:
-            live_tv.list_channels()
-    elif listing == 'list' and not series and not category:
-        feed = feed or iplayer.feed(tvradio or 'tv', category=category)
-        list_series(feed, listing, category=category, progcount=progcount)
-    elif listing:
-        channels=None
-        if not feed:
-            feed = feed or iplayer.feed(tvradio or 'tv', category=category)
-            channels=feed.channels_feed()
-        list_feed_listings(feed, listing, category=category, series=series, channels=channels)
+            timeout = 5
+        if environment in ['Linux', 'xbox'] and timeout > 0:
+            setdefaulttimeout(timeout)
     
+        progcount = True
+        if xbmcplugin.getSetting('progcount') == 'false':  progcount = False
+      
+        # get current state parameters
+        (feed, listing, pid, tvradio, category, series, url, label, deletesearch, externalcmd) = read_url()
+        logging.info( (feed, listing, pid, tvradio, category, series, url, label, deletesearch, externalcmd) )
+        
+        # update feed category
+        if feed and category:
+            feed.category = category
+    
+        # state engine
+        if pid:
+            pDialog = xbmcgui.DialogProgress()
+            pDialog.update(0)
+            try:
+                if not label:
+                    pDialog.create('IPlayer', 'Loading catchup stream info')
+                    xbmc.sleep(50)
+                    watch(feed, pid, pDialog)
+                else:
+                    pDialog.create('IPlayer', 'Loading live stream info')
+                    xbmc.sleep(50)
+                    pref = get_setting_videostream(label)
+                    bitrate = pref.split(' ')[1]
+                    live_tv.play_stream(label, bitrate, pDialog)
+                pDialog.close()
+    
+            except:
+                pDialog.close()
+    
+        elif url:
+            listen_live(label, url)
+        elif deletesearch:
+            search_delete(tvradio or 'tv', deletesearch)        
+        elif not (feed or listing):
+            if not tvradio:
+                list_tvradio()
+            elif tvradio == 'Settings':
+                xbmcplugin.openSettings(sys.argv[ 0 ])  
+            elif tvradio:
+                feed = iplayer.feed(tvradio).channels_feed()
+                list_feeds(feed, tvradio)
+        elif listing == 'categories':
+            channels = None
+            feed = feed or iplayer.feed(tvradio or 'tv',  searchcategory=True, category=category)
+            list_categories(tvradio, feed)
+        elif listing == 'searchlist':
+            search_list(tvradio or 'tv')
+        elif listing == 'search':
+            search(tvradio or 'tv', label)   
+        elif listing == 'atoz':
+            list_atoz(feed)
+        elif listing == 'livefeeds':
+            tvradio = tvradio or 'tv'
+            if tvradio == 'radio':
+                channels = iplayer.feed(tvradio or 'tv').channels_feed()
+                list_live_feeds(channels, tvradio)
+            else:
+                live_tv.list_channels()
+        elif listing == 'list' and not series and not category:
+            feed = feed or iplayer.feed(tvradio or 'tv', category=category)
+            list_series(feed, listing, category=category, progcount=progcount)
+        elif listing:
+            channels=None
+            if not feed:
+                feed = feed or iplayer.feed(tvradio or 'tv', category=category)
+                channels=feed.channels_feed()
+            list_feed_listings(feed, listing, category=category, series=series, channels=channels)
+        
 
+    except Exception, e:
+        # Make sure the text from any script errors are logged
+        logging.error( "Exception: ", e )
+        raise e
