@@ -6,7 +6,6 @@ from string import ascii_lowercase
 from socket import setdefaulttimeout
 from time import time
 import traceback
-import md5
 import logging
 import operator
 
@@ -22,7 +21,6 @@ sys.path.insert(0, os.path.join(os.getcwd(), 'lib'))
 
 try: 
     import iplayer2 as iplayer
-    import httplib2
     import live_tv
     import iplayer_search
 except ImportError, error:
@@ -975,8 +973,7 @@ if __name__ == "__main__":
     try:
     
         # setup and check script environment 
-        cache = httplib2.FileCache(HTTP_CACHE_DIR, safe=lambda x: md5.new(x).hexdigest())
-        iplayer.set_http_cache(cache)
+        iplayer.set_http_cache(HTTP_CACHE_DIR)
     
         environment = os.environ.get( "OS", "xbox" )
         try:

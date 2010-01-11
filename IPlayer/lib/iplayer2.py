@@ -5,6 +5,7 @@ import re, time, os, string, sys
 import urllib, urllib2
 import logging
 import xml.dom.minidom as dom
+import md5
 from pprint import pformat
 from socket import timeout as SocketTimeoutError
 from time import time
@@ -14,8 +15,11 @@ from time import time
 import xbmcgui
 
 # external libs
-import httplib2
-import feedparser
+try:
+    import httplib2
+except:
+    pass
+#import feedparser
 import listparser
 from BeautifulSoup import BeautifulStoneSoup
 
@@ -267,19 +271,23 @@ rss_cache = {}
 
 self_closing_tags = ['alternate', 'mediator']
 
-http = httplib2.Http()
+http = None
+try:
+    http = httplib2.Http()
+except:
+    pass
 
 re_selfclose = re.compile('<([a-zA-Z0-9]+)( ?.*)/>', re.M | re.S)
 
 def fix_selfclosing(xml):
     return re_selfclose.sub('<\\1\\2></\\1>', xml)
 
-def set_http_cache_dir(d):
-    fc = httplib2.FileCache(d)
-    http.cache = fc
-
-def set_http_cache(c):
-    http.cache = c
+def set_http_cache(dir):
+    try:
+        cache = httplib2.FileCache(HTTP_CACHE_DIR, safe=lambda x: md5.new(x).hexdigest())
+        http.cache = cache
+    except:
+        pass
 
 class NoItemsError(Exception):
     def __init__(self, reason=None):
@@ -306,7 +314,7 @@ class memoize(object):
         return result
 
 def httpretrieve(url, filename):
-    _, data = http.request(url, 'GET')
+    data = httpget(url)    
     f = open(filename, 'wb')
     f.write(data)
     f.close() 
@@ -315,7 +323,13 @@ def httpget(url):
     resp = ''
     data = ''
     try:
-        resp, data = http.request(url, 'GET')
+        if http:
+            resp, data = http.request(url, 'GET')
+        else:
+            f = urllib.urlopen(url)
+            data = f.read()
+            f.close()
+        return data
     except:
         try:
             # fallback to urllib to avoid a bug in httplib which often
@@ -323,6 +337,7 @@ def httpget(url):
             f = urllib.urlopen(url)
             data = f.read()
             f.close()
+            return data
         except:
             #print "Response for status %s for %s" % (resp.status, data)
             dialog = xbmcgui.Dialog()
@@ -581,7 +596,7 @@ class item(object):
         if self.medias: return self.medias
         url = self.mediaselector_url
         logging.info("Stream XML URL: %s", str(url+'a'))
-        _, xml = http.request(url)
+        xml = httpget(url)
         soup = BeautifulStoneSoup(xml)
         medias = [media(self, m) for m in soup('media')]
         #logging.info('Found media: %s', pformat(medias, indent=8))
@@ -634,7 +649,7 @@ class programme(object):
         try:
             url = self.playlist_url
             logging.info("Getting XML playlist at URL: %s", url)
-            r, xml = http.request(url, 'GET')
+            xml = httpget(url)
             return xml
         except SocketTimeoutError:
             logging.error("Timed out trying to download programme XML")
