@@ -1001,23 +1001,20 @@ if __name__ == "__main__":
                 # Under Linux this dialog can cause all sorts of slow downs
                 pDialog = xbmcgui.DialogProgress()
                 pDialog.update(0)
-            try:
-                if not label:
-                    if pDialog:
-                        pDialog.create('IPlayer', 'Loading catchup stream info')
-                        xbmc.sleep(50)
-                    watch(feed, pid, pDialog)
-                else:
-                    if pDialog:
-                        pDialog.create('IPlayer', 'Loading live stream info')
-                        xbmc.sleep(50)
-                    pref = get_setting_videostream(label)
-                    bitrate = pref.split(' ')[1]
-                    live_tv.play_stream(label, bitrate, pDialog)
-                if pDialog: pDialog.close()
-    
-            except:
-                if pDialog: pDialog.close()
+            if not label:
+                if pDialog:
+                    pDialog.create('IPlayer', 'Loading catchup stream info')
+                    xbmc.sleep(50)
+                watch(feed, pid, pDialog)
+            else:
+                if pDialog:
+                    pDialog.create('IPlayer', 'Loading live stream info')
+                    xbmc.sleep(50)
+                pref = get_setting_videostream(label)
+                bitrate = pref.split(' ')[1]
+                live_tv.play_stream(label, bitrate, pDialog)
+
+            if pDialog: pDialog.close()
     
         elif url:
             listen_live(label, url)
@@ -1059,7 +1056,7 @@ if __name__ == "__main__":
             list_feed_listings(feed, listing, category=category, series=series, channels=channels)
         
 
-    except Exception, e:
+    except:
         # Make sure the text from any script errors are logged
-        logging.error( "Exception: ", e )
-        raise e
+        traceback.print_exc(file=sys.stdout)
+        raise

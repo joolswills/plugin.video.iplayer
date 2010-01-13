@@ -19,9 +19,13 @@ try:
     import httplib2
 except:
     pass
-#import feedparser
 import listparser
-from BeautifulSoup import BeautifulStoneSoup
+try:
+    # python >= 2.5
+    from xml.etree import ElementTree as ET
+except:
+    # python 2.4 has to use the plugin's version of elementtree
+    from elementtree import ElementTree as ET
 
 IMG_DIR = os.path.join(os.getcwd(), 'resources', 'media')
 
@@ -347,6 +351,12 @@ def httpget(url):
     
     return data
 
+# ElementTree addes {namespace} as a prefix for each element tag
+# This function removes these prefixes
+def xml_strip_namespace(tree):
+    for elem in tree.getiterator():
+        elem.tag = elem.tag.split('}')[1]
+
 def parse_entry_id(entry_id):
     # tag:bbc.co.uk,2008:PIPS:b00808sc
     r = re.compile('PIPS:([0-9a-z]{8})')
@@ -421,17 +431,26 @@ class media(object):
             if media.get('bitrate') != None:
                 logging.info("bitrate = " + '"' + media.get('bitrate') + '"')
             self.bitrate = None
-        
-        # find an akamai stream in preference
-        conn = media.find('connection', { "kind" : "akamai" })
-        if not conn:
-            conn = media.find('connection')
-            
-        self.connection_kind = conn.get('kind')
-        self.connection_live = conn.get('live') == 'true'
+
+        self.connection_kind = None
+        self.connection_live = None
         self.connection_protocol = None
         self.connection_href = None
         self.connection_method = None
+        
+        # find an akamai stream in preference
+        conn = None
+        for c in media.findall('connection'):
+            if c.get('kind') == 'akamai':
+                conn = c
+                break     
+        if conn == None:
+            conn = media.find('connection')
+        if conn == None:
+            return
+            
+        self.connection_kind = conn.get('kind')
+        self.connection_live = conn.get('live') == 'true'
           
         if self.connection_kind in ['http', 'sis']: # http
             self.connection_href = conn.get('href')
@@ -469,7 +488,7 @@ class media(object):
             self.connection_protocol = 'rtmp'
             server = conn.get('server')
             identifier = conn.get('identifier')
-            auth = conn.get('authstring')
+            auth = conn.get('authString')
             application = 'ondemand'
             
             if self.encoding == 'h264':                
@@ -549,10 +568,15 @@ class item(object):
             self.group = node.get('group')
             self.duration = node.get('duration')
             #self.broadcast = node.broadcast
-            self.service = node.service and node.service.get('id')
-            self.masterbrand = node.masterbrand and node.masterbrand.get('id')
-            self.alternate = node.alternate and node.alternate.get('id')
-            self.guidance = node.guidance 
+            nf = node.find('service')
+            if nf: self.service = nf.text and nf.get('id')
+            nf = node.find('masterbrand')
+            if nf: self.masterbrand = nf.text and nf.get('id')
+            nf = node.find('alternate')
+            if nf: self.alternate = nf.text and nf.get('id')
+            nf = node.find('guidance')
+            if nf: self.guidance = nf.text 
+  
         
     @property
     def is_radio(self):
@@ -595,11 +619,14 @@ class item(object):
         """
         if self.medias: return self.medias
         url = self.mediaselector_url
-        logging.info("Stream XML URL: %s", str(url+'a'))
+        logging.info("Stream XML URL: %s", url)
         xml = httpget(url)
-        soup = BeautifulStoneSoup(xml)
-        medias = [media(self, m) for m in soup('media')]
-        #logging.info('Found media: %s', pformat(medias, indent=8))
+        tree = ET.XML(xml)
+        xml_strip_namespace(tree)
+        medias = []
+        for m in tree.findall('media'):
+            medias.append(media(self, m))
+            
         self.medias = medias
         if medias == None or len(medias) == 0:
             d = xbmcgui.Dialog()
@@ -655,37 +682,36 @@ class programme(object):
             logging.error("Timed out trying to download programme XML")
             raise
 
-    def parse_playlist(self, xml):
+    def parse_playlist(self, xmlstr):
         #logging.info('Parsing playlist XML... %s', xml)
         #xml.replace('<summary/>', '<summary></summary>')
         #xml = fix_selfclosing(xml)
         
-        soup = BeautifulStoneSoup(xml, selfClosingTags=self_closing_tags)
+        #soup = BeautifulStoneSoup(xml, selfClosingTags=self_closing_tags)
+        tree = ET.XML(xmlstr)
+        xml_strip_namespace(tree)
         
         self.meta = {}
         self._items = []
         self._related = []
 
-        logging.info('  Found programme: %s', soup.playlist.title.string)
-        self.meta['title'] = soup.playlist.title.string
-        self.meta['summary'] = string.lstrip(soup.playlist.summary.string, ' ')
-        self.meta['updated'] = soup.playlist.updated.string
+        logging.info('Found programme: %s', tree.find('title').text)
+        self.meta['title'] = tree.find('title').text
+        self.meta['summary'] = string.lstrip(tree.find('summary').text, ' ')
+        self.meta['updated'] = tree.find('updated').text
         
-        if soup.playlist.noitems:
-            logging.info('No playlist items: %s', soup.playlist.noitems.get('reason'))
-            self.meta['reason'] = soup.playlist.noitems.get('reason')
+        if tree.find('noitems'):
+            logging.info('No playlist items: %s', tree.find('noitems').get('reason'))
+            self.meta['reason'] = tree.find('noitems').get('reason')
                         
-        self._items = [item(self, i) for i in soup('item')]
-        for i in self._items:
-            logging.info((i, i.alternate , " ",))
-        
+        self._items = [item(self, i) for i in tree.findall('item')]
 
         rId = re.compile('concept_pid:([a-z0-9]{8})')
-        for link in soup('relatedlink'):
+        for link in tree.findall('relatedlink'):
             i = {}
-            i['title'] = link.title.string
+            i['title'] = link.find('title').text
             #i['summary'] = item.summary # FIXME looks like a bug in BSS
-            i['pid'] = (rId.findall(link.id.string) or [None])[0]
+            i['pid'] = (rId.findall(link.find('id').text) or [None])[0]
             i['programme'] = programme(i['pid'])
             self._related.append(i)
         
