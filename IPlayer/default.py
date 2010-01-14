@@ -984,7 +984,7 @@ if __name__ == "__main__":
             setdefaulttimeout(timeout)
     
         progcount = True
-        if xbmcplugin.getSetting('progcount') == 'false':  progcount = False
+        if xbmcplugin.getSetting('progcount') == 'false':  progcount = False   
       
         # get current state parameters
         (feed, listing, pid, tvradio, category, series, url, label, deletesearch, externalcmd) = read_url()
@@ -997,7 +997,7 @@ if __name__ == "__main__":
         # state engine
         if pid:
             pDialog = None
-            if environment != 'Linux':
+            if xbmcplugin.getSetting('displaydialog') == 'true':
                 # Under Linux this dialog can cause all sorts of slow downs
                 pDialog = xbmcgui.DialogProgress()
                 pDialog.update(0)
