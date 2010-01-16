@@ -1,10 +1,9 @@
 #/bin/python
 
-import sys, os, os.path, re
+import sys, os, os.path, re, time
 import urllib, cgi
 from string import ascii_lowercase
 from socket import setdefaulttimeout
-from time import time
 import traceback
 import logging
 import operator
@@ -15,7 +14,7 @@ import xbmc, xbmcgui, xbmcplugin
 __scriptname__ = "IPlayer"
 __author__     = 'Dink [dink12345@googlemail.com]'
 __svn_url__    = "http://xbmc-iplayerv2.googlecode.com/svn/trunk/IPlayer"
-__version__    = "2010-01-07"
+__version__    = "2010-01-15"
 
 sys.path.insert(0, os.path.join(os.getcwd(), 'lib'))
 
@@ -747,10 +746,23 @@ def download_subtitles(url):
     fw.close()    
     return outfile
 
-def watch(feed, pid, pDialog):
+def watch(feed, pid, showDialog):
 
+    times = []
+    times.append(['start',time.clock()])
+    if showDialog:
+        pDialog = xbmcgui.DialogProgress()
+        times.append(['xbmcgui.DialogProgress()',time.clock()])
+        pDialog.update(0)
+        times.append(['pDialog.update(0)',time.clock()])
+        pDialog.create('IPlayer', 'Loading catchup stream info')
+        times.append(['pDialog.create',time.clock()])
+        xbmc.sleep(50)
+        times.append(['xbmc.sleep(50)',time.clock()])
+    
     subtitles_file = None
     item      = get_item(pid)
+    times.append(['get_item',time.clock()])
     thumbnail = item.programme.thumbnail
     title     = item.programme.title
     summary   = item.programme.summary
@@ -759,20 +771,31 @@ def watch(feed, pid, pDialog):
     thumbfile = None
     if feed and feed.name:
         channel = feed.name
+    times.append(['setup variables',time.clock()])        
     logging.info('watching channel=%s pid=%s' % (channel, pid))
-    logging.info('thumb =%s   summary=%s' % (thumbnail, summary))   
+    times.append(['logging',time.clock()])
+    logging.info('thumb =%s   summary=%s' % (thumbnail, summary))
+    times.append(['logging',time.clock()])   
     subtitles = get_setting_subtitles()
+    times.append(['get_setting_subtitles',time.clock()])
 
     if thumbnail: 
+        # attempt to use the existing thumbnail file
+        thumbcache = xbmc.getCacheThumbName( sys.argv[ 0 ] + sys.argv[ 2 ] )
+        thumbfile  = os.path.join( xbmc.translatePath( "special://profile" ), "Thumbnails", "Video", thumbcache[ 0 ], thumbcache )
+        logging.info('Reusing existing thumbfile =%s for url %s%s' % (thumbfile, sys.argv[ 0 ], sys.argv[ 2 ]))
+        
+    if thumbnail and not os.path.isfile(thumbfile):
+        # thumbnail wasn't available locally so download    
         try:
             # The thumbnail needs to accessed via the local filesystem
             # for "Media Info" to display it when playing a video
-            if pDialog:
+            if showDialog:
                 pDialog.update(20, 'Fetching thumbnail')
                 if pDialog.iscanceled(): raise 
-            ext = os.path.splitext(thumbnail)[1]
-            thumbfile = TMP_THUMB + ext
+                times.append(['update dialog',time.clock()])
             iplayer.httpretrieve(thumbnail, thumbfile)
+            times.append(['retrieve thumbnail',time.clock()])
         except:
             pass
 
@@ -780,16 +803,20 @@ def watch(feed, pid, pDialog):
         # TV Stream
         iconimage = 'DefaultVideo.png'
 
-        if pDialog:
+        if showDialog:
             pDialog.update(50, 'Fetching video stream info')
             if pDialog.iscanceled(): raise
+            times.append(['update dialog',time.clock()])
         pref = get_setting_videostream(channel)
+        times.append(['get_setting_videostream',time.clock()])
         opref = pref
-        if pDialog:
+        if showDialog:
             pDialog.update(70, 'Selecting video stream')
             if pDialog.iscanceled(): raise
+            times.append(['update dialog',time.clock()])
         
         media = item.get_media_for(pref)
+        times.append(['fetch media',time.clock()])
 
         # fall down to find a supported stream. 
 
@@ -817,6 +844,8 @@ def watch(feed, pid, pDialog):
             pref = 'flashwii'
             media = item.get_media_for(pref)      
 
+        times.append(['media 1',time.clock()])
+        
         # problem - no media found for default or lower
         if not media:
             # find the first available stream in ascending order
@@ -836,36 +865,46 @@ def watch(feed, pid, pDialog):
                 d = xbmcgui.Dialog()
                 d.ok('Stream Error', 'Can\'t locate any usable TV streams.')            
                 return False
-            
+        times.append(['media 2',time.clock()])    
         url = media.url
+        times.append(['media.url',time.clock()]) 
         logging.info('watching url=%s' % url)
+        times.append(['logging',time.clock()])
 
-        if pDialog:
+        if showDialog:
             pDialog.update(90, 'Selecting subtitles')
             if pDialog.iscanceled(): raise
+            times.append(['update dialog',time.clock()])
         if subtitles:
             subtitles_media = item.get_media_for('captions')
+            times.append(['subtitles_media',time.clock()])
             if subtitles_media:
                 subtitles_file = download_subtitles(subtitles_media.url)
+                times.append(['subtitles download',time.clock()])
 
         listitem = xbmcgui.ListItem(title)
+        times.append(['create listitem',time.clock()])
         #listitem.setIconImage(iconimage)
         listitem.setInfo('video', {
                                    "TVShowTitle": title,
                                    'Plot': summary + ' ' + updated,
                                    'PlotOutline': summary,
                                    "Date": updated,})
+        times.append(['listitem setinfo',time.clock()])
         play=xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
+        times.append(['xbmc.PlayList',time.clock()])
         
     else:
         # Radio stream        
-        if pDialog:
+        if showDialog:
             pDialog.update(30, 'Fetching radio stream info')
             if pDialog.iscanceled(): raise
+            times.append(['update dialog',time.clock()])
         pref = get_setting_audiostream()
-        if pDialog:
+        if showDialog:
             pDialog.update(50, 'Selecting radio stream')
             if pDialog.iscanceled(): raise
+            times.append(['update dialog',time.clock()])
         media = item.get_media_for(pref)
         if not media and pref == 'aac':
             # fallback to mp3 as aac is not always available
@@ -891,10 +930,14 @@ def watch(feed, pid, pDialog):
         logging.info('Listening to url=%s' % url)
 
         listitem = xbmcgui.ListItem(title)
+        times.append(['listitem create',time.clock()])
         listitem.setIconImage('defaultAudio.png')
+        times.append(['listitem.setIconImage',time.clock()])
         play=xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
+        times.append(['xbmc.PlayList',time.clock()])
 
     logging.info('Playing preference %s' % pref)
+    times.append(['logging.info',time.clock()])
     
     if media.connection_protocol == 'rtmp':
         if media.SWFPlayer:
@@ -909,26 +952,44 @@ def watch(feed, pid, pDialog):
         #if media.tcUrl:
         #    listitem.setProperty("tcUrl", media.tcUrl)
         #    print "tcUrl  : " + media.tcUrl
+    times.append(['listitem.setproperty x 3',time.clock()])
 
     if thumbfile: 
         listitem.setIconImage(thumbfile)
+        times.append(['listitem.setIconImage(thumbfile)',time.clock()])
         listitem.setThumbnailImage(thumbfile)
+        times.append(['listitem.setThumbnailImage(thumbfile)',time.clock()])
     
     del item
     del media
     
-    if pDialog:
+    if showDialog:
         pDialog.update(80, 'Playing')
         if pDialog.iscanceled(): raise
+        times.append(['update dialog',time.clock()])
     play.clear()
+    times.append(['play.clear()',time.clock()])
     play.add(url,listitem)
+    times.append(['play.add',time.clock()])
     player = xbmc.Player(xbmc.PLAYER_CORE_AUTO)
+    times.append(['xbmc.Player()',time.clock()])
     player.play(play)
+    times.append(['player.play',time.clock()])
     
     # Auto play subtitles if they have downloaded 
     logging.info("subtitles: %s   - subtitles_file %s " % (subtitles,subtitles_file))
+    times.append(['logging.info',time.clock()])
     if subtitles == 'autoplay' and subtitles_file: 
         player.setSubtitles(subtitles_file)
+        times.append(['player.setSubtitles',time.clock()])
+    
+    if showDialog: pDialog.close()
+    times.append(['pDialog.close()',time.clock()])
+    
+    pt = times[0][1]
+    for t in times:
+        logging.info('Took %2.2f sec for %s' % (t[1] - pt, t[0]))
+        pt = t[1]
 
 
 def listen_live(label='', url=None):
@@ -996,26 +1057,13 @@ if __name__ == "__main__":
     
         # state engine
         if pid:
-            pDialog = None
-            if xbmcplugin.getSetting('displaydialog') == 'true':
-                # Under Linux this dialog can cause all sorts of slow downs
-                pDialog = xbmcgui.DialogProgress()
-                pDialog.update(0)
+            showDialog = xbmcplugin.getSetting('displaydialog') == 'true'
             if not label:
-                if pDialog:
-                    pDialog.create('IPlayer', 'Loading catchup stream info')
-                    xbmc.sleep(50)
-                watch(feed, pid, pDialog)
+                watch(feed, pid, showDialog)
             else:
-                if pDialog:
-                    pDialog.create('IPlayer', 'Loading live stream info')
-                    xbmc.sleep(50)
                 pref = get_setting_videostream(label)
                 bitrate = pref.split(' ')[1]
-                live_tv.play_stream(label, bitrate, pDialog)
-
-            if pDialog: pDialog.close()
-    
+                live_tv.play_stream(label, bitrate, showDialog)
         elif url:
             listen_live(label, url)
         elif deletesearch:

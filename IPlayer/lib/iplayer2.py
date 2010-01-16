@@ -6,10 +6,9 @@ import urllib, urllib2
 import logging
 import xml.dom.minidom as dom
 import md5
+import traceback
 from pprint import pformat
 from socket import timeout as SocketTimeoutError
-from time import time
-
 
 # XBMC libs
 import xbmcgui
@@ -33,8 +32,7 @@ IMG_DIR = os.path.join(os.getcwd(), 'resources', 'media')
 logging.basicConfig(
     stream=sys.stdout,
     level=logging.DEBUG,
-    format='iplayer2.py: %(levelname)4s %(message)s',
-)    
+    format='iplayer2.py: %(levelname)4s %(message)s',)    
 # me want 2.5!!!
 def any(iterable):
      for element in iterable:
@@ -279,7 +277,7 @@ http = None
 try:
     http = httplib2.Http()
 except:
-    pass
+    logging.error('Failed to initialize httplib2 module')
 
 re_selfclose = re.compile('<([a-zA-Z0-9]+)( ?.*)/>', re.M | re.S)
 
@@ -327,14 +325,20 @@ def httpget(url):
     resp = ''
     data = ''
     try:
+        start_time = time.clock()
         if http:
             resp, data = http.request(url, 'GET')
         else:
             f = urllib.urlopen(url)
             data = f.read()
             f.close()
+        
+        sec = time.clock() - start_time
+        logging.info('URL Fetch took %2.2f sec for %s', sec, url)            
+            
         return data
     except:
+        traceback.print_exc(file=sys.stdout)
         try:
             # fallback to urllib to avoid a bug in httplib which often
             # occurs during searches

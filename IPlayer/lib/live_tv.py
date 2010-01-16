@@ -69,9 +69,14 @@ def fetch_stream_info(channel, bitrate):
     return (url, playpath)
 
 
-def play_stream(channel, bitrate, pDialog):
+def play_stream(channel, bitrate, showDialog):
     (url, playpath) = fetch_stream_info(channel, bitrate)
-    pDialog.update(50, 'Starting Stream')
+    if showDialog:
+        pDialog.create('IPlayer', 'Loading live stream info')
+        xbmc.sleep(50)
+        
+    if showDialog: pDialog.update(50, 'Starting Stream')
+    
     item = xbmcgui.ListItem("BBC Live video")
     item.setProperty("SWFPlayer", 'http://www.bbc.co.uk/emp/9player.swf?revision=8812_8903')
     item.setProperty("PlayPath", playpath) 
@@ -82,7 +87,7 @@ def play_stream(channel, bitrate, pDialog):
     play.add(url,item)
     player = xbmc.Player(xbmc.PLAYER_CORE_AUTO)
     player.play(play) 
-    pDialog.close()
+    if showDialog: pDialog.close()
     
     
 def make_url(channel=None):
