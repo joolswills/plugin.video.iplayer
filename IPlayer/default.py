@@ -14,7 +14,7 @@ import xbmc, xbmcgui, xbmcplugin
 __scriptname__ = "IPlayer"
 __author__     = 'Dink [dink12345@googlemail.com]'
 __svn_url__    = "http://xbmc-iplayerv2.googlecode.com/svn/trunk/IPlayer"
-__version__    = "2010-01-16"
+__version__    = "2010-01-18"
 
 sys.path.insert(0, os.path.join(os.getcwd(), 'lib'))
 
@@ -75,15 +75,27 @@ def sort_by_attr(seq, attr):
     return map(operator.getitem, intermed, (-1,) * len(intermed))
 
 
+def get_plugin_thumbnail(image):
+
+    # support user supplied .png files
+    userpng = os.path.join(iplayer.IMG_DIR, xbmc.getSkinDir(), image + '.png')
+    if os.path.isfile(userpng):
+        return userpng
+    userpng = os.path.join(iplayer.IMG_DIR, image + '.png')
+    if os.path.isfile(userpng):
+        return userpng
+    
+    return None
+    
+
 def get_feed_thumbnail(feed):
     thumbfn = ''
     if not feed or not feed.channel: return ''
 
     # support user supplied .png files
-    userpng = os.path.join(iplayer.IMG_DIR, feed.channel + '.png')
-    if os.path.isfile(userpng):
-        return userpng
-
+    userpng = get_plugin_thumbnail(feed.channel)
+    if userpng: return userpng
+    
     # check for a preconfigured logo
     if iplayer.channels_logos.has_key(feed.channel):
         url = iplayer.channels_logos[feed.channel]
@@ -162,14 +174,14 @@ def list_feeds(feeds, tvradio='tv'):
     xbmcplugin.addSortMethod(handle=handle, sortMethod=xbmcplugin.SORT_METHOD_TRACKNUM )   
 
     folders = []
-    folders.append(('Categories', 'categories.png', make_url(listing='categories', tvradio=tvradio)))    
-    folders.append(('Highlights', 'highlights.png', make_url(listing='highlights', tvradio=tvradio)))
+    folders.append(('Categories', 'categories', make_url(listing='categories', tvradio=tvradio)))    
+    folders.append(('Highlights', 'highlights', make_url(listing='highlights', tvradio=tvradio)))
     if tvradio == 'radio':
-        folders.append(('Listen Live', 'listenlive.png', make_url(listing='livefeeds', tvradio=tvradio)))
+        folders.append(('Listen Live', 'listenlive', make_url(listing='livefeeds', tvradio=tvradio)))
     else:
-        folders.append(('Watch Live', 'tv.png', make_url(listing='livefeeds', tvradio=tvradio)))    
-    folders.append(('Popular', 'popular.png', make_url(listing='popular', tvradio=tvradio)))
-    folders.append(('Search', 'search.png', make_url(listing='searchlist', tvradio=tvradio)))
+        folders.append(('Watch Live', 'tv', make_url(listing='livefeeds', tvradio=tvradio)))    
+    folders.append(('Popular', 'popular', make_url(listing='popular', tvradio=tvradio)))
+    folders.append(('Search', 'search', make_url(listing='searchlist', tvradio=tvradio)))
 
     total = len(folders) + len(feeds) + 1
 
@@ -177,7 +189,7 @@ def list_feeds(feeds, tvradio='tv'):
     for j, (label, tn, url) in enumerate(folders):
         listitem = xbmcgui.ListItem(label=label)
         listitem.setIconImage('defaultFolder.png')
-        listitem.setThumbnailImage(os.path.join(THUMB_DIR, tn))
+        listitem.setThumbnailImage(get_plugin_thumbnail(tn))
         listitem.setProperty('tracknumber', str(i + j))            
         ok = xbmcplugin.addDirectoryItem(
             handle=handle, 
@@ -262,14 +274,14 @@ def list_tvradio():
     xbmcplugin.addSortMethod(handle=handle, sortMethod=xbmcplugin.SORT_METHOD_TRACKNUM)
         
     folders = []
-    folders.append(('TV', os.path.join(iplayer.IMG_DIR, 'tv.png'), make_url(tvradio='tv')))
-    folders.append(('Radio', os.path.join(iplayer.IMG_DIR, 'radio.png'), make_url(tvradio='radio')))
-    folders.append(('Settings', os.path.join(iplayer.IMG_DIR, 'settings.png'), make_url(tvradio='Settings')))
+    folders.append(('TV', 'tv', make_url(tvradio='tv')))
+    folders.append(('Radio', 'radio', make_url(tvradio='radio')))
+    folders.append(('Settings', 'settings', make_url(tvradio='Settings')))
         
     for i, (label, tn, url) in enumerate(folders):
         listitem = xbmcgui.ListItem(label=label)
         listitem.setIconImage('defaultFolder.png')
-        listitem.setThumbnailImage(tn)
+        listitem.setThumbnailImage(get_plugin_thumbnail(tn))
         folder=True
         if label == 'Settings':
             # fix for reported bug where loading dialog would overlay settings dialog 
@@ -283,7 +295,7 @@ def list_tvradio():
     
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
-def get_setting_videostream(feed=None,default='flashmed'):
+def get_setting_videostream(feed=None,default='h264 800'):
     
     # SVN 20015 supports H.264 of which H.264 800 can play on all platforms
     try:
@@ -428,9 +440,9 @@ def list_categories(tvradio='tv', feed=None, channels=None, progcount=True):
         url = make_url(feed=feed, listing='list', category=category, tvradio=tvradio)
         listitem = xbmcgui.ListItem(label=label)
         if tvradio == 'tv':
-            listitem.setThumbnailImage(os.path.join(iplayer.IMG_DIR, 'tv.png'))
+            listitem.setThumbnailImage(get_plugin_thumbnail('tv'))
         else:
-            listitem.setThumbnailImage(os.path.join(iplayer.IMG_DIR, 'radio.png'))
+            listitem.setThumbnailImage(get_plugin_thumbnail('radio'))
         ok = xbmcplugin.addDirectoryItem(            
             handle=handle, 
             url=url,
@@ -547,7 +559,7 @@ def search_list(tvradio):
     # provide a list of saved search terms
     handle = int(sys.argv[1])
     xbmcplugin.addSortMethod(handle=handle, sortMethod=xbmcplugin.SORT_METHOD_NONE)
-    searchimg = os.path.join(THUMB_DIR, 'search.png')
+    searchimg = get_plugin_thumbnail('search')
     
     # First item allows a new search to be created
     listitem = xbmcgui.ListItem(label='New Search...')
