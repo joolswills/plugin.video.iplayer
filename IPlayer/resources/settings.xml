@@ -6,4 +6,5 @@
 <setting id="subtitles_control" label="30025"  type="enum" values="None|Download and Play|Download to File" default="None" />
 <setting id="socket_timeout" label="30050" type="integer" default="5" />
 <setting id="displaydialog" label="30060" type="bool" default="true" />
+<setting id="enhanceddebug" label="30070" type="bool" default="false" />
 </settings>

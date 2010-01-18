@@ -998,10 +998,11 @@ def watch(feed, pid, showDialog):
     if showDialog: pDialog.close()
     times.append(['pDialog.close()',time.clock()])
     
-    pt = times[0][1]
-    for t in times:
-        logging.info('Took %2.2f sec for %s' % (t[1] - pt, t[0]))
-        pt = t[1]
+    if xbmcplugin.getSetting('enhanceddebug') == 'true':
+        pt = times[0][1]
+        for t in times:
+            logging.info('Took %2.2f sec for %s' % (t[1] - pt, t[0]))
+            pt = t[1]
 
 
 def listen_live(label='', url=None):

@@ -11,7 +11,7 @@ from pprint import pformat
 from socket import timeout as SocketTimeoutError
 
 # XBMC libs
-import xbmcgui
+import xbmcgui, xbmcplugin
 
 # external libs
 try:
@@ -525,7 +525,7 @@ class media(object):
         else:
             logging.error("connectionkind %s unknown", self.connection_kind)
         
-        if self.connection_protocol:
+        if self.connection_protocol and xbmcplugin.getSetting('enhanceddebug') == 'true':
             logging.info("protocol: %s - kind: %s - type: %s - encoding: %s, - bitrate: %s" % 
                          (self.connection_protocol, self.connection_kind, self.mimetype, self.encoding, self.bitrate))
             logging.info("conn href: %s", self.connection_href)
@@ -679,7 +679,6 @@ class programme(object):
         """ Downloads and returns the XML for a PID from the iPlayer site. """
         try:
             url = self.playlist_url
-            logging.info("Getting XML playlist at URL: %s", url)
             xml = httpget(url)
             return xml
         except SocketTimeoutError:

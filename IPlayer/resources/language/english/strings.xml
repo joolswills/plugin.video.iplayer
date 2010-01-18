@@ -11,4 +11,5 @@
 	<string id="30025">Subtitles</string>
 	<string id="30050">Socket timeout value (seconds) [0=disabled]</string>
 	<string id="30060">Display dialog when Play pressed</string>
+	<string id="30070">Enhanced Debug output</string>
 </strings>
