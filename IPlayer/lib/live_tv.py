@@ -72,6 +72,7 @@ def fetch_stream_info(channel, bitrate):
 def play_stream(channel, bitrate, showDialog):
     (url, playpath) = fetch_stream_info(channel, bitrate)
     if showDialog:
+        pDialog = xbmcgui.DialogProgress()
         pDialog.create('IPlayer', 'Loading live stream info')
         xbmc.sleep(50)
         
