@@ -78,10 +78,10 @@ def sort_by_attr(seq, attr):
 def get_plugin_thumbnail(image):
 
     # support user supplied .png files
-    userpng = os.path.join(iplayer.IMG_DIR, xbmc.getSkinDir(), image + '.png')
+    userpng = os.path.join(THUMB_DIR, xbmc.getSkinDir(), image + '.png')
     if os.path.isfile(userpng):
         return userpng
-    userpng = os.path.join(iplayer.IMG_DIR, image + '.png')
+    userpng = os.path.join(THUMB_DIR, image + '.png')
     if os.path.isfile(userpng):
         return userpng
     
@@ -97,8 +97,10 @@ def get_feed_thumbnail(feed):
     if userpng: return userpng
     
     # check for a preconfigured logo
-    if iplayer.channels_logos.has_key(feed.channel):
-        url = iplayer.channels_logos[feed.channel]
+    if iplayer.stations.channels_logos.has_key(feed.channel):
+        url = iplayer.stations.channels_logos[feed.channel]
+        if url == None:
+            url = os.path.join(THUMB_DIR, 'bbc_local_radio.png')
         return url
         
     # national TV and Radio stations have easy to find online logos
@@ -109,7 +111,7 @@ def get_feed_thumbnail(feed):
         
     return url
     
-def make_url(feed=None, listing=None, pid=None, tvradio=None, category=None, series=None, url=None, label=None):
+def make_url(feed=None, listing=None, pid=None, tvradio=None, category=None, series=None, url=None, label=None, radio=None):
     base = sys.argv[0]
     d = {}
     if series: d['series'] = series       
@@ -124,6 +126,7 @@ def make_url(feed=None, listing=None, pid=None, tvradio=None, category=None, ser
     if tvradio: d['tvradio'] = tvradio
     if url: d['url'] = url
     if label: d['label'] = label
+    if radio: d['radio'] = radio
     params = urllib.urlencode(d, True)
     return base + '?' + params
 
@@ -139,49 +142,30 @@ def read_url():
     url          = args.get('url', [None])[0]
     label        = args.get('label', [None])[0]
     deletesearch = args.get('deletesearch', [None])[0]
-    externalcmd  = args.get('externalcmd', [None])[0]
+    radio        = args.get('radio', [None])[0]
     
     feed = None
     if feed_channel:
-        feed = iplayer.feed('auto', channel=feed_channel, atoz=feed_atoz)
+        feed = iplayer.feed('auto', channel=feed_channel, atoz=feed_atoz, radio=radio)
     elif feed_atoz:
-        feed = iplayer.feed(tvradio or 'auto', atoz=feed_atoz)
-    return (feed, listing, pid, tvradio, category, series, url, label, deletesearch, externalcmd)
-
-def list_atoz(feed=None):
-    handle = int(sys.argv[1])
-    xbmcplugin.addSortMethod(handle=handle, sortMethod=xbmcplugin.SORT_METHOD_UNSORTED)
+        feed = iplayer.feed(tvradio or 'auto', atoz=feed_atoz, radio=radio)
+    return (feed, listing, pid, tvradio, category, series, url, label, deletesearch, radio)
     
-    letters = list(ascii_lowercase) + ['0']
-        
-    feed = feed or iplayer.tv
-    feeds = [feed.get(l) for l in letters]
-    for f in feeds:
-        listitem = xbmcgui.ListItem(label=f.name)
-        listitem.setThumbnailImage(get_feed_thumbnail(f))
-        url = make_url(feed=f, listing='list')
-        ok = xbmcplugin.addDirectoryItem(
-            handle=handle,
-            url=url,
-            listitem=listitem,
-            isFolder=True,
-        )
-
-    xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
-    
-def list_feeds(feeds, tvradio='tv'):
+def list_feeds(feeds, tvradio='tv', radio=None):
     handle = int(sys.argv[1])
     xbmcplugin.addSortMethod(handle=handle, sortMethod=xbmcplugin.SORT_METHOD_TRACKNUM )   
 
     folders = []
-    folders.append(('Categories', 'categories', make_url(listing='categories', tvradio=tvradio)))    
-    folders.append(('Highlights', 'highlights', make_url(listing='highlights', tvradio=tvradio)))
+    if tvradio == 'tv' or radio == 'national':
+        folders.append(('Categories', 'categories', make_url(listing='categories', tvradio=tvradio)))    
+        folders.append(('Highlights', 'highlights', make_url(listing='highlights', tvradio=tvradio)))
     if tvradio == 'radio':
-        folders.append(('Listen Live', 'listenlive', make_url(listing='livefeeds', tvradio=tvradio)))
+        folders.append(('Listen Live', 'listenlive', make_url(listing='livefeeds', tvradio=tvradio, radio=radio)))
     else:
-        folders.append(('Watch Live', 'tv', make_url(listing='livefeeds', tvradio=tvradio)))    
-    folders.append(('Popular', 'popular', make_url(listing='popular', tvradio=tvradio)))
-    folders.append(('Search', 'search', make_url(listing='searchlist', tvradio=tvradio)))
+        folders.append(('Watch Live', 'tv', make_url(listing='livefeeds', tvradio=tvradio)))
+    if tvradio == 'tv' or radio == 'national':
+        folders.append(('Popular', 'popular', make_url(listing='popular', tvradio=tvradio)))
+        folders.append(('Search', 'search', make_url(listing='searchlist', tvradio=tvradio)))
 
     total = len(folders) + len(feeds) + 1
 
@@ -217,42 +201,45 @@ def list_feeds(feeds, tvradio='tv'):
 def list_live_feeds(feeds, tvradio='tv'):
     #print 'list_live_feeds %s' % feeds
     handle = int(sys.argv[1])
+    xbmcplugin.setContent(handle, 'songs')
     xbmcplugin.addSortMethod(handle=handle, sortMethod=xbmcplugin.SORT_METHOD_TRACKNUM)
 
     if tvradio == 'tv':
         return
         
     i = 0        
+    
     for j, f in enumerate(feeds):
-        if not iplayer.live_radio_stations.has_key(f.name):
+        if not iplayer.stations.live_radio_stations.has_key(f.name):
             #print "no key for %s" % f.name
             continue
         listitem = xbmcgui.ListItem(label=f.name)
         listitem.setIconImage('defaultFolder.png')
-        if iplayer.live_webcams.has_key(f.name):
-            listitem.setThumbnailImage(iplayer.live_webcams[f.name])
+        if iplayer.stations.live_webcams.has_key(f.name):
+            listitem.setThumbnailImage(iplayer.stations.live_webcams[f.name])
         else:
             listitem.setThumbnailImage(get_feed_thumbnail(f))
         listitem.setProperty('tracknumber', str(i + j))
         
         # Real & ASX url's are just redirects that are not always well
         # handled by XBMC so if present load and process redirect
-        radio_url   = iplayer.live_radio_stations[f.name]
+        radio_url   = iplayer.stations.live_radio_stations[f.name]
         stream_asx  = re.compile('\.asx$', re.IGNORECASE)
-        stream_mms  = re.compile('href\="(mms.*?)"', re.IGNORECASE)
-        stream_real = re.compile('\.ram$', re.IGNORECASE)
+        stream_mms  = re.compile('href\s*\=\s*"(mms.*?)"', re.IGNORECASE)
                
-        match_asx   = stream_mms.search(radio_url) 
-        match_real  = stream_mms.search(radio_url)
+        match_asx   = stream_asx.search(radio_url) 
         
-        if match_real:
-            stream_url = iplayer.httpget(radio_url)
-        elif match_asx:
+        if match_asx:
             txt = iplayer.httpget(radio_url)
-            match_mms  = stream_mms.search(txt) 
-            stream_url = matchmms.group(1)
+            match_mms  = stream_mms.search(txt)
+            if  match_mms:
+                stream_url = match_mms.group(1)
+            else:
+                stream_url = radio_url
         else:
             stream_url = radio_url
+        
+        listitem.setPath(stream_url)
                           
         ok = xbmcplugin.addDirectoryItem(
             handle=handle,
@@ -294,6 +281,33 @@ def list_tvradio():
         )
     
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
+    
+def list_radio_types():
+    """
+    Lists folders - National, Regional & Local Radio + Search 
+    """
+    handle = int(sys.argv[1])
+    xbmcplugin.addSortMethod(handle=handle, sortMethod=xbmcplugin.SORT_METHOD_TRACKNUM)
+        
+    folders = []
+    folders.append(('National Radio Stations', 'national', make_url(tvradio='radio',radio='national')))
+    folders.append(('Regional Radio Stations', 'regional', make_url(tvradio='radio',radio='regional')))
+    folders.append(('Local Radio Stations',    'local',    make_url(tvradio='radio',radio='local')))
+        
+    for i, (label, tn, url) in enumerate(folders):
+        listitem = xbmcgui.ListItem(label=label)
+        listitem.setIconImage(get_plugin_thumbnail('bbc_radio'))
+        listitem.setThumbnailImage(get_plugin_thumbnail('bbc_radio'))
+        folder=True
+        ok = xbmcplugin.addDirectoryItem(
+            handle=handle, 
+            url=url,
+            listitem=listitem,
+            isFolder=folder,
+        )
+    
+    xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
+    
 
 def get_setting_videostream(feed=None,default='h264 800'):
     
@@ -338,9 +352,9 @@ def get_setting_videostream(feed=None,default='h264 800'):
     
     return default
 
-def get_setting_audiostream(default='mp3'):
+def get_setting_audiostream(default='wma'):
     videostream = xbmcplugin.getSetting('audio_stream')
-    #Auto|MP3|Real|AAC
+    #Auto|MP3|Real|AAC|WMA
     if videostream:
         if videostream == 'MP3' or videostream == '1':
             return 'mp3'
@@ -348,6 +362,8 @@ def get_setting_audiostream(default='mp3'):
             return 'real'
         elif videostream == 'AAC' or videostream == '3':
             return 'aac'        
+        elif videostream == 'WMA' or videostream == '4':
+            return 'wma'
     return default
 
 
@@ -415,10 +431,6 @@ def add_programme(feed, programme, totalItems=None, tracknumber=None, thumbnail_
     if tracknumber: listitem.setProperty('tracknumber', str(tracknumber))
         
     #print "Getting URL for %s ..." % (programme.title)
-
-    # change the context menu adding an external app command
-    #cmd = "XBMC.RunPlugin(%s?externalcmd=launch&pid=%s&tvradio=%s)" % (sys.argv[0], urllib.quote_plus(programme.pid), urllib.quote_plus(tvradio))
-    #listitem.addContextMenuItems( [ ('External Application' , cmd) ] )
 
     url=make_url(feed=feed, pid=programme.pid)
     xbmcplugin.addDirectoryItem(
@@ -918,14 +930,19 @@ def watch(feed, pid, showDialog):
             if pDialog.iscanceled(): raise
             times.append(['update dialog',time.clock()])
         media = item.get_media_for(pref)
-        if not media and pref == 'aac':
-            # fallback to mp3 as aac is not always available
-            logging.info('Steam %s not available, falling back to mp3 stream' % pref)
+        if not media:
+            # fallback to mp3 
+            logging.info('Steam %s not available, trying mp3 stream' % pref)
             pref = 'mp3'
             media = item.get_media_for(pref)
-        if not media and pref == 'mp3':
-            # fallback to real as mp3 is not always available
-            logging.info('Steam %s not available, falling back to real stream' % pref)
+        if not media:
+            # fallback to wma 
+            logging.info('Steam %s not available, trying wma stream' % pref)
+            pref = 'wma'
+            media = item.get_media_for(pref)            
+        if not media:
+            # fallback to real 
+            logging.info('Steam %s not available, trying real stream' % pref)
             pref = 'real'
             media = item.get_media_for(pref)
         if not media:            
@@ -1010,8 +1027,6 @@ def listen_live(label='', url=None):
     if not url:
         return
     
-    logging.info('live radio station=%s url=%s' % (label, url))
-
     txt = iplayer.httpget(url)
     
     # some of the the urls passed in are .asx. These are text files with multiple mss stream hrefs
@@ -1061,8 +1076,8 @@ if __name__ == "__main__":
         if xbmcplugin.getSetting('progcount') == 'false':  progcount = False   
       
         # get current state parameters
-        (feed, listing, pid, tvradio, category, series, url, label, deletesearch, externalcmd) = read_url()
-        logging.info( (feed, listing, pid, tvradio, category, series, url, label, deletesearch, externalcmd) )
+        (feed, listing, pid, tvradio, category, series, url, label, deletesearch, radio) = read_url()
+        logging.info( (feed, listing, pid, tvradio, category, series, url, label, deletesearch, radio) )
         
         # update feed category
         if feed and category:
@@ -1085,34 +1100,34 @@ if __name__ == "__main__":
             if not tvradio:
                 list_tvradio()
             elif tvradio == 'Settings':
-                xbmcplugin.openSettings(sys.argv[ 0 ])  
+                xbmcplugin.openSettings(sys.argv[ 0 ])
+            elif tvradio == 'radio' and radio == None:
+                list_radio_types()
             elif tvradio:
-                feed = iplayer.feed(tvradio).channels_feed()
-                list_feeds(feed, tvradio)
+                feed = iplayer.feed(tvradio, radio=radio).channels_feed()
+                list_feeds(feed, tvradio, radio)
         elif listing == 'categories':
             channels = None
-            feed = feed or iplayer.feed(tvradio or 'tv',  searchcategory=True, category=category)
+            feed = feed or iplayer.feed(tvradio or 'tv',  searchcategory=True, category=category, radio=radio)
             list_categories(tvradio, feed)
         elif listing == 'searchlist':
             search_list(tvradio or 'tv')
         elif listing == 'search':
             search(tvradio or 'tv', label)   
-        elif listing == 'atoz':
-            list_atoz(feed)
         elif listing == 'livefeeds':
             tvradio = tvradio or 'tv'
             if tvradio == 'radio':
-                channels = iplayer.feed(tvradio or 'tv').channels_feed()
+                channels = iplayer.feed(tvradio or 'tv', radio=radio).channels_feed()
                 list_live_feeds(channels, tvradio)
             else:
                 live_tv.list_channels()
         elif listing == 'list' and not series and not category:
-            feed = feed or iplayer.feed(tvradio or 'tv', category=category)
+            feed = feed or iplayer.feed(tvradio or 'tv', category=category, radio=radio)
             list_series(feed, listing, category=category, progcount=progcount)
         elif listing:
             channels=None
             if not feed:
-                feed = feed or iplayer.feed(tvradio or 'tv', category=category)
+                feed = feed or iplayer.feed(tvradio or 'tv', category=category, radio=radio)
                 channels=feed.channels_feed()
             list_feed_listings(feed, listing, category=category, series=series, channels=channels)
         

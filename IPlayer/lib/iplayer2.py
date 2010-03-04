@@ -19,6 +19,7 @@ try:
 except:
     pass
 import listparser
+import stations
 try:
     # python >= 2.5
     from xml.etree import ElementTree as ET
@@ -60,214 +61,6 @@ def loaded_by(loader):
             return fn(self, *args, **kwargs)
         return result
     return decorator
-
-channels_tv_list = [
-    ('bbc_one', 'BBC One'), 
-    ('bbc_two', 'BBC Two'), 
-    ('bbc_three', 'BBC Three'), 
-    ('bbc_four', 'BBC Four'),
-    ('cbbc', 'CBBC'),
-    ('cbeebies', 'CBeebies'),
-    ('bbc_hd', 'BBC HD'), 
-    ('bbc_news24', 'BBC News Channel'),
-    ('bbc_parliament', 'BBC Parliament'),
-    ('bbc_alba', 'BBC Alba'),
-]
-channels_tv = dict(channels_tv_list)
-channels_national_radio_list = [
-    ('bbc_radio_one', 'Radio 1'), 
-    ('bbc_1xtra', '1 Xtra'),
-    ('bbc_radio_two', 'Radio 2'), 
-    ('bbc_radio_three', 'Radio 3'), 
-    ('bbc_radio_four', 'Radio 4'), 
-    ('bbc_radio_five_live', '5 Live'), 
-    ('bbc_radio_five_live_sports_extra', '5 Live Sports Extra'), 
-    ('bbc_6music', '6 Music'), 
-    ('bbc_7', 'BBC 7'),
-    ('bbc_asian_network', 'Asian Network'),
-    ('bbc_radio_scotland', 'BBC Scotland'),
-    ('bbc_radio_ulster', 'BBC Ulster'),
-    ('bbc_radio_foyle', 'Radio Foyle'),
-    ('bbc_radio_wales', 'BBC Wales'),
-    ('bbc_radio_cymru', 'BBC Cymru'),
-    ('bbc_world_service', 'World Service'),
-    ('bbc_radio_nan_gaidheal', 'BBC nan Gaidheal')
-]
-channels_local_radio_list = [
-    ('bbc_radio_cumbria', 'BBC Cumbria'),
-    ('bbc_radio_newcastle', 'BBC Newcastle'),
-    ('bbc_tees', 'BBC Tees'),
-    ('bbc_radio_lancashire', 'BBC Lancashire'),
-    ('bbc_radio_merseyside', 'BBC Merseyside'),
-    ('bbc_radio_manchester', 'BBC Manchester'),
-    ('bbc_radio_leeds', 'BBC Leeds'),
-    ('bbc_radio_sheffield', 'BBC Sheffield'),
-    ('bbc_radio_york', 'BBC York'),
-    ('bbc_radio_humberside', 'BBC Humberside'),
-    ('bbc_radio_lincolnshire', 'BBC Lincolnshire'),
-    ('bbc_radio_nottingham', 'BBC Nottingham'),
-    ('bbc_radio_leicester', 'BBC Leicester'),
-    ('bbc_radio_derby', 'BBC Derby'),
-    ('bbc_radio_stoke', 'BBC Stoke'),
-    ('bbc_radio_shropshire', 'BBC Shropshire'),
-    ('bbc_wm', 'BBC WM'),
-    ('bbc_radio_coventry_warwickshire', 'BBC Coventry Warwickshire'),
-    ('bbc_radio_hereford_worcester', 'BBC Hereford/Worcester'),
-    ('bbc_radio_northampton', 'BBC Northampton'),
-    ('bbc_three_counties_radio', 'BBC Three Counties Radio'),
-    ('bbc_radio_cambridge', 'BBC Cambridge'),
-    ('bbc_radio_norfolk', 'BBC Norfolk'),
-    ('bbc_radio_suffolk', 'BBC Suffolk'),
-    ('bbc_radio_essex', 'BBC Essex'),
-    ('bbc_london', 'BBC London'),
-    ('bbc_radio_kent', 'BBC Kent'),
-    ('bbc_southern_counties_radio', 'BBC Southern Counties Radio'),
-    ('bbc_radio_oxford', 'BBC Oxford'),
-    ('bbc_radio_berkshire', 'BBC Berkshire'),
-    ('bbc_radio_solent', 'BBC Solent'),
-    ('bbc_radio_gloucestershire', 'BBC Gloucestershire'),
-    ('bbc_radio_swindon', 'BBC Swindon'),
-    ('bbc_radio_wiltshire', 'BBC Wiltshire'),
-    ('bbc_radio_bristol', 'BBC Bristol'),
-    ('bbc_radio_somerset_sound', 'BBC Somerset'),
-    ('bbc_radio_devon', 'BBC Devon'),
-    ('bbc_radio_cornwall', 'BBC Cornwall'),
-    ('bbc_radio_guernsey', 'BBC Guernsey'),
-    ('bbc_radio_jersey', 'BBC Jersey')
-]
-channels_logos = {
-    'bbc_radio_cumbria': 'http://www.bbc.co.uk/englandcms/localradio/images/cumbria.gif',
-    'bbc_radio_newcastle': 'http://www.bbc.co.uk/englandcms/localradio/images/newcastle.gif',
-    'bbc_tees': 'http://www.bbc.co.uk/englandcms/localradio/images/tees.gif',
-    'bbc_radio_lancashire': 'http://www.bbc.co.uk/englandcms/images/rh_nav170_lancs.gif',
-    'bbc_radio_merseyside': 'http://www.bbc.co.uk/englandcms/localradio/images/merseyside.gif',
-    'bbc_radio_manchester': os.path.join(IMG_DIR, 'bbc_local_radio.png'),
-    'bbc_radio_leeds': 'http://www.bbc.co.uk/englandcms/images/rh_nav170_leeds.gif',
-    'bbc_radio_sheffield': 'http://www.bbc.co.uk/englandcms/images/rh_nav170_sheffield.gif',
-    'bbc_radio_york': 'http://www.bbc.co.uk/englandcms/localradio/images/york.gif',
-    'bbc_radio_humberside': 'http://www.bbc.co.uk/radio/images/home/r-home-nation-regions.gif',
-    'bbc_radio_lincolnshire': 'http://www.bbc.co.uk/englandcms/localradio/images/lincs.gif',
-    'bbc_radio_nottingham': os.path.join(IMG_DIR, 'bbc_local_radio.png'),
-    'bbc_radio_leicester': 'http://www.bbc.co.uk/englandcms/localradio/images/leicester.gif',
-    'bbc_radio_derby': 'http://www.bbc.co.uk/englandcms/derby/images/rh_nav170_derby.gif',
-    'bbc_radio_stoke': 'http://www.bbc.co.uk/englandcms/localradio/images/stoke.gif',
-    'bbc_radio_shropshire': 'http://www.bbc.co.uk/englandcms/localradio/images/shropshire.gif',
-    'bbc_wm': os.path.join(IMG_DIR, 'bbc_local_radio.png'),
-    'bbc_radio_coventry_warwickshire': 'http://www.bbc.co.uk/englandcms/localradio/images/cov_warks.gif',
-    'bbc_radio_hereford_worcester': 'http://www.bbc.co.uk/englandcms/localradio/images/hereford_worcester.gif',
-    'bbc_radio_northampton': 'http://www.bbc.co.uk/englandcms/localradio/images/northampton.gif',
-    'bbc_three_counties_radio': 'http://www.bbc.co.uk/englandcms/images/rh_nav170_3counties.gif',
-    'bbc_radio_cambridge': 'http://www.bbc.co.uk/englandcms/localradio/images/cambridgeshire.gif',
-    'bbc_radio_norfolk': 'http://www.bbc.co.uk/englandcms/localradio/images/norfolk.gif',
-    'bbc_radio_suffolk': 'http://www.bbc.co.uk/englandcms/localradio/images/suffolk.gif',
-    'bbc_radio_essex': 'http://www.bbc.co.uk/englandcms/images/rh_nav170_essex.gif',
-    'bbc_london': os.path.join(IMG_DIR, 'bbc_local_radio.png'),
-    'bbc_radio_kent': 'http://www.bbc.co.uk/radio/images/home/r-home-nation-regions.gif',
-    'bbc_southern_counties_radio': os.path.join(IMG_DIR, 'bbc_local_radio.png'),
-    'bbc_radio_oxford': 'http://www.bbc.co.uk/englandcms/images/rh_nav170_oxford.gif',
-    'bbc_radio_berkshire': 'http://www.bbc.co.uk/englandcms/images/rh_nav170_berks.gif',
-    'bbc_radio_solent': 'http://www.bbc.co.uk/englandcms/localradio/images/solent.gif',
-    'bbc_radio_gloucestershire': 'http://www.bbc.co.uk/englandcms/localradio/images/gloucestershire.gif',
-    'bbc_radio_swindon': os.path.join(IMG_DIR, 'bbc_local_radio.png'),
-    'bbc_radio_wiltshire': os.path.join(IMG_DIR, 'bbc_local_radio.png'),
-    'bbc_radio_bristol': 'http://www.bbc.co.uk/englandcms/localradio/images/bristol.gif',
-    'bbc_radio_somerset_sound': 'http://www.bbc.co.uk/englandcms/images/rh_nav170_somerset.gif',
-    'bbc_radio_devon': 'http://www.bbc.co.uk/englandcms/images/rh_nav170_devon.gif',
-    'bbc_radio_cornwall': 'http://www.bbc.co.uk/englandcms/localradio/images/cornwall.gif',
-    'bbc_radio_guernsey': 'http://www.bbc.co.uk/englandcms/localradio/images/guernsey.gif',
-    'bbc_radio_jersey': 'http://www.bbc.co.uk/englandcms/localradio/images/jersey.gif'
-}
-
-
-channels_national_radio = dict(channels_national_radio_list)
-channels_local_radio = dict(channels_local_radio_list)
-channels_radio_list = channels_national_radio_list + channels_local_radio_list
-channels_radio = dict(channels_radio_list)
-
-channels = dict(channels_tv_list + channels_radio_list)
-categories_list = [
-    ('childrens', 'Children\'s'),
-    ('comedy', 'Comedy'),
-    ('drama', 'Drama'),
-    ('entertainment', 'Entertainment'),
-    ('factual', 'Factual'),
-    ('music', 'Music'),
-    ('news', 'News'),
-    ('religion_and_ethics', 'Religion & Ethics'),
-    ('sport', 'Sport'),
-    ('olympics', 'Olympics'),
-    ('wales', 'Wales'),
-    ('signed', 'Sign Zone')
-]
-categories = dict(categories_list)
-
-live_radio_stations = {'Radio 1': 'http://www.bbc.co.uk/radio1/wm_asx/aod/radio1_hi.asx',
-                       '1 Xtra':  'http://www.bbc.co.uk/1xtra/realmedia/1xtra_hi.asx',
-                       'Radio 2': 'http://www.bbc.co.uk/radio2/wm_asx/aod/radio2_hi.asx',
-                       'Radio 3': 'http://www.bbc.co.uk/radio3/wm_asx/aod/radio3_hi.asx',
-                       'Radio 4': 'http://www.bbc.co.uk/radio4/wm_asx/aod/radio4.asx',
-                       '5 Live':  'http://www.bbc.co.uk/fivelive/live/live.asx',
-                       '5 Live Sports Extra': 'http://www.bbc.co.uk/fivelive/live/live_sportsextra.asx',
-                       '6 Music': 'http://www.bbc.co.uk/6music/ram/6music_hi.asx',
-                       'BBC 7':   'http://www.bbc.co.uk/bbc7/realplayer/bbc7_hi.asx',
-                       'Asian Network': 'http://www.bbc.co.uk/asiannetwork/rams/asiannet_hi.asx',
-                       'BBC Scotland': 'http://www.bbc.co.uk/scotland/radioscotland/media/radioscotland.ram',
-                       'World Service': 'http://www.bbc.co.uk/worldservice/meta/tx/nb/live_eneuk_au_nb.asx',
-                       'BBC nan Gaidheal': 'http://www.bbc.co.uk/scotland/alba/media/live/radio_ng.ram',
-                       'BBC London': 'http://www.bbc.co.uk/england/realmedia/live/localradio/london.ram',
-                       'BBC Berkshire': 'http://www.bbc.co.uk/england/realmedia/live/localradio/radioberkshire.ram',
-                       'BBC Bristol': 'http://www.bbc.co.uk/england/realmedia/live/localradio/bristol.ram',
-                       'BBC Cambridgeshire': 'http://www.bbc.co.uk/england/realmedia/live/localradio/cambridgeshire.ram',
-                       'BBC Cornwall': 'http://www.bbc.co.uk/england/realmedia/live/localradio/cornwall.ram',
-                       'BBC Coventry Warwickshire': 'http://www.bbc.co.uk/england/realmedia/live/localradio/coventryandwarks.ram',
-                       'BBC Cumbria': 'http://www.bbc.co.uk/england/realmedia/live/localradio/cumbria.ram',
-                       'BBC Derby': 'http://www.bbc.co.uk/england/realmedia/live/localradio/derby.ram',
-                       'BBC Devon': 'http://www.bbc.co.uk/england/realmedia/live/localradio/devon.ram',
-                       'BBC Essex': 'http://www.bbc.co.uk/england/realmedia/live/localradio/essex.ram',
-                       'BBC Gloucestershire': 'http://www.bbc.co.uk/england/realmedia/live/localradio/gloucestershire.ram',
-                       'BBC Guernsey': 'http://www.bbc.co.uk/england/realmedia/live/localradio/guernsey.ram',
-                       'BBC Hereford/Worcester': 'http://www.bbc.co.uk/england/realmedia/live/localradio/herefordandworcester.ram',
-                       'BBC Humberside': 'http://www.bbc.co.uk/england/realmedia/live/localradio/humberside.ram',
-                       'BBC Jersey': 'http://www.bbc.co.uk/england/realmedia/live/localradio/jersey.ram',
-                       'BBC Kent': 'http://www.bbc.co.uk/england/realmedia/live/localradio/kent.ram',
-                       'BBC Lancashire': 'http://www.bbc.co.uk/england/realmedia/live/localradio/lancashire.ram',
-                       'BBC Leeds': 'http://www.bbc.co.uk/england/realmedia/live/localradio/leeds.ram',
-                       'BBC Leicester': 'http://www.bbc.co.uk/england/realmedia/live/localradio/leicester.ram',
-                       'BBC Lincolnshire': 'http://www.bbc.co.uk/england/realmedia/live/localradio/lincolnshire.ram',
-                       'BBC Manchester': 'http://www.bbc.co.uk/england/realmedia/live/localradio/manchester.ram',
-                       'BBC Merseyside': 'http://www.bbc.co.uk/england/realmedia/live/localradio/merseyside.ram',
-                       'BBC Newcastle': 'http://www.bbc.co.uk/england/realmedia/live/localradio/newcastle.ram',
-                       'BBC Norfolk': 'http://www.bbc.co.uk/england/realmedia/live/localradio/norfolk.ram',
-                       'BBC Northampton': 'http://www.bbc.co.uk/england/realmedia/live/localradio/northampton.ram',
-                       'BBC Nottingham': 'http://www.bbc.co.uk/england/realmedia/live/localradio/nottingham.ram',
-                       'BBC Oxford': 'http://www.bbc.co.uk/england/realmedia/live/localradio/radiooxford.ram',
-                       'BBC Sheffield': 'http://www.bbc.co.uk/england/realmedia/live/localradio/sheffield.ram',
-                       'BBC Shropshire': 'http://www.bbc.co.uk/england/realmedia/live/localradio/shropshire.ram',
-                       'BBC Solent': 'http://www.bbc.co.uk/england/realmedia/live/localradio/solent.ram',
-                       'BBC Somerset': 'http://www.bbc.co.uk/england/realmedia/live/localradio/somerset.ram',
-                       'BBC Southern Counties Radio': 'http://www.bbc.co.uk/england/realmedia/live/localradio/southerncounties.ram',
-                       'BBC Stoke': 'http://www.bbc.co.uk/england/realmedia/live/localradio/stoke.ram',
-                       'BBC Suffolk': 'http://www.bbc.co.uk/england/realmedia/live/localradio/suffolk.ram',
-                       'BBC Swindon': 'http://www.bbc.co.uk/england/realmedia/live/localradio/swindon.ram',
-                       'BBC Three Counties Radio': 'http://www.bbc.co.uk/england/realmedia/live/localradio/threecounties.ram',
-                       'BBC Wiltshire': 'http://www.bbc.co.uk/england/realmedia/live/localradio/wiltshire.ram',
-                       'BBC York': 'http://www.bbc.co.uk/england/realmedia/live/localradio/york.ram',
-                       'BBC WM': 'http://www.bbc.co.uk/england/realmedia/live/localradio/wm.ram',
-                       'BBC Cymru': 'http://www.bbc.co.uk/cymru/live/rc-live.ram',
-                       'Radio Foyle': 'http://www.bbc.co.uk/northernireland/realmedia/rf-live.ram',
-                       'BBC Scotland': 'http://www.bbc.co.uk/scotland/radioscotland/media/radioscotland.ram',
-                       'BBC nan Gaidheal': 'http://www.bbc.co.uk/scotland/alba/media/live/radio_ng.ram',
-                       'BBC Ulster': 'http://www.bbc.co.uk/ni/realmedia/ru-live.ram',
-                       'BBC Wales': 'http://www.bbc.co.uk/wales/live/rwg2.ram',
-                       'BBC Tees': 'http://www.bbc.co.uk/england/realmedia/live/localradio/cleveland.ram',
-                       
-                       }
-live_webcams = {'Radio 1': 'http://www.bbc.co.uk/radio1/webcam/images/live/webcam.jpg',
-                '1 Xtra':  'http://www.bbc.co.uk/1xtra/webcam/live/1xtraa.jpg',
-                'Radio 2': 'http://www.bbc.co.uk/radio2/webcam/live/radio2.jpg',
-                '5 Live':  'http://www.bbc.co.uk/fivelive/inside/webcam/5Lwebcam1.jpg',
-                '6 Music': 'http://www.bbc.co.uk/6music/webcam/live/6music.jpg',
-                'Asian Network': 'http://www.bbc.co.uk/asiannetwork/webcams/birmingham.jpg'}
 
 rss_cache = {}
 
@@ -412,9 +205,10 @@ class media(object):
         tep['video', 'video/x-flv', 'vp6', 'rtmp', 512]   = 'flashmed'
         tep['video', 'video/x-flv', 'spark', 'rtmp', 800] = 'flashwii'
         tep['video', 'video/mpeg', 'h264', 'http', 184]   = 'mobile'
-        tep['audio', 'audio/mpeg', 'mp3', 'rtmp', 128]    = 'mp3'
-        tep['audio', 'audio/real', 'real', 'http', 128]   = 'real'
+        tep['audio', 'audio/mpeg', 'mp3', 'rtmp', None]   = 'mp3'
+        tep['audio', 'audio/real', 'real', 'http', None]  = 'real'
         tep['audio', 'audio/mp4',  'aac', 'rtmp', None]   = 'aac'
+        tep['audio', 'audio/wma',  'wma', 'http', None]   = 'wma'
         tep['video', 'video/mp4', 'h264', 'http', 516]    = 'iphonemp3'
         me = (self.kind, self.mimetype, self.encoding, self.connection_protocol, self.bitrate)
         return tep.get(me, None)
@@ -429,6 +223,7 @@ class media(object):
         self.encoding = media.get('encoding')
         self.width, self.height = media.get('width'), media.get('height')
         self.live = media.get('live') == 'true'
+        self.service = media.get('service')
         try:
             self.bitrate = int(media.get('bitrate'))
         except:
@@ -455,8 +250,18 @@ class media(object):
             
         self.connection_kind = conn.get('kind')
         self.connection_live = conn.get('live') == 'true'
-          
-        if self.connection_kind in ['http', 'sis']: # http
+
+        if self.mimetype == 'audio/wma':
+            self.connection_href = conn.get('href')
+            self.connection_protocol = 'http'
+            self.kind = 'audio'
+            self.bitrate = None
+        if self.mimetype == 'audio/real':
+            self.connection_href = conn.get('href')
+            self.connection_protocol = 'http'
+            self.kind = 'audio'
+            self.bitrate = None            
+        elif self.connection_kind in ['http', 'sis']: # http
             self.connection_href = conn.get('href')
             self.connection_protocol = 'http'
             if self.mimetype == 'video/mp4' and self.encoding == 'h264':
@@ -511,6 +316,7 @@ class media(object):
                 p = re.compile('^mp3:')
                 identifier = p.sub('', identifier)
                 self.SWFPlayer = 'http://www.bbc.co.uk/emp/9player.swf?revision=7276'
+                self.bitrate = None
             else:
                 self.SWFPlayer = 'http://www.bbc.co.uk/emp/9player.swf?revision=7276'
                 self.PlayPath  = identifier                
@@ -885,7 +691,7 @@ class programme_simple(object):
 
 
 class feed(object):
-    def __init__(self, tvradio=None, channel=None, category=None, searchcategory=None, atoz=None, searchterm=None):
+    def __init__(self, tvradio=None, channel=None, category=None, searchcategory=None, atoz=None, searchterm=None, radio=None):
         """
         Creates a feed for the specified channel/category/whatever.
         tvradio: type of channel - 'tv' or 'radio'. If a known channel is specified, use 'auto'.
@@ -897,9 +703,9 @@ class feed(object):
         if tvradio == 'auto':
             if not channel and not searchterm:
                 raise Exception, "Must specify channel or searchterm when using 'auto'"
-            elif channel in channels_tv:
+            elif channel in stations.channels_tv:
                 self.tvradio = 'tv'
-            elif channel in channels_radio:
+            elif channel in stations.channels_radio:
                 self.tvradio = 'radio'
             else:
                 raise Exception, "TV channel '%s' not recognised." % self.channel
@@ -912,7 +718,8 @@ class feed(object):
         self.category = category            
         self.searchcategory = searchcategory
         self.atoz = atoz
-        self.searchterm = searchterm      
+        self.searchterm = searchterm   
+        self.radio = radio   
         
     def create_url(self, listing):
         """
@@ -963,12 +770,12 @@ class feed(object):
         
         # if got a channel, don't need tv/radio distinction
         if self.channel:
-            assert self.channel in channels_tv or self.channel in channels_radio, 'Unknown channel'
+            assert self.channel in stations.channels_tv or self.channel in stations.channels_radio, 'Unknown channel'
             #print self.tvradio
             if self.tvradio == 'tv':
-                path.append(channels_tv.get(self.channel, '(TV)'))
+                path.append(stations.channels_tv.get(self.channel, '(TV)'))
             else:
-                path.append(channels_radio.get(self.channel, '(Radio)'))
+                path.append(stations.channels_radio.get(self.channel, '(Radio)'))
         elif self.tvradio: 
             # no channel
             medium = 'TV'
@@ -997,8 +804,12 @@ class feed(object):
         Return a list of available channels.
         """
         if self.channel: return None
-        if self.tvradio == 'tv': return channels_tv
-        if self.tvradio == 'radio': return channels_radio
+        if self.tvradio == 'tv': return stations.channels_tv_list
+        if self.tvradio == 'radio':
+            if radio:
+                return channels_radio_type_list[radio]
+            else: 
+                return stations.channels_radio_list
         return None    
     
     def channels_feed(self):
@@ -1009,9 +820,12 @@ class feed(object):
             logging.warning("%s doesn\'t have any channels!", self.channel)
             return None
         if self.tvradio == 'tv': 
-            return [feed('tv', channel=ch) for (ch, title) in channels_tv_list]
-        if self.tvradio == 'radio': 
-            return [feed('radio', channel=ch) for (ch, title) in channels_radio_list]
+            return [feed('tv', channel=ch) for (ch, title) in stations.channels_tv_list]
+        if self.tvradio == 'radio':
+            if self.radio:
+                return [feed('radio', channel=ch) for (ch, title) in stations.channels_radio_type_list[self.radio]]
+            else: 
+                return [feed('radio', channel=ch) for (ch, title) in stations.channels_radio_list]
         return None
 
         
@@ -1074,8 +888,8 @@ class feed(object):
         elif self.is_atoz(subfeed):
             return self.sub(atoz=self.is_atoz(subfeed))
         else:
-            if subfeed in channels_tv: return feed('tv', channel=subfeed)
-            if subfeed in channels_radio: return feed('radio', channel=subfeed)
+            if subfeed in stations.channels_tv: return feed('tv', channel=subfeed)
+            if subfeed in stations.channels_radiot: return feed('radio', channel=subfeed)
         # TODO handle properly oh pants
         return None
 
