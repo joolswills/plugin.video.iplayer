@@ -14,7 +14,7 @@ import xbmc, xbmcgui, xbmcplugin
 __scriptname__ = "IPlayer"
 __author__     = 'Dink [dink12345@googlemail.com]'
 __svn_url__    = "http://xbmc-iplayerv2.googlecode.com/svn/trunk/IPlayer"
-__version__    = "2010-01-29"
+__version__    = "2010-03-05"
 
 sys.path.insert(0, os.path.join(os.getcwd(), 'lib'))
 
@@ -432,7 +432,9 @@ def add_programme(feed, programme, totalItems=None, tracknumber=None, thumbnail_
         
     #print "Getting URL for %s ..." % (programme.title)
 
+    # tv catchup url
     url=make_url(feed=feed, pid=programme.pid)
+        
     xbmcplugin.addDirectoryItem(
         handle=handle, 
         url=url,
@@ -560,6 +562,20 @@ def search(tvradio, searchterm):
     
     logging.info("searchterm=" + searchterm)
     feed = iplayer.feed(tvradio, searchterm=searchterm)
+    
+    listitem = xbmcgui.ListItem(label=' Delete this search - ' + searchterm)
+    listitem.setIconImage(get_plugin_thumbnail('search'))
+    listitem.setThumbnailImage(get_plugin_thumbnail('search'))
+    listitem.setProperty('tracknumber', '0')
+    
+    url = "%s?deletesearch=%s&tvradio=%s" % (sys.argv[0], urllib.quote_plus(searchterm), urllib.quote_plus(tvradio))
+    ok = xbmcplugin.addDirectoryItem(
+                handle=handle,
+                url=url,             
+                listitem=listitem,
+                isFolder=False,
+    )
+    
     list_feed_listings(feed, 'list')
 
 def search_delete(tvradio, searchterm):
