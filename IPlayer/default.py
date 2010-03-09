@@ -309,8 +309,7 @@ def list_radio_types():
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
     
 
-def get_setting_videostream(feed=None,default='h264 800'):
-    
+def get_setting_videostream(feed=None,default='h264 800'):  
     # SVN 20015 supports H.264 of which H.264 800 can play on all platforms
     try:
         xbmc_version = xbmc.getInfoLabel( "System.BuildVersion" )
@@ -466,6 +465,21 @@ def list_categories(tvradio='tv', feed=None, channels=None, progcount=True):
         
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
     
+def series_match(name):
+    # match the series name part of a programme name
+    seriesmatch = []
+    
+    seriesmatch.append(re.compile('^(Late\s+Kick\s+Off\s+)'))
+    seriesmatch.append(re.compile('^(Inside\s+Out\s+)'))
+    seriesmatch.append(re.compile('^(.*?):'))  
+    match = None
+
+    for s in seriesmatch:
+        match = s.match(name)
+        if match:
+            break
+        
+    return match
 
 def list_series(feed, listing, category=None, progcount=True):
     handle = int(sys.argv[1])
@@ -496,10 +510,11 @@ def list_series(feed, listing, category=None, progcount=True):
     episodes = {}
     categories = {}
     dates = {}
-    seriesmatch = re.compile('^(.*?):')
+  
     thumbnail_size = get_setting_thumbnail_size()
     for p in programmes:
-        match = seriesmatch.search(p.title)
+
+        match = series_match(p.title)            
         thumb = p.get_thumbnail(thumbnail_size, feed.tvradio)
 
         if match:
@@ -634,14 +649,13 @@ def list_feed_listings(feed, listing, category=None, series=None, channels=None)
     ## filter by series
     if series:
         temp_prog = []
-        seriesmatch = re.compile('^(.*?):')
         # if a series filter has been specified then only parse programmes
         # in that series
         i = len(series)
 
         for p in programmes:
             matchagainst = p.title
-            match = seriesmatch.match(p.title)
+            match = series_match(p.title)
             if match: matchagainst = match.group(1)
             #print "matching %s,%s" % (p.title, matchagainst)
             if series == matchagainst: 
