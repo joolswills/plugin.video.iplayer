@@ -300,25 +300,22 @@ class media(object):
             auth = conn.get('authString')
             application = 'ondemand'
             
+            self.SWFPlayer = 'http://www.bbc.co.uk/emp/9player.swf?revision=7276'
             if self.encoding == 'h264':                
                 # HD streams drop the leading mp4: in the identifier but not the playpath
                 self.PlayPath  = identifier
                 p = re.compile('^mp4:')
-                identifier = p.sub('', identifier)
-                self.SWFPlayer = 'http://www.bbc.co.uk/emp/9player.swf?revision=10344_10753'
+                identifier = p.sub('', identifier)              
             elif self.connection_kind == 'limelight':
                 application    = conn.get('application')
                 self.PlayPath  = auth
-                self.SWFPlayer = 'http://www.bbc.co.uk/emp/9player.swf?revision=10344_10753'
             elif self.encoding == 'mp3':
                 # mp3 streams drop the leading mp3: in the identifier but not the playpath
                 self.PlayPath  = identifier
                 p = re.compile('^mp3:')
                 identifier = p.sub('', identifier)
-                self.SWFPlayer = 'http://www.bbc.co.uk/emp/9player.swf?revision=7276'
                 self.bitrate = None
             else:
-                self.SWFPlayer = 'http://www.bbc.co.uk/emp/9player.swf?revision=7276'
                 self.PlayPath  = identifier                
 
             params = dict(ip=server, server=server, auth=auth, identifier=identifier, application=application)
@@ -326,7 +323,7 @@ class media(object):
             if self.connection_live:
                 logging.error("No support for live streams!")                
             else:
-                self.connection_href = "rtmp://%(ip)s:1935/%(application)s?_fcs_vhost=%(server)s&auth=%(auth)s&aifp=v001&slist=%(identifier)s" % params
+                self.connection_href = "rtmp://%(ip)s:1935/%(application)s?_fcs_vhost=%(server)s&%(auth)s" % params
                 #self.tcUrl = "rtmp://%(server)s:1935/%(application)s" % params
         else:
             logging.error("connectionkind %s unknown", self.connection_kind)

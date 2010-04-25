@@ -343,6 +343,8 @@ def get_setting_videostream(feed=None,default='h264 800'):
             return 'h264 1500'        
         elif videostream == 'H.264 (3200kb)' or videostream == '4':
             return 'h264 3200'   
+        elif videostream == 'Mobile' or videostream == '5':
+            return 'mobile'           
 
     # Linux & Windows from SVN:20015 support H.264
     # XBox from SVN:20810 supports H.264
@@ -861,7 +863,7 @@ def watch(feed, pid, showDialog):
             pDialog.update(50, 'Fetching video stream info')
             if pDialog.iscanceled(): raise
             times.append(['update dialog',time.clock()])
-        pref = get_setting_videostream(channel)
+        pref = get_setting_videostream(channel)        
         times.append(['get_setting_videostream',time.clock()])
         opref = pref
         if showDialog:
@@ -892,10 +894,16 @@ def watch(feed, pid, showDialog):
             pref = 'h264 480'
             media = item.get_media_for(pref)
 
-        if not media:
-            # And finally fallback to 'flashwii'
-            logging.info('Steam %s not available, falling back to flash wii stream' % pref)
+        if not media and pref == 'h264 480':
+            # fallback to 'flashwii' as 'h264 480' is not always available
+            logging.info('Steam %s not available, falling back to flashmed stream' % pref)
             pref = 'flashwii'
+            media = item.get_media_for(pref)
+
+        if not media:
+            # And finally fallback to 'mobile'
+            logging.info('Steam %s not available, falling back to flash wii stream' % pref)
+            pref = 'mobile'
             media = item.get_media_for(pref)      
 
         times.append(['media 1',time.clock()])
@@ -903,7 +911,7 @@ def watch(feed, pid, showDialog):
         # problem - no media found for default or lower
         if not media:
             # find the first available stream in ascending order
-            for apref in ['h264 480', 'h264 800', 'h264 1500', 'h264 3200']:
+            for apref in ['mobile', 'h264 480', 'h264 800', 'h264 1500', 'h264 3200']:
                 media = item.get_media_for(apref)
                 if media:
                     pref=apref
