@@ -20,3 +20,5 @@ http://www.iconspedia.com/icon/settings-1036-.html
 ElementTree XML Parser by Fredrik Lundh
 http://effbot.org/zone/element-index.htm
 
+Additional thanks to:
+* Eddebaby - for contributing to the live tv code

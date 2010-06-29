@@ -161,6 +161,18 @@ def parse_entry_id(entry_id):
     if not matches: return None
     return matches[0]
 
+def get_provider():
+    provider = ""
+    try:
+        provider_id = xbmcplugin.getSetting('provider')
+    except:
+        provider_id = 0
+
+    if   provider_id == '1': provider = 'akamai'
+    elif provider_id == '2': provider = 'limelight'
+
+    return provider
+
 
 class media(object):
     def __init__(self, item, media_node):
@@ -189,7 +201,6 @@ class media(object):
         else:
             return self.connection_href
 
-
     @property
     def application(self):
         """
@@ -202,6 +213,7 @@ class media(object):
         tep['video', 'video/mp4', 'h264', 'rtmp', 1500]   = 'h264 1500'
         tep['video', 'video/mp4', 'h264', 'rtmp', 796]    = 'h264 800'
         tep['video', 'video/mp4', 'h264', 'rtmp', 480]    = 'h264 480'
+        tep['video', 'video/mp4', 'h264', 'rtmp', 396]    = 'h264 400'
         tep['video', 'video/x-flv', 'vp6', 'rtmp', 512]   = 'flashmed'
         tep['video', 'video/x-flv', 'spark', 'rtmp', 800] = 'flashwii'
         tep['video', 'video/mpeg', 'h264', 'http', 184]   = 'mobile'
@@ -237,12 +249,14 @@ class media(object):
         self.connection_href = None
         self.connection_method = None
         
-        # find an akamai stream in preference
+        # try to find a stream from users preference
         conn = None
+        provider = get_provider()
+
         for c in media.findall('connection'):
-            if c.get('kind') == 'akamai':
+            if provider != "" and c.get('kind') == provider:
                 conn = c
-                break     
+                break
         if conn == None:
             conn = media.find('connection')
         if conn == None:
@@ -270,61 +284,37 @@ class media(object):
             elif self.kind == 'captions':
                 self.connection_method = None                
             else:
-                self.connection_method = 'resolve'
-        #elif self.kind == 'video' and self.mimetype == 'video/mp4' and self.encoding == 'h264': #rtmp
-        #    
-        #    # for h.264 content only level3 connections are supported currently
-        #    if self.connection_kind != 'level3':
-        #       conn = media.find(name = 'connection', kind="level3")
-        #        if not conn:
-        #            logging.error("No support for non level3 h264 streams!")  
-        #            return
-        #        self.connection_kind = conn.get('kind')
-        #        self.connection_live = conn.get('live') == 'true'                
-        #        
-        #    self.connection_protocol = 'rtmp'
-        #    hostname = conn.get('server')
-        #    application = conn.get('application')
-        #    identifier = conn.get('identifier')
-        #
-        #    if self.connection_live:
-        #        logging.error("No support for live streams!")                
-        #    else:
-        #       auth = conn.get('authstring')
-        #       params = dict(ip=hostname, application=application, auth=auth, identifier=identifier)
-        #       self.connection_href = "rtmp://%(ip)s:1935/%(application)s?authString=%(auth)s&aifp=v001&slist=%(identifier)s" % params                
-        elif self.connection_kind in ['level3', 'akamai', 'limelight']: #rtmp
+                self.connection_method = 'resolve' 
+        elif self.connection_kind in ['akamai', 'limelight']:
+
+            if self.connection_live:
+                logging.error("No support for live streams!")   
+                return
+
             self.connection_protocol = 'rtmp'
             server = conn.get('server')
             identifier = conn.get('identifier')
             auth = conn.get('authString')
-            application = 'ondemand'
-            
-            self.SWFPlayer = 'http://www.bbc.co.uk/emp/9player.swf?revision=7276'
-            if self.encoding == 'h264':                
-                # HD streams drop the leading mp4: in the identifier but not the playpath
-                self.PlayPath  = identifier
-                p = re.compile('^mp4:')
-                identifier = p.sub('', identifier)              
-            elif self.connection_kind == 'limelight':
-                application    = conn.get('application')
-                self.PlayPath  = auth
-            elif self.encoding == 'mp3':
-                # mp3 streams drop the leading mp3: in the identifier but not the playpath
-                self.PlayPath  = identifier
-                p = re.compile('^mp3:')
-                identifier = p.sub('', identifier)
-                self.bitrate = None
-            else:
-                self.PlayPath  = identifier                
+            application = conn.get('application')
 
-            params = dict(ip=server, server=server, auth=auth, identifier=identifier, application=application)
+            if application == None:
+                application = 'ondemand'
+
+            timeout = xbmcplugin.getSetting('stream_timeout')
             
-            if self.connection_live:
-                logging.error("No support for live streams!")                
-            else:
-                self.connection_href = "rtmp://%(ip)s:1935/%(application)s?_fcs_vhost=%(server)s&%(auth)s" % params
-                #self.tcUrl = "rtmp://%(server)s:1935/%(application)s" % params
+            swfplayer = 'http://www.bbc.co.uk/emp/10player.swf'       
+
+            params = dict(server=server, auth=auth, ident=identifier, app=application)
+
+            # both akamai and limelight also support rtmpt (rtmp over http - port 80) but this has additional overhead so we don't use it. Might be a useful option for those behind firewalls though ?
+            if self.connection_kind == 'akamai':
+                self.connection_href = "rtmp://%(server)s:1935/%(app)s?%(auth)s playpath=%(ident)s" % params
+            elif self.connection_kind == 'limelight':
+                # note that librtmp has a small issue with constructing the tcurl here. we construct it ourselves for now.
+                self.connection_href = "rtmp://%(server)s:1935/ app=%(app)s?%(auth)s tcurl=rtmpt://%(server)s/%(app)s?%(auth)s playpath=%(ident)s" % params
+
+            self.connection_href += " swfurl=%s swfvfy=true timeout=%s" % (swfplayer, timeout)
+
         else:
             logging.error("connectionkind %s unknown", self.connection_kind)
         
@@ -333,7 +323,6 @@ class media(object):
                          (self.connection_protocol, self.connection_kind, self.mimetype, self.encoding, self.bitrate))
             logging.info("conn href: %s", self.connection_href)
 
-    
     @property 
     def programme(self):
         return self.item.programme
@@ -415,17 +404,17 @@ class item(object):
         """ True if this stream is 'signed' for the hard-of-hearing. """
         return self.alternate == 'signed'
     
-    @property
-    def mediaselector_url(self):        
-        return "http://www.bbc.co.uk/mediaselector/4/mtis/stream/%s" % self.identifier    
-        
-    @property
-    def media(self):
+    def mediaselector_url(self, suffix):
+        if suffix == None:
+            return "http://www.bbc.co.uk/mediaselector/4/mtis/stream/%s" % self.identifier         
+        return "http://www.bbc.co.uk/mediaselector/4/mtis/stream/%s/%s" % (self.identifier, suffix)
+
+    def medialist(self, suffix = None):
         """
         Returns a list of all the media available for this item.
         """
         if self.medias: return self.medias
-        url = self.mediaselector_url
+        url = self.mediaselector_url(suffix)
         logging.info("Stream XML URL: %s", url)
         xml = httpget(url)
         tree = ET.XML(xml)
@@ -433,7 +422,21 @@ class item(object):
         medias = []
         for m in tree.findall('media'):
             medias.append(media(self, m))
-            
+        return medias
+
+    @property
+    def media(self):
+        """
+        Returns a list of all the media available for this item.
+        """
+
+        if self.medias: return self.medias
+        medias = []
+        # this was needed before due to authentication changes (the auth from the main xml didnt work so you had to request specific xmls for each quality)
+        #for m in ['iplayer_streaming_h264_flv_hd', 'iplayer_streaming_h264_flv_high', 'iplayer_streaming_h264_flv', 'iplayer_streaming_h264_flv_lo']:
+        #    medias.extend(self.medialist(m))
+        medias.extend(self.medialist())
+
         self.medias = medias
         if medias == None or len(medias) == 0:
             d = xbmcgui.Dialog()

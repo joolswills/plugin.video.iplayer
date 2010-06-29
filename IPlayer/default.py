@@ -12,9 +12,9 @@ import xbmc, xbmcgui, xbmcplugin
 
 # Script constants
 __scriptname__ = "IPlayer"
-__author__     = 'Dink [dink12345@googlemail.com]'
+__author__     = 'Dink [dink12345@googlemail.com] / BuZz [buzz@exotica.org.uk]'
 __svn_url__    = "http://xbmc-iplayerv2.googlecode.com/svn/trunk/IPlayer"
-__version__    = "2010-04-25"
+__version__    = "2010-06-29"
 
 sys.path.insert(0, os.path.join(os.getcwd(), 'lib'))
 
@@ -28,7 +28,6 @@ except ImportError, error:
     d = xbmcgui.Dialog()
     d.ok(str(error), 'Please check you installed this plugin correctly.')
     raise
-
 
 logging.basicConfig(
     stream=sys.stdout,
@@ -49,8 +48,8 @@ logging.info("IPlayer: Subtitles dir: %s" % SUBTITLES_DIR)
 
 if not os.path.isdir(CACHE_DIR):
     d = xbmcgui.Dialog()
-    d.ok('Welcome to BBC IPlayer plugin.', 'Please be aware this plugin only works in the UK.', 'The IPlayer service checks to ensure UK IP addresses.')            
-    
+    d.ok('Welcome to BBC IPlayer plugin.', 'Please be aware this plugin only works in the UK.', 'The IPlayer service checks to ensure UK IP addresses.')
+    d.ok('Note about streams', 'This plugin will only work on XBMC versions including libRTMP support', 'Refer to the plugin website for more details.' )
 
 for d in [CACHE_DIR, HTTP_CACHE_DIR, SUBTITLES_DIR]:
     if not os.path.isdir(d):
@@ -311,9 +310,10 @@ def list_radio_types():
 
 def get_setting_videostream(feed=None,default='h264 800'):  
     # SVN 20015 supports H.264 of which H.264 800 can play on all platforms
+    # try and get xbmc revision
+    rev_re = re.compile('r(\d+)')
     try:
-        xbmc_version = xbmc.getInfoLabel( "System.BuildVersion" )
-        xbmc_rev = int( xbmc_version.split( " " )[ 1 ].replace( "r", "" ) )
+        xbmc_rev = int(rev_re.search(xbmc.getInfoLabel( 'System.BuildVersion' )).group(1))
     except:
         logging.info("Revision info not available: %s" % xbmc_version)
         xbmc_rev = 0
@@ -342,9 +342,7 @@ def get_setting_videostream(feed=None,default='h264 800'):
         elif videostream == 'H.264 (1500kb)' or videostream == '3':
             return 'h264 1500'        
         elif videostream == 'H.264 (3200kb)' or videostream == '4':
-            return 'h264 3200'   
-        elif videostream == 'Mobile' or videostream == '5':
-            return 'mobile'           
+            return 'h264 3200'           
 
     # Linux & Windows from SVN:20015 support H.264
     # XBox from SVN:20810 supports H.264
@@ -875,43 +873,26 @@ def watch(feed, pid, showDialog):
         times.append(['fetch media',time.clock()])
 
         # fall down to find a supported stream. 
+        streams = ['h264 3200', 'h264 1500', 'h264 800', 'h264 480', 'h264 400']
 
-        if not media and pref == 'h264 3200':
-            # fallback to 'h264 1500' as 'h264 3200' is not always available
-            logging.info('Steam %s not available, falling back to flash h264 1500 stream' % pref)
-            pref = 'h264 1500'
-            media = item.get_media_for(pref)
-            
-        if not media and pref == 'h264 1500':
-            # fallback to 'h264 800' as 'h264 1500' is not always available
-            logging.info('Steam %s not available, falling back to flash h264 800 stream' % pref)
-            pref = 'h264 800'
-            media = item.get_media_for(pref)
-        
-        if not media and pref == 'h264 800':
-            # fallback to 'h264 480' as 'h264 800' is not always available
-            logging.info('Steam %s not available, falling back to flashmed stream' % pref)
-            pref = 'h264 480'
-            media = item.get_media_for(pref)
+        for i, stream in enumerate(streams):
+          if pref == stream:
+              break
 
-        if not media and pref == 'h264 480':
-            # fallback to 'flashwii' as 'h264 480' is not always available
-            logging.info('Steam %s not available, falling back to flashmed stream' % pref)
-            pref = 'flashwii'
+        while not media and i < len(streams)-1:
+            i += 1
+            logging.info('Steam %s not available, falling back to flash %s stream' % (pref, streams[i]) )
+            pref = streams[i]
+            print pref
             media = item.get_media_for(pref)
-
-        if not media:
-            # And finally fallback to 'mobile'
-            logging.info('Steam %s not available, falling back to flash wii stream' % pref)
-            pref = 'mobile'
-            media = item.get_media_for(pref)      
 
         times.append(['media 1',time.clock()])
-        
+
+        streams.reverse();
         # problem - no media found for default or lower
         if not media:
             # find the first available stream in ascending order
-            for apref in ['mobile', 'h264 480', 'h264 800', 'h264 1500', 'h264 3200']:
+            for apref in streams:
                 media = item.get_media_for(apref)
                 if media:
                     pref=apref
@@ -1042,7 +1023,6 @@ def watch(feed, pid, showDialog):
     times.append(['xbmc.Player()',time.clock()])
     player.play(play)
     times.append(['player.play',time.clock()])
-    
     # Auto play subtitles if they have downloaded 
     logging.info("subtitles: %s   - subtitles_file %s " % (subtitles,subtitles_file))
     times.append(['logging.info',time.clock()])

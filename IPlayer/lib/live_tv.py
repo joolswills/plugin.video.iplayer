@@ -1,6 +1,12 @@
-import cgi, os, sys, urllib
+import cgi, os, sys, urllib, re
 import xml.dom.minidom as dom
+import logging
 import xbmcplugin, xbmcgui, xbmc
+from datetime import date
+
+from iplayer2 import get_provider, httpget
+
+# it would be nice to scrape what's on now - at least when the items are first created.
 
 THUMB_DIR      = os.path.join(os.getcwd(), 'resources', 'media')
 
@@ -12,51 +18,35 @@ live_tv_channels = [
                     ('cbbc','CBBC', 'cbbc.png'),
                     ('cbeebies','Cbeebies', 'cbeebies.png'),
                     ('bbc_news24','BBC News', 'bbc_news24.png'),
-                    ('bbc_parliament','BBC Parliament', 'bbc_parliament.png')
+                    ('bbc_parliament','BBC Parliament', 'bbc_parliament.png'),
+                    ('bbc_alba','BBC ALBA', 'bbc_alba.png'),
+                    ('bbc_redbutton','BBC Red Button', 'bbc_one.png')
                     ]
 
-def fetch_stream_info(channel, bitrate):
+def parseXML(url):
+    xml = httpget(url)
+    doc = dom.parseString(xml)
+    root = doc.documentElement
+    return root
 
+def fetch_stream_info_old(channel):
     # read the simulcast xml
     cxml = 'http://www.bbc.co.uk/emp/simulcast/' + channel + '.xml'
-    f = urllib.urlopen(cxml)
-    cstr = f.read()
-    f.close()
-
-    # parse the simulcast xml
-    doc = dom.parseString(cstr)
-    root = doc.documentElement
+    root = parseXML(cxml)
     surl = ''
     mbitrate = 0
-    
+
     for media in root.getElementsByTagName( "media" ):
-        mbitrate    = media.attributes['bitrate'].nodeValue
-        connection  = media.getElementsByTagName( "connection" )[0]
-        simulcast   = connection.attributes['identifier'].nodeValue
-        server      = connection.attributes['server'].nodeValue
-        kind        = connection.attributes['kind'].nodeValue
-        application = connection.attributes['application'].nodeValue
+        conn  = media.getElementsByTagName( "connection" )[0]
+        simulcast   = conn.attributes['identifier'].nodeValue
+        server      = conn.attributes['server'].nodeValue
+        kind        = conn.attributes['kind'].nodeValue
+        application = conn.attributes['application'].nodeValue
         
         surl = 'http://www.bbc.co.uk/mediaselector/4/gtis/?server=%s&identifier=%s&kind=%s&application=%s&cb=62605' % (server , simulcast, kind, application)        
-        
-        print "bitrates: Found %s Searching for %s" % (mbitrate, bitrate)
-        if int(mbitrate) <= int(bitrate):
-            # select the current bitrate if it equals or is less than the desired bitrate.
-            # as the xml file lists streams in descending order of bit rate this ensures that the 
-            # nearest bitrate to the desired one is selected
-            break
-    
-    print 'Live Video Stream. Preference bitrate = %s,actual = %s' % (bitrate, mbitrate)
     
     # read the media selector xml
-    print surl
-    f    = urllib.urlopen(surl)
-    xstr = f.read()
-    f.close()
-    
-    # parse the media selector xml
-    doc    = dom.parseString(xstr)
-    root   = doc.documentElement
+    root = parseXML(surl)
     token  = root.getElementsByTagName( "token" )[0].firstChild.nodeValue
     kind   = root.getElementsByTagName( "kind" )[0].firstChild.nodeValue
     server = root.getElementsByTagName( "server" )[0].firstChild.nodeValue
@@ -66,30 +56,115 @@ def fetch_stream_info(channel, bitrate):
     print 'token: ' + token, 'kind: ' + kind, 'server: ' + server, 'identifier: ' + identifier, 'application: ' + application
     url = "rtmp://%s:1935/%s/%s?auth=%s&aifp=xxxxxx" % (server, application, identifier, token)
     playpath = "%s?auth=%s&aifp=xxxxxx" % (identifier, token)
-    return (url, playpath)
+    url = "%s playpath=%s live=1" % (url, playpath)
+    return (url)
+
+def fetch_stream_info(streamchannel, bitrate, req_provider):
+    # bbc seem to be changing the XML format - force new style
+    if streamchannel=='bbc_one_london'  : streamchannel='bbc_one'
+    if streamchannel=='bbc_two_england' : streamchannel='bbc_two'
+    if streamchannel=='cbbc' : streamchannel='bbc_three'
+    if streamchannel=='cbeebies' : streamchannel='bbc_four'
+
+    identifier = streamchannel + '_live_rtmp'
+    
+    # red button doesn't have an _rtmp page (and therefore no akamai rtmp stream either) 
+    if streamchannel == 'bbc_redbutton' :
+        identifier = 'bbc_redbutton_live'
+        req_provider = 'limelight'
+
+    # experimental - cb seems to increase - but by how much? assume 1 per day for now
+    # seems to be more random than that. However changing the number seems beneficial atm
+    cbadd = date.today() - date(2010,6,17)
+    cb = str(26512 + cbadd.days)
+
+    if bitrate == 480: quality = 'iplayer_streaming_h264_flv_lo_live'
+    elif bitrate == 800: quality = 'iplayer_streaming_h264_flv_live'
+    elif bitrate >= 1500: quality = 'iplayer_streaming_h264_flv_high_live'
+    
+    surl = 'http://www.bbc.co.uk/mediaselector/4/mtis/stream/%s/%s/%s?cb=%s' % (identifier, quality, req_provider, cb)
+    logging.info("getting media information from %s" % surl)
+    root = parseXML(surl)
+    mbitrate = 0
+    url = ""
+    media = root.getElementsByTagName( "media" )[0]
+
+    conn  = media.getElementsByTagName( "connection" )[0]
+
+    # rtmp streams
+    identifier  = conn.attributes['identifier'].nodeValue
+    server      = conn.attributes['server'].nodeValue
+    auth        = conn.attributes['authString'].nodeValue
+    supplier    = conn.attributes['supplier'].nodeValue
+
+    # not always listed for some reason
+    try: 
+        application = conn.attributes['application'].nodeValue
+    except:
+        application = 'live'
+
+    params = dict(server = server, app = application, ident = identifier, auth = auth)
+
+    if supplier == "akamai" or supplier == "limelight":
+        if supplier == "akamai":
+            url = "rtmp://%(server)s:1935/%(app)s/?%(auth)s playpath=%(ident)s?%(auth)s" % params
+        if supplier == "limelight":
+            url = "rtmp://%(server)s:1935/ app=%(app)s?%(auth)s tcurl=rtmp://%(server)s:1935/%(app)s?%(auth)s playpath=%(ident)s" % params
+        url += " swfurl=http://www.bbc.co.uk/emp/10player.swf swfvfy=1 live=1"
+
+    return (url)
 
 
 def play_stream(channel, bitrate, showDialog):
-    (url, playpath) = fetch_stream_info(channel, bitrate)
+    bitrate = int(bitrate)
+    # check to see if bbcthree/cbbc or bbcfour/cbeebies is on the air?    
+    if channel == 'bbc_three' or channel == 'bbc_four' or channel == 'cbeebies' or channel == 'cbbc':
+        surl = 'http://www.bbc.co.uk/iplayer/tv/'+channel
+        cstr = httpget(surl)
+        off_air_message = re.compile('<p class="off-air">(.*?)</p>').findall(cstr)
+        if off_air_message:
+            pDialog = xbmcgui.Dialog()
+            pDialog.ok('IPlayer', off_air_message[0])
+            return
+
+    provider = get_provider()
+    
+    if channel=='bbc_parliament' or channel=='bbc_news24' or channel=='bbc_alba':
+        url = fetch_stream_info_old(channel)
+    else:
+        # check for red button usage
+        if channel == 'bbc_redbutton':
+            pDialog = xbmcgui.Dialog()
+            if pDialog.yesno("BBC Red Button Live Stream", "This will only work when the stream is broadcasting.", "If it is not on, xbmc will retry indefinately (crash)", "Do you want to try anyway?"):
+                url = fetch_stream_info(channel, bitrate, provider)
+            else:
+                return
+        else:
+            url = fetch_stream_info(channel, bitrate, provider)
+
+    if url == "":
+        Dialog = xbmcgui.Dialog()
+        pDialog.ok('IPlayer', "Sorry, stream is currently unavailable")
+
     if showDialog:
         pDialog = xbmcgui.DialogProgress()
         pDialog.create('IPlayer', 'Loading live stream info')
         xbmc.sleep(50)
-        
+
     if showDialog: pDialog.update(50, 'Starting Stream')
-    
-    item = xbmcgui.ListItem("BBC Live video")
-    item.setProperty("SWFPlayer", 'http://www.bbc.co.uk/emp/9player.swf?revision=8812_8903')
-    item.setProperty("PlayPath", playpath) 
-    item.setProperty("IsLive", "true")               
+    # build listitem to display whilst playing
+    for j, (id, label, thumb) in enumerate(live_tv_channels):
+        if id == channel:
+            listitem = xbmcgui.ListItem(label=label+' - Live')
+            listitem.setIconImage('defaultVideo.png')
+            listitem.setThumbnailImage(os.path.join(THUMB_DIR, thumb))
                    
-    play=xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
+    play = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
     play.clear()
-    play.add(url,item)
-    player = xbmc.Player(xbmc.PLAYER_CORE_AUTO)
-    player.play(play) 
+    play.add(url,listitem)
+    player = xbmc.Player(xbmc.PLAYER_CORE_DVDPLAYER)
+    player.play(play)
     if showDialog: pDialog.close()
-    
     
 def make_url(channel=None):
     base = sys.argv[0]
@@ -109,21 +184,19 @@ def list_channels():
         listitem.setIconImage('defaultVideo.png')
         listitem.setThumbnailImage(os.path.join(THUMB_DIR, thumb))        
         ok = xbmcplugin.addDirectoryItem(
-            handle=handle, 
-            url=url,
-            listitem=listitem,
-            isFolder=False,
+            handle = handle, 
+            url = url,
+            listitem = listitem,
+            isFolder = False,
         )
 
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
-
-
 
 ##############################################
 if __name__ == '__main__':
     args = cgi.parse_qs(sys.argv[2][1:])
     channel = args.get('label', [None])[0]
     if channel and channel != '':
-        play_stream(channel, 800)
+        play_stream(channel,800)
     else:
         list_channels()
