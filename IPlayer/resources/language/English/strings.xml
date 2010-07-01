@@ -9,7 +9,9 @@
 	<string id="30020">Download thumbnails</string>
 	<string id="30021">Delete thumbnails older than X days [0=disabled]</string>
 	<string id="30025">Subtitles</string>
-	<string id="30050">Socket timeout value (seconds) [0=disabled]</string>
+	<string id="30050">Socket timeout (seconds) [0=disabled]</string>
 	<string id="30060">Display dialog when Play pressed</string>
 	<string id="30070">Enhanced Debug output</string>
+	<string id="30080">Stream source preference</string>
+	<string id="30090">Stream timeout (seconds)</string>
 </strings>
