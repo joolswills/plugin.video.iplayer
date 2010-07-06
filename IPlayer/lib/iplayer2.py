@@ -11,7 +11,7 @@ from pprint import pformat
 from socket import timeout as SocketTimeoutError
 
 # XBMC libs
-import xbmcgui, xbmcplugin
+import xbmcgui
 
 # external libs
 try:
@@ -20,6 +20,7 @@ except:
     pass
 import listparser
 import stations
+import addoncompat
 try:
     # python >= 2.5
     from xml.etree import ElementTree as ET
@@ -164,7 +165,7 @@ def parse_entry_id(entry_id):
 def get_provider():
     provider = ""
     try:
-        provider_id = xbmcplugin.getSetting('provider')
+        provider_id = addoncompat.get_setting('provider')
     except:
         provider_id = 0
 
@@ -300,7 +301,7 @@ class media(object):
             if application == None:
                 application = 'ondemand'
 
-            timeout = xbmcplugin.getSetting('stream_timeout')
+            timeout = addoncompat.get_setting('stream_timeout')
             
             swfplayer = 'http://www.bbc.co.uk/emp/10player.swf'       
 
@@ -317,8 +318,8 @@ class media(object):
 
         else:
             logging.error("connectionkind %s unknown", self.connection_kind)
-        
-        if self.connection_protocol and xbmcplugin.getSetting('enhanceddebug') == 'true':
+
+        if self.connection_protocol and addoncompat.get_setting('enhanceddebug') == 'true':
             logging.info("protocol: %s - kind: %s - type: %s - encoding: %s, - bitrate: %s" % 
                          (self.connection_protocol, self.connection_kind, self.mimetype, self.encoding, self.bitrate))
             logging.info("conn href: %s", self.connection_href)
