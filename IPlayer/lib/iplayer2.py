@@ -167,13 +167,30 @@ def get_provider():
     try:
         provider_id = addoncompat.get_setting('provider')
     except:
-        provider_id = 0
+        provider_id = '0'
 
     if   provider_id == '1': provider = 'akamai'
     elif provider_id == '2': provider = 'limelight'
 
     return provider
 
+def get_protocol():
+    protocol = ""
+    try:
+        protocol_id = addoncompat.get_setting('protocol')
+    except:
+        protocol_id = '0'
+
+    if   protocol_id == '0': protocol = 'rtmp'
+    elif protocol_id == '1': protocol = 'rtmpt'
+
+    return protocol
+
+def get_port():
+    port = 1935
+    protocol = get_protocol()
+    if protocol == 'rtmpt': port = '80'
+    return port
 
 class media(object):
     def __init__(self, item, media_node):
@@ -189,7 +206,6 @@ class media(object):
         self.PageURL   = None
         self.read_media_node(media_node)
 
-    
     @property
     def url(self):
         if self.connection_method == 'resolve':
@@ -302,17 +318,14 @@ class media(object):
                 application = 'ondemand'
 
             timeout = addoncompat.get_setting('stream_timeout')
-            
             swfplayer = 'http://www.bbc.co.uk/emp/10player.swf'       
+            params = dict(protocol = get_protocol(), port = get_port(), server = server, auth = auth, ident = identifier, app = application)
 
-            params = dict(server=server, auth=auth, ident=identifier, app=application)
-
-            # both akamai and limelight also support rtmpt (rtmp over http - port 80) but this has additional overhead so we don't use it. Might be a useful option for those behind firewalls though ?
             if self.connection_kind == 'akamai':
-                self.connection_href = "rtmp://%(server)s:1935/%(app)s?%(auth)s playpath=%(ident)s" % params
+                self.connection_href = "%(protocol)s://%(server)s:%(port)s/%(app)s?%(auth)s playpath=%(ident)s" % params
             elif self.connection_kind == 'limelight':
-                # note that librtmp has a small issue with constructing the tcurl here. we construct it ourselves for now.
-                self.connection_href = "rtmp://%(server)s:1935/ app=%(app)s?%(auth)s tcurl=rtmpt://%(server)s/%(app)s?%(auth)s playpath=%(ident)s" % params
+                # note that librtmp has a small issue with constructing the tcurl here. we construct it ourselves for now (fixed in later librtmp)
+                self.connection_href = "%(protocol)s://%(server)s:%(port)s/ app=%(app)s?%(auth)s tcurl=%(protocol)s://%(server)s:%(port)s/%(app)s?%(auth)s playpath=%(ident)s" % params
 
             self.connection_href += " swfurl=%s swfvfy=true timeout=%s" % (swfplayer, timeout)
 

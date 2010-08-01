@@ -4,7 +4,7 @@ import logging
 import xbmcplugin, xbmcgui, xbmc
 from datetime import date
 
-from iplayer2 import get_provider, httpget
+from iplayer2 import get_provider, httpget, get_protocol, get_port
 
 # it would be nice to scrape what's on now - at least when the items are first created.
 
@@ -103,13 +103,13 @@ def fetch_stream_info(streamchannel, bitrate, req_provider):
     except:
         application = 'live'
 
-    params = dict(server = server, app = application, ident = identifier, auth = auth)
+    params = dict(protocol = get_protocol(), port = get_port(), server = server, auth = auth, ident = identifier, app = application)
 
     if supplier == "akamai" or supplier == "limelight":
         if supplier == "akamai":
-            url = "rtmp://%(server)s:1935/%(app)s/?%(auth)s playpath=%(ident)s?%(auth)s" % params
+            url = "%(protocol)s://%(server)s:%(port)s/%(app)s/?%(auth)s playpath=%(ident)s?%(auth)s" % params
         if supplier == "limelight":
-            url = "rtmp://%(server)s:1935/ app=%(app)s?%(auth)s tcurl=rtmp://%(server)s:1935/%(app)s?%(auth)s playpath=%(ident)s" % params
+            url = "%(protocol)s://%(server)s:%(port)s/ app=%(app)s?%(auth)s tcurl=%(protocol)s://%(server)s:%(port)s/%(app)s?%(auth)s playpath=%(ident)s" % params
         url += " swfurl=http://www.bbc.co.uk/emp/10player.swf swfvfy=1 live=1"
 
     return (url)

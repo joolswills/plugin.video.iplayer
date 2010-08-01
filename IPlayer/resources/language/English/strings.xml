@@ -14,4 +14,5 @@
 	<string id="30070">Enhanced Debug output</string>
 	<string id="30080">Stream source preference</string>
 	<string id="30090">Stream timeout (seconds)</string>
+	<string id="30100">Protocol (try rtmpt if firewalled)</string>
 </strings>
