@@ -38,38 +38,28 @@ logging.basicConfig(
 
 DIR_USERDATA   = xbmc.translatePath(os.path.join( "T:"+os.sep,"plugin_data", __scriptname__ ))    
 HTTP_CACHE_DIR = os.path.join(DIR_USERDATA, 'iplayer_http_cache')
-CACHE_DIR      = os.path.join(DIR_USERDATA, 'iplayer_cache')
 SUBTITLES_DIR  = os.path.join(DIR_USERDATA, 'Subtitles')
 THUMB_DIR      = os.path.join(os.getcwd(), 'resources', 'media')
-TMP_THUMB      = os.path.join(CACHE_DIR, 'tmp_thumb')
 SEARCH_FILE    = os.path.join(DIR_USERDATA, 'search.txt')
+VERSION_FILE   = os.path.join(DIR_USERDATA, 'version.txt')
 
 PLUGIN_HANDLE = int(sys.argv[1])
 
-logging.info("IPlayer: version: %s" % __version__)
-logging.info("IPlayer: Subtitles dir: %s" % SUBTITLES_DIR)
-
-if not os.path.isdir(CACHE_DIR):
-    d = xbmcgui.Dialog()
-    d.ok('Welcome to BBC IPlayer plugin.', 'Please be aware this plugin only works in the UK.', 'The IPlayer service checks to ensure UK IP addresses.')
-    d.ok('Note about streams', 'This plugin will only work on XBMC versions including libRTMP support', 'Refer to the plugin website for more details.' )
-
-for d in [CACHE_DIR, HTTP_CACHE_DIR, SUBTITLES_DIR]:
-    if not os.path.isdir(d):
-        try:
-            logging.info("%s doesn't exist, creating" % d)
-            os.makedirs(d)
-        except IOError, e:
-            logging.info("Couldn't create %s, %s" % (d, str(e)))
-            raise
-
-if not os.path.isfile(SEARCH_FILE):
+def file_read(filename):
+    text = ''
+    fh = open(filename, "r")
     try:
-        open(SEARCH_FILE, 'wb').close() 
-    except IOError, e:
-        logging.error("Couldn't create %s, %s" % (d, str(e)))
-        raise
+        text = fh.read()
+    finally:
+        fh.close()
+    return text
 
+def file_write(filename, data):
+    fh = open(filename, "w")
+    try:
+        fh.write(data)
+    finally:
+        fh.close()
 
 def sort_by_attr(seq, attr):
     intermed = map(None, map(getattr, seq, (attr,)*len(seq)), xrange(len(seq)), seq)
@@ -1045,10 +1035,39 @@ def listen_live(label='', url=None):
 
     player.play(play)
 
-    
+
+logging.info("IPlayer: version: %s" % __version__)
+logging.info("IPlayer: Subtitles dir: %s" % SUBTITLES_DIR)
+
+old_version = ''
+if os.path.isfile(VERSION_FILE):
+    old_version = file_read(VERSION_FILE)
+
+if old_version != __version__:
+    file_write(VERSION_FILE, __version__)
+    d = xbmcgui.Dialog()
+    d.ok('Welcome to BBC IPlayer plugin.', 'Please be aware this plugin only works in the UK.', 'The IPlayer service checks to ensure UK IP addresses.')
+    d.ok('Note about streams', 'This plugin will only work on XBMC versions that', 'include libRTMP support. See the plugin website', 'for more information.' )
+
+for d in [HTTP_CACHE_DIR, SUBTITLES_DIR]:
+    if not os.path.isdir(d):
+        try:
+            logging.info("%s doesn't exist, creating" % d)
+            os.makedirs(d)
+        except IOError, e:
+            logging.info("Couldn't create %s, %s" % (d, str(e)))
+            raise
+
+if not os.path.isfile(SEARCH_FILE):
+    try:
+        open(SEARCH_FILE, 'wb').close() 
+    except IOError, e:
+        logging.error("Couldn't create %s, %s" % (d, str(e)))
+    raise
+
 if __name__ == "__main__":
     try:
-    
+
         # setup and check script environment 
         iplayer.set_http_cache(HTTP_CACHE_DIR)
     
@@ -1118,7 +1137,6 @@ if __name__ == "__main__":
                 feed = feed or iplayer.feed(tvradio or 'tv', category=category, radio=radio)
                 channels=feed.channels_feed()
             list_feed_listings(feed, listing, category=category, series=series, channels=channels)
-        
 
     except:
         # Make sure the text from any script errors are logged
