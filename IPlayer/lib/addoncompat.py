@@ -5,20 +5,14 @@ import xbmc, xbmcplugin
 
 try:
     import xbmcaddon
+    __has_addons__ = True
 except:
+    __has_addons__ = False
     pass
 
-def has_addons():
-  xbmc_os = get_os()
-  # no addons on xbox4xbox as of yet
-  if os.environ.get('OS') == 'xbox':
-      return False
-  # preliminary test number for now. will bump this to the revision of the stable
-  # xbmc release when it is out
-  elif get_revision() >= 28276:
-      return True
-  else:
-      return False
+__plugin_handle__ = int(sys.argv[1])
+if __has_addons__:
+    __addon__ = xbmcaddon.Addon(os.path.basename(os.getcwd()))
 
 def get_os():
     try: xbmc_os = os.environ.get('OS')
@@ -52,9 +46,4 @@ def open_settings():
         __addon__.openSettings() 
     else:
         xbmcplugin.openSettings(sys.argv[ 0 ])
-
-__plugin_handle__ = int(sys.argv[1])
-__has_addons__ = has_addons()
-if __has_addons__:
-    __addon__ = xbmcaddon.Addon(os.path.basename(os.getcwd()))
 
