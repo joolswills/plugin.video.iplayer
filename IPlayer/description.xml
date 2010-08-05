@@ -23,7 +23,7 @@
     <title>IPlayer</title>
 
     <!-- (required) Major.minor.build -->
-    <version>2.1</version>
+    <version>2.2</version>
 
     <!-- (required) author name & email.  at least one author name is required -->
     <authors>
@@ -43,7 +43,7 @@
     </tags>
 
     <!-- minimum revision of xbmc your addon will run on.  Leave blank all revisions-->
-    <minrevision>r21819</minrevision>
+    <minrevision>r30366</minrevision>
 
     <!--platforms compatible with your addon.   xbox, osx, windows, linux, or all -->
     <platforms>

@@ -14,7 +14,7 @@ import xbmc, xbmcgui, xbmcplugin
 __scriptname__ = "IPlayer"
 __author__     = 'Dink [dink12345@googlemail.com] / BuZz [buzz@exotica.org.uk]'
 __svn_url__    = "http://xbmc-iplayerv2.googlecode.com/svn/trunk/IPlayer"
-__version__    = "2.1"
+__version__    = "2.2"
 
 sys.path.insert(0, os.path.join(os.getcwd(), 'lib'))
 
@@ -44,6 +44,17 @@ SEARCH_FILE    = os.path.join(DIR_USERDATA, 'search.txt')
 VERSION_FILE   = os.path.join(DIR_USERDATA, 'version.txt')
 
 PLUGIN_HANDLE = int(sys.argv[1])
+
+def is_old_xbmc():
+   xbmc_rev = addoncompat.get_revision()
+   return ( addoncompat.get_os() == "xbox" and xbmc_rev < 30366 ) or xbmc_rev < 31519
+
+def show_version_warning():
+    # on xbmc mainline we need a new version for librtmp support (using 31519 for now until dharma) is released)
+    # on xbmc4xbox we need at least revision 30366
+    xbmc_rev = addoncompat.get_revision()
+    d = xbmcgui.Dialog()
+    d.ok('XBMC version warning', 'Your XBMC version (r%s) may be too old to use' % xbmc_rev, 'this plugin fully. Please upgrade to a new version', 'if you have any trouble playing streams')
 
 def file_read(filename):
     text = ''
@@ -253,15 +264,19 @@ def list_tvradio():
     folders.append(('TV', 'tv', make_url(tvradio='tv')))
     folders.append(('Radio', 'radio', make_url(tvradio='radio')))
     folders.append(('Settings', 'settings', make_url(tvradio='Settings')))
-        
+    if is_old_xbmc():
+        folders.append(('Old XBMC Warning', 'old_xbmc', make_url(tvradio='old_xbmc')))
+
     for i, (label, tn, url) in enumerate(folders):
         listitem = xbmcgui.ListItem(label=label)
         listitem.setIconImage('defaultFolder.png')
-        listitem.setThumbnailImage(get_plugin_thumbnail(tn))
+        thumbnail = get_plugin_thumbnail(tn)
+        if thumbnail:
+            listitem.setThumbnailImage(get_plugin_thumbnail(tn))
         folder=True
-        if label == 'Settings':
+        if label == 'Settings' or label == 'Old XBMC Warning':
             # fix for reported bug where loading dialog would overlay settings dialog 
-            folder = False        
+            folder = False
         ok = xbmcplugin.addDirectoryItem(
             handle=PLUGIN_HANDLE, 
             url=url,
@@ -773,13 +788,9 @@ def watch(feed, pid, showDialog):
     if showDialog:
         pDialog = xbmcgui.DialogProgress()
         times.append(['xbmcgui.DialogProgress()',time.clock()])
-        pDialog.update(0)
-        times.append(['pDialog.update(0)',time.clock()])
         pDialog.create('IPlayer', 'Loading catchup stream info')
         times.append(['pDialog.create',time.clock()])
-        xbmc.sleep(50)
-        times.append(['xbmc.sleep(50)',time.clock()])
-    
+
     subtitles_file = None
     item      = get_item(pid)
     times.append(['get_item',time.clock()])
@@ -849,7 +860,6 @@ def watch(feed, pid, showDialog):
             i += 1
             logging.info('Steam %s not available, falling back to flash %s stream' % (pref, streams[i]) )
             pref = streams[i]
-            print pref
             media = item.get_media_for(pref)
 
         times.append(['media 1',time.clock()])
@@ -1042,12 +1052,14 @@ logging.info("IPlayer: Subtitles dir: %s" % SUBTITLES_DIR)
 old_version = ''
 if os.path.isfile(VERSION_FILE):
     old_version = file_read(VERSION_FILE)
-
+    
 if old_version != __version__:
     file_write(VERSION_FILE, __version__)
     d = xbmcgui.Dialog()
-    d.ok('Welcome to BBC IPlayer plugin.', 'Please be aware this plugin only works in the UK.', 'The IPlayer service checks to ensure UK IP addresses.')
-    d.ok('Note about streams', 'This plugin will only work on XBMC versions that', 'include libRTMP support. See the plugin website', 'for more information.' )
+    d.ok('Welcome to BBC IPlayer plugin', 'Please be aware this plugin only works in the UK.', 'The IPlayer service checks to ensure UK IP addresses.')
+
+    if is_old_xbmc():
+         show_version_warning()
 
 for d in [HTTP_CACHE_DIR, SUBTITLES_DIR]:
     if not os.path.isdir(d):
@@ -1108,6 +1120,8 @@ if __name__ == "__main__":
                 list_tvradio()
             elif tvradio == 'Settings':
                 addoncompat.open_settings()
+            elif tvradio == 'old_xbmc':
+                show_version_warning()
             elif tvradio == 'radio' and radio == None:
                 list_radio_types()
             elif tvradio:
