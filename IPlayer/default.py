@@ -14,7 +14,7 @@ import xbmc, xbmcgui, xbmcplugin
 __scriptname__ = "IPlayer"
 __author__     = 'Dink [dink12345@googlemail.com] / BuZz [buzz@exotica.org.uk]'
 __svn_url__    = "http://xbmc-iplayerv2.googlecode.com/svn/trunk/IPlayer"
-__version__    = "2.2"
+__version__    = "2.3"
 
 sys.path.insert(0, os.path.join(os.getcwd(), 'lib'))
 
@@ -47,7 +47,7 @@ PLUGIN_HANDLE = int(sys.argv[1])
 
 def is_old_xbmc():
    xbmc_rev = addoncompat.get_revision()
-   return ( addoncompat.get_os() == "xbox" and xbmc_rev < 30366 ) or xbmc_rev < 31519
+   return ( addoncompat.get_os() != "xbox" and xbmc_rev < 31519) or xbmc_rev < 30366 
 
 def show_version_warning():
     # on xbmc mainline we need a new version for librtmp support (using 31519 for now until dharma) is released)
@@ -66,7 +66,7 @@ def file_read(filename):
     return text
 
 def file_write(filename, data):
-    fh = open(filename, "w")
+    fh = open(filename, "wb")
     try:
         fh.write(data)
     finally:
@@ -1050,18 +1050,10 @@ logging.info("IPlayer: version: %s" % __version__)
 logging.info("IPlayer: Subtitles dir: %s" % SUBTITLES_DIR)
 
 old_version = ''
-if os.path.isfile(VERSION_FILE):
-    old_version = file_read(VERSION_FILE)
-    
-if old_version != __version__:
-    file_write(VERSION_FILE, __version__)
-    d = xbmcgui.Dialog()
-    d.ok('Welcome to BBC IPlayer plugin', 'Please be aware this plugin only works in the UK.', 'The IPlayer service checks to ensure UK IP addresses.')
 
-    if is_old_xbmc():
-         show_version_warning()
+DIR_USERDATA
 
-for d in [HTTP_CACHE_DIR, SUBTITLES_DIR]:
+for d in [DIR_USERDATA, HTTP_CACHE_DIR, SUBTITLES_DIR]:
     if not os.path.isdir(d):
         try:
             logging.info("%s doesn't exist, creating" % d)
@@ -1075,7 +1067,20 @@ if not os.path.isfile(SEARCH_FILE):
         open(SEARCH_FILE, 'wb').close() 
     except IOError, e:
         logging.error("Couldn't create %s, %s" % (d, str(e)))
-    raise
+        raise
+
+if os.path.isfile(VERSION_FILE):
+    old_version = file_read(VERSION_FILE)
+    
+if old_version != __version__:
+    file_write(VERSION_FILE, __version__)
+    d = xbmcgui.Dialog()
+    d.ok('Welcome to BBC IPlayer plugin', 'Please be aware this plugin only works in the UK.', 'The IPlayer service checks to ensure UK IP addresses.')
+
+    if is_old_xbmc():
+         show_version_warning()
+
+
 
 if __name__ == "__main__":
     try:
