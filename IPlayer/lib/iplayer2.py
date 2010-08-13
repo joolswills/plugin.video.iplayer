@@ -166,7 +166,7 @@ def get_provider():
     try:
         provider_id = addoncompat.get_setting('provider')
     except:
-        provider_id = '0'
+        pass
 
     if   provider_id == '1': provider = 'akamai'
     elif provider_id == '2': provider = 'limelight'
@@ -174,14 +174,13 @@ def get_provider():
     return provider
 
 def get_protocol():
-    protocol = ""
+    protocol = "rtmp"
     try:
         protocol_id = addoncompat.get_setting('protocol')
     except:
-        protocol_id = '0'
+        pass
 
-    if   protocol_id == '0': protocol = 'rtmp'
-    elif protocol_id == '1': protocol = 'rtmpt'
+    if   protocol_id == '1': protocol = 'rtmpt'
 
     return protocol
 
