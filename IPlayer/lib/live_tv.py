@@ -3,6 +3,7 @@ import xml.dom.minidom as dom
 import logging
 import xbmcplugin, xbmcgui, xbmc
 from datetime import date
+from operator import itemgetter
 
 from iplayer2 import get_provider, httpget, get_protocol, get_port
 
@@ -10,18 +11,21 @@ from iplayer2 import get_provider, httpget, get_protocol, get_port
 
 THUMB_DIR      = os.path.join(os.getcwd(), 'resources', 'media')
 
-live_tv_channels = [
-                    ('bbc_one_london', 'BBC One', 'bbc_one.png'),
-                    ('bbc_two_england','BBC Two', 'bbc_two.png'),
-                    ('bbc_three','BBC Three', 'bbc_three.png'),
-                    ('bbc_four','BBC Four', 'bbc_four.png'),
-                    ('cbbc','CBBC', 'cbbc.png'),
-                    ('cbeebies','Cbeebies', 'cbeebies.png'),
-                    ('bbc_news24','BBC News', 'bbc_news24.png'),
-                    ('bbc_parliament','BBC Parliament', 'bbc_parliament.png'),
-                    ('bbc_alba','BBC ALBA', 'bbc_alba.png'),
-                    ('bbc_redbutton','BBC Red Button', 'bbc_one.png')
-                    ]
+# note that cbbc and cbeebies use bbc three/four whilst they are offline
+# channel id : order, stream id, display name, logo
+# note: some channel ids used in www urls are different from the stream urls
+live_tv_channels = {
+    'bbc_one_london' : (1, 'bbc_one_live', 'BBC One', 'bbc_one.png'),
+    'bbc_two_england': (2, 'bbc_two_live', 'BBC Two', 'bbc_two.png'),
+    'bbc_three' : (3, 'bbc_three_live', 'BBC Three', 'bbc_three.png'),
+    'bbc_four' : (4, 'bbc_four_live', 'BBC Four', 'bbc_four.png'),
+    'cbbc' : (5, 'bbc_three_live', 'CBBC', 'cbbc.png'),
+    'cbeebies' : (6, 'bbc_four_live', 'Cbeebies', 'cbeebies.png'),
+    'bbc_news24' : (7, 'journalism_bbc_news_channel', 'BBC News', 'bbc_news24.png'),
+    'bbc_parliament' : (8, 'bbc_parliament_live', 'BBC Parliament', 'bbc_parliament.png'),
+    'bbc_alba' : (9, 'bbc_alba_live', 'BBC ALBA', 'bbc_alba.png'),
+    'bbc_redbutton' : (10, 'bbc_redbutton_live', 'BBC Red Button', 'bbc_one.png')
+    }
 
 def parseXML(url):
     xml = httpget(url)
@@ -29,60 +33,22 @@ def parseXML(url):
     root = doc.documentElement
     return root
 
-def fetch_stream_info_old(channel):
-    # read the simulcast xml
-    cxml = 'http://www.bbc.co.uk/emp/simulcast/' + channel + '.xml'
-    root = parseXML(cxml)
-    surl = ''
-    mbitrate = 0
-
-    for media in root.getElementsByTagName( "media" ):
-        conn  = media.getElementsByTagName( "connection" )[0]
-        simulcast   = conn.attributes['identifier'].nodeValue
-        server      = conn.attributes['server'].nodeValue
-        kind        = conn.attributes['kind'].nodeValue
-        application = conn.attributes['application'].nodeValue
-        
-        surl = 'http://www.bbc.co.uk/mediaselector/4/gtis/?server=%s&identifier=%s&kind=%s&application=%s&cb=62605' % (server , simulcast, kind, application)        
-    
-    # read the media selector xml
-    root = parseXML(surl)
-    token  = root.getElementsByTagName( "token" )[0].firstChild.nodeValue
-    kind   = root.getElementsByTagName( "kind" )[0].firstChild.nodeValue
-    server = root.getElementsByTagName( "server" )[0].firstChild.nodeValue
-    identifier  = root.getElementsByTagName( "identifier" )[0].firstChild.nodeValue
-    application = root.getElementsByTagName( "application" )[0].firstChild.nodeValue
-    
-    print 'token: ' + token, 'kind: ' + kind, 'server: ' + server, 'identifier: ' + identifier, 'application: ' + application
-    url = "rtmp://%s:1935/%s/%s?auth=%s&aifp=xxxxxx" % (server, application, identifier, token)
-    playpath = "%s?auth=%s&aifp=xxxxxx" % (identifier, token)
-    url = "%s playpath=%s live=1" % (url, playpath)
-    return (url)
-
-def fetch_stream_info(streamchannel, bitrate, req_provider):
-    # bbc seem to be changing the XML format - force new style
-    if streamchannel=='bbc_one_london'  : streamchannel='bbc_one'
-    if streamchannel=='bbc_two_england' : streamchannel='bbc_two'
-    if streamchannel=='cbbc' : streamchannel='bbc_three'
-    if streamchannel=='cbeebies' : streamchannel='bbc_four'
-
-    identifier = streamchannel + '_live_rtmp'
-    
-    # red button doesn't have an _rtmp page (and therefore no akamai rtmp stream either) 
-    if streamchannel == 'bbc_redbutton' :
-        identifier = 'bbc_redbutton_live'
-        req_provider = 'limelight'
-
-    # experimental - cb seems to increase - but by how much? assume 1 per day for now
-    # seems to be more random than that. However changing the number seems beneficial atm
-    cbadd = date.today() - date(2010,6,17)
-    cb = str(26512 + cbadd.days)
+def fetch_stream_info(channel, bitrate, req_provider):
+    (sort, stream_id, label, thumb) = live_tv_channels[channel]
 
     if bitrate == 480: quality = 'iplayer_streaming_h264_flv_lo_live'
     elif bitrate == 800: quality = 'iplayer_streaming_h264_flv_live'
     elif bitrate >= 1500: quality = 'iplayer_streaming_h264_flv_high_live'
-    
-    surl = 'http://www.bbc.co.uk/mediaselector/4/mtis/stream/%s/%s/%s?cb=%s' % (identifier, quality, req_provider, cb)
+
+    # bbc news 24 is only available as 800kbit maximum currently
+    if channel == "bbc_news24":
+        if bitrate < 800 : quality = 'journalism_uk_stream_h264_flv_lo_live'
+        else : quality = 'journalism_uk_stream_h264_flv_med_live'
+
+    if channel == "bbc_parliament" or channel == "bbc_alba":
+        quality = 'iplayer_streaming_vp6_flv_lo_live'
+
+    surl = 'http://www.bbc.co.uk/mediaselector/4/mtis/stream/%s/%s/%s' % (stream_id, quality, req_provider)
     logging.info("getting media information from %s" % surl)
     root = parseXML(surl)
     mbitrate = 0
@@ -121,26 +87,21 @@ def play_stream(channel, bitrate, showDialog):
     if channel == 'bbc_three' or channel == 'bbc_four' or channel == 'cbeebies' or channel == 'cbbc':
         surl = 'http://www.bbc.co.uk/iplayer/tv/'+channel
         cstr = httpget(surl)
-        off_air_message = re.compile('<p class="off-air">(.*?)</p>').findall(cstr)
+        off_air_message = re.compile('<h2 class="off-air">.+?</span>(.+?)</a></h2>').findall(cstr)
         if off_air_message:
             pDialog = xbmcgui.Dialog()
-            pDialog.ok('IPlayer', off_air_message[0])
+            pDialog.ok('IPlayer', 'Channel is currently Off Air')
             return
 
     provider = get_provider()
     
-    if channel=='bbc_parliament' or channel=='bbc_news24' or channel=='bbc_alba':
-        url = fetch_stream_info_old(channel)
-    else:
-        # check for red button usage
-        if channel == 'bbc_redbutton':
-            pDialog = xbmcgui.Dialog()
-            if pDialog.yesno("BBC Red Button Live Stream", "This will only work when the stream is broadcasting.", "If it is not on, xbmc will retry indefinately (crash)", "Do you want to try anyway?"):
-                url = fetch_stream_info(channel, bitrate, provider)
-            else:
-                return
-        else:
-            url = fetch_stream_info(channel, bitrate, provider)
+    # check for red button usage
+    if channel == 'bbc_redbutton':
+        pDialog = xbmcgui.Dialog()
+        if not pDialog.yesno("BBC Red Button Live Stream", "This will only work when the stream is broadcasting.", "If it is not on, xbmc may retry indefinately (crash)", "Do you want to try anyway?"):
+            return
+
+    url = fetch_stream_info(channel, bitrate, provider)
 
     if url == "":
         Dialog = xbmcgui.Dialog()
@@ -153,12 +114,11 @@ def play_stream(channel, bitrate, showDialog):
 
     if showDialog: pDialog.update(50, 'Starting Stream')
     # build listitem to display whilst playing
-    for j, (id, label, thumb) in enumerate(live_tv_channels):
-        if id == channel:
-            listitem = xbmcgui.ListItem(label=label+' - Live')
-            listitem.setIconImage('defaultVideo.png')
-            listitem.setThumbnailImage(os.path.join(THUMB_DIR, thumb))
-                   
+    (sort, stream_id, label, thumb) = live_tv_channels[channel]
+    listitem = xbmcgui.ListItem(label = label + ' - Live')
+    listitem.setIconImage('defaultVideo.png')
+    listitem.setThumbnailImage(os.path.join(THUMB_DIR, thumb))
+
     play = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
     play.clear()
     play.add(url,listitem)
@@ -176,10 +136,11 @@ def make_url(channel=None):
 
 def list_channels():
     handle = int(sys.argv[1])
-    xbmcplugin.addSortMethod(handle=handle, sortMethod=xbmcplugin.SORT_METHOD_NONE )   
-     
-    for j, (id, label, thumb) in enumerate(live_tv_channels):
-        url = make_url(channel=id)
+    xbmcplugin.addSortMethod(handle=handle, sortMethod=xbmcplugin.SORT_METHOD_NONE )
+
+    channels = sorted(live_tv_channels.items(), key=itemgetter(1))
+    for id, (sort, stream_id, label, thumb) in channels:
+        url = make_url(channel = id)
         listitem = xbmcgui.ListItem(label=label)
         listitem.setIconImage('defaultVideo.png')
         listitem.setThumbnailImage(os.path.join(THUMB_DIR, thumb))        
