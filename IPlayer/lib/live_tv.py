@@ -5,11 +5,9 @@ import xbmcplugin, xbmcgui, xbmc
 from datetime import date
 from operator import itemgetter
 
-from iplayer2 import get_provider, httpget, get_protocol, get_port
+from iplayer2 import get_provider, httpget, get_protocol, get_port, get_thumb_dir
 
 # it would be nice to scrape what's on now - at least when the items are first created.
-
-THUMB_DIR      = os.path.join(os.getcwd(), 'resources', 'media')
 
 # note that cbbc and cbeebies use bbc three/four whilst they are offline
 # channel id : order, stream id, display name, logo
@@ -117,7 +115,7 @@ def play_stream(channel, bitrate, showDialog):
     (sort, stream_id, label, thumb) = live_tv_channels[channel]
     listitem = xbmcgui.ListItem(label = label + ' - Live')
     listitem.setIconImage('defaultVideo.png')
-    listitem.setThumbnailImage(os.path.join(THUMB_DIR, thumb))
+    listitem.setThumbnailImage(os.path.join(get_thumb_dir(), thumb))
 
     play = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
     play.clear()
@@ -143,7 +141,7 @@ def list_channels():
         url = make_url(channel = id)
         listitem = xbmcgui.ListItem(label=label)
         listitem.setIconImage('defaultVideo.png')
-        listitem.setThumbnailImage(os.path.join(THUMB_DIR, thumb))        
+        listitem.setThumbnailImage(os.path.join(get_thumb_dir(), thumb))        
         ok = xbmcplugin.addDirectoryItem(
             handle = handle, 
             url = url,

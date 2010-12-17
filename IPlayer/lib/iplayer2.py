@@ -28,8 +28,6 @@ except:
     # python 2.4 has to use the plugin's version of elementtree
     from elementtree import ElementTree as ET
 
-IMG_DIR = os.path.join(os.getcwd(), 'resources', 'media')
-
 #print "iplayer2 logging to stdout"
 logging.basicConfig(
     stream=sys.stdout,
@@ -41,7 +39,6 @@ def any(iterable):
          if element:
              return True
      return False
-
 
 # http://colinm.org/blog/on-demand-loading-of-flickr-photo-metadata
 # returns immediately for all previously-called functions
@@ -189,6 +186,12 @@ def get_port():
     protocol = get_protocol()
     if protocol == 'rtmpt': port = 80
     return port
+
+def get_thumb_dir():
+    thumb_dir = os.path.join(os.getcwd(), 'resources', 'media')
+    if addoncompat.get_os() == "xbox":
+        thumb_dir = os.path.join(thumb_dir, 'xbox')
+    return thumb_dir
 
 class media(object):
     def __init__(self, item, media_node):
@@ -550,7 +553,7 @@ class programme(object):
         elif size in ['150x84', '150x', 'x84', 'smallest']:
             return "http://www.bbc.co.uk/iplayer/images/episode/%s_150_84.jpg" % (self.pid)
         else:
-            return os.path.join(IMG_DIR, '%s.png' % tvradio)
+            return os.path.join(get_thumb_dir(), '%s.png' % tvradio)
        
 
     def get_url(self):
@@ -649,7 +652,7 @@ class programme_simple(object):
         elif size in ['150x84', '150x', 'x84', 'smallest']:
             return "http://www.bbc.co.uk/iplayer/images/episode/%s_150_84.jpg" % (self.pid)
         else:
-            return os.path.join(IMG_DIR, '%s.png' % tvradio)
+            return os.path.join(get_thumb_dir(), '%s.png' % tvradio)
 
 
     def get_url(self):

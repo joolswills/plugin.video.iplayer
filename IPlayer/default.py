@@ -39,7 +39,6 @@ logging.basicConfig(
 DIR_USERDATA   = xbmc.translatePath(os.path.join( "T:"+os.sep,"plugin_data", __scriptname__ ))    
 HTTP_CACHE_DIR = os.path.join(DIR_USERDATA, 'iplayer_http_cache')
 SUBTITLES_DIR  = os.path.join(DIR_USERDATA, 'Subtitles')
-THUMB_DIR      = os.path.join(os.getcwd(), 'resources', 'media')
 SEARCH_FILE    = os.path.join(DIR_USERDATA, 'search.txt')
 VERSION_FILE   = os.path.join(DIR_USERDATA, 'version.txt')
 
@@ -81,10 +80,10 @@ def sort_by_attr(seq, attr):
 def get_plugin_thumbnail(image):
 
     # support user supplied .png files
-    userpng = os.path.join(THUMB_DIR, xbmc.getSkinDir(), image + '.png')
+    userpng = os.path.join(iplayer.get_thumb_dir(), xbmc.getSkinDir(), image + '.png')
     if os.path.isfile(userpng):
         return userpng
-    userpng = os.path.join(THUMB_DIR, image + '.png')
+    userpng = os.path.join(iplayer.get_thumb_dir(), image + '.png')
     if os.path.isfile(userpng):
         return userpng
     
@@ -103,7 +102,7 @@ def get_feed_thumbnail(feed):
     if iplayer.stations.channels_logos.has_key(feed.channel):
         url = iplayer.stations.channels_logos[feed.channel]
         if url == None:
-            url = os.path.join(THUMB_DIR, 'bbc_local_radio.png')
+            url = os.path.join(iplayer.get_thumb_dir(), 'bbc_local_radio.png')
         return url
         
     # national TV and Radio stations have easy to find online logos
