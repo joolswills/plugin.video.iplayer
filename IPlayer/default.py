@@ -134,12 +134,13 @@ def read_url():
     label        = args.get('label', [None])[0]
     deletesearch = args.get('deletesearch', [None])[0]
     radio        = args.get('radio', [None])[0]
-    
+
     feed = None
     if feed_channel:
         feed = iplayer.feed('auto', channel=feed_channel, atoz=feed_atoz, radio=radio)
     elif feed_atoz:
         feed = iplayer.feed(tvradio or 'auto', atoz=feed_atoz, radio=radio)
+
     return (feed, listing, pid, tvradio, category, series, url, label, deletesearch, radio)
     
 def list_feeds(feeds, tvradio='tv', radio=None):
@@ -296,7 +297,6 @@ def list_radio_types():
         )
     
     xbmcplugin.endOfDirectory(handle=PLUGIN_HANDLE, succeeded=True)
-    
 
 def get_setting_videostream(feed=None,default='h264 800'):  
 
@@ -317,28 +317,28 @@ def get_setting_videostream(feed=None,default='h264 800'):
     videostream = addoncompat.get_setting('video_stream')
     # Auto|H.264 (480kb)|H.264 (800kb)|H.264 (1500kb)|H.264 (3200kb)
     if videostream:
-        if videostream == 'H.264 (480kb)' or videostream == '1':
+        if videostream == '1':
             return 'h264 480'
-        elif videostream == 'H.264 (800kb)' or videostream == '2':
+        elif videostream == '2':
             return 'h264 800'        
-        elif videostream == 'H.264 (1500kb)' or videostream == '3':
+        elif videostream == '3':
             return 'h264 1500'        
-        elif videostream == 'H.264 (3200kb)' or videostream == '4':
+        elif videostream == '4':
             return 'h264 3200'
     
     return default
 
 def get_setting_audiostream(default='wma'):
-    videostream = addoncompat.get_setting('audio_stream')
+    audiostream = addoncompat.get_setting('audio_stream')
     #Auto|MP3|Real|AAC|WMA
-    if videostream:
-        if videostream == 'MP3' or videostream == '1':
+    if audiostream:
+        if audiostream == '1': 
             return 'mp3'
-        elif videostream == 'Real' or videostream == '2':
+        elif audiostream == '2':
             return 'real'
-        elif videostream == 'AAC' or videostream == '3':
+        elif audiostream == '3':
             return 'aac'        
-        elif videostream == 'WMA' or videostream == '4':
+        elif audiostream == '4':
             return 'wma'
     return default
 
@@ -347,15 +347,15 @@ def get_setting_thumbnail_size():
     size = addoncompat.get_setting('thumbnail_size')
     #Biggest|Large|Small|Smallest|None
     if size:
-        if size == 'Biggest' or size == '0':
+        if size == '0':
             return 'biggest'
-        elif size == 'Large' or size == '1':
+        elif size == '1':
             return 'large'
-        elif size == 'Small' or size == '2':
+        elif size == '2':
             return 'small'
-        elif size =='Smallest' or size == '3':
+        elif size == '3':
             return 'smallest'
-        elif size == 'None' or size == '4':
+        elif size == '4':
             return 'none'
     # default
     return 'large'
@@ -1092,9 +1092,7 @@ if __name__ == "__main__":
                 list_tvradio()
             elif tvradio == 'Settings':
                 addoncompat.open_settings()
-            elif tvradio == 'old_xbmc':
-                show_version_warning()
-            elif tvradio == 'radio' and radio == None:
+            elif (tvradio == 'radio' and radio == None):
                 list_radio_types()
             elif tvradio:
                 feed = iplayer.feed(tvradio, radio=radio).channels_feed()

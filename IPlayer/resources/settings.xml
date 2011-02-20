@@ -1,13 +1,30 @@
 <settings>
-<setting id="video_stream" label="30000" type="enum" values="Auto|H.264 (480Kb)|H.264 (800kb)|H.264 (1500kb)|H.264 (3200kb)" default="Auto"/>
-<setting id="audio_stream" label="30001" type="enum" values="Auto|MP3|Real|AAC|WMA" default="Auto"/>
-<setting id="provider" label="30080" type="enum" values="Any|Akamai|Limelight|Level3" default="Akamai" />
-<setting id="protocol" label="30100" type="enum" values="rtmp (port 1935)|rtmpt (port 80)" default="rtmp (port 1935)" />
-<setting id="progcount" label="30006" type="bool" default="true" />
-<setting id="thumbnail_size" label="30007" type="enum" values="Biggest|Large|Small|Smallest|None" default="Large"/>
-<setting id="subtitles_control" label="30025"  type="enum" values="None|Download and Play|Download to File" default="None" />
-<setting id="socket_timeout" label="30050" type="integer" default="5" />
-<setting id="stream_timeout" label="30090" type="integer" default="600" />
-<setting id="displaydialog" label="30060" type="bool" default="true" />
-<setting id="enhanceddebug" label="30070" type="bool" default="false" />
+  <!-- General -->
+  <category label="300100">
+    <setting id="progcount" label="30110" type="bool" default="true" />
+    <setting id="thumbnail_size" label="30120" type="enum" values="Biggest|Large|Small|Smallest|None" default="1" />
+    <setting id="subtitles_control" label="30130"  type="enum" values="None|Download and Play|Download to File" default="0" />
+    <setting id="start_section" label="30140" type="enum" values="Main Screen|TV|Radio" default="0" />
+  </category>
+  <!-- Streams -->
+  <category label="30200">
+    <setting id="video_stream" label="30210" type="enum" values="Auto|H.264 (480Kb)|H.264 (800kb)|H.264 (1500kb)|H.264 (3200kb)" default="0" />
+    <setting id="audio_stream" label="30220" type="enum" values="Auto|MP3|Real|AAC|WMA" default="0" />
+    <setting id="provider" label="30230" type="enum" values="Any|Akamai|Limelight|Level3" default="0" />
+    <setting id="protocol" label="30240" type="enum" values="rtmp (port 1935)|rtmpt (port 80)" default="r0" />
+  </category>
+  <!-- Proxy -->
+  <category label="30300">
+    <setting id="proxy_use" label="30310" type="bool" default="false" />
+    <setting id="proxy_server" label="30320" type="text" default="" />
+    <setting id="proxy_port" label="30330" type="number" default="" />
+  </category>
+  <!-- Advanced -->
+  <category label="30400">
+    <setting id="socket_timeout" label="30410" type="number" default="5" />
+    <setting id="stream_timeout" label="30420" type="number" default="180" />
+    <setting id="displaydialog" label="30430" type="bool" default="true" />
+    <setting id="enhanceddebug" label="30440" type="bool" default="false" />
+  </category>
+
 </settings>

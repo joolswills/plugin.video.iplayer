@@ -14,10 +14,6 @@ from socket import timeout as SocketTimeoutError
 import xbmcgui
 
 # external libs
-try:
-    import httplib2
-except:
-    pass
 import listparser
 import stations
 import addoncompat
@@ -27,6 +23,9 @@ try:
 except:
     # python 2.4 has to use the plugin's version of elementtree
     from elementtree import ElementTree as ET
+import httplib2
+sys.path.insert(0, os.path.join(os.getcwd(), 'lib', 'socksipy'))
+import socks
 
 #print "iplayer2 logging to stdout"
 logging.basicConfig(
@@ -66,7 +65,14 @@ self_closing_tags = ['alternate', 'mediator']
 
 http = None
 try:
-    http = httplib2.Http()
+    if addoncompat.get_setting('proxy_use') == 'true':
+
+        server = addoncompat.get_setting('proxy_server')
+        port = int(addoncompat.get_setting('proxy_port'))
+        logging.info("Using proxy %s port %s", server, port )
+        http = httplib2.Http(proxy_info = httplib2.ProxyInfo(socks.PROXY_TYPE_HTTP, server, port))
+    else:
+        http = httplib2.Http()
 except:
     logging.error('Failed to initialize httplib2 module')
 
@@ -119,9 +125,7 @@ def httpget(url):
         if http:
             resp, data = http.request(url, 'GET')
         else:
-            f = urllib.urlopen(url)
-            data = f.read()
-            f.close()
+            raise
         
         sec = time.clock() - start_time
         logging.info('URL Fetch took %2.2f sec for %s', sec, url)            
@@ -129,19 +133,18 @@ def httpget(url):
         return data
     except:
         traceback.print_exc(file=sys.stdout)
-        try:
-            # fallback to urllib to avoid a bug in httplib which often
-            # occurs during searches
-            f = urllib.urlopen(url)
-            data = f.read()
-            f.close()
-            return data
-        except:
-            #print "Response for status %s for %s" % (resp.status, data)
-            dialog = xbmcgui.Dialog()
-            dialog.ok('Network Error', 'Failed to fetch URL', url)
-            logging.error( 'Network Error. Failed to fetch URL %s' % url )
-            raise
+        # disabling this for now - want to know if it is still needed with current xbmc
+        #try:
+        #    # fallback to urllib to avoid a bug in httplib which often
+        #    # occurs during searches
+        #    f = urllib.urlopen(url)
+        #    data = f.read()
+        #    f.close()
+        #    return data
+        #except:
+        dialog = xbmcgui.Dialog()
+        dialog.ok('Network Error', 'Failed to fetch URL', url)
+        logging.error( 'Network Error. Failed to fetch URL %s' % url )
     
     return data
 
@@ -178,7 +181,7 @@ def get_protocol():
     except:
         pass
 
-    if   protocol_id == '1': protocol = 'rtmpt'
+    if protocol_id == '1': protocol = 'rtmpt'
 
     return protocol
 
