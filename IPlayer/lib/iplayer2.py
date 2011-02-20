@@ -167,6 +167,7 @@ def get_provider():
 
     if   provider_id == '1': provider = 'akamai'
     elif provider_id == '2': provider = 'limelight'
+    elif provider_id == '3': provider = 'level3'
 
     return provider
 
@@ -201,10 +202,6 @@ class media(object):
         self.method    = None
         self.width, self.height = None, None
         self.bitrate   = None
-        self.SWFPlayer = None
-        self.PlayPath  = None
-        #self.tcUrl     = None
-        self.PageURL   = None
         self.read_media_node(media_node)
 
     @property
@@ -271,10 +268,11 @@ class media(object):
         conn = None
         provider = get_provider()
 
-        for c in media.findall('connection'):
-            if provider != "" and c.get('kind') == provider:
-                conn = c
-                break
+        if provider != "":
+            for c in media.findall('connection'):
+                if c.get('kind') == provider:
+                    conn = c
+                    break
         if conn == None:
             conn = media.find('connection')
         if conn == None:
@@ -303,7 +301,7 @@ class media(object):
                 self.connection_method = None                
             else:
                 self.connection_method = 'resolve' 
-        elif self.connection_kind in ['akamai', 'limelight']:
+        elif self.connection_kind in ['akamai', 'limelight', 'level3']:
 
             if self.connection_live:
                 logging.error("No support for live streams!")   
@@ -322,7 +320,7 @@ class media(object):
             swfplayer = 'http://www.bbc.co.uk/emp/10player.swf'       
             params = dict(protocol = get_protocol(), port = get_port(), server = server, auth = auth, ident = identifier, app = application)
 
-            if self.connection_kind == 'akamai':
+            if self.connection_kind == 'akamai' or self.connection_kind == 'level3':
                 self.connection_href = "%(protocol)s://%(server)s:%(port)s/%(app)s?%(auth)s playpath=%(ident)s" % params
             elif self.connection_kind == 'limelight':
                 # note that librtmp has a small issue with constructing the tcurl here. we construct it ourselves for now (fixed in later librtmp)

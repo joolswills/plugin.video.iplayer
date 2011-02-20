@@ -44,17 +44,6 @@ VERSION_FILE   = os.path.join(DIR_USERDATA, 'version.txt')
 
 PLUGIN_HANDLE = int(sys.argv[1])
 
-def is_old_xbmc():
-   xbmc_rev = addoncompat.get_revision()
-   return ( addoncompat.get_os() != "xbox" and xbmc_rev < 31519) or xbmc_rev < 30366 
-
-def show_version_warning():
-    # on xbmc mainline we need a new version for librtmp support (using 31519 for now until dharma) is released)
-    # on xbmc4xbox we need at least revision 30366
-    xbmc_rev = addoncompat.get_revision()
-    d = xbmcgui.Dialog()
-    d.ok('XBMC version warning', 'Your XBMC version (r%s) may be too old to use' % xbmc_rev, 'this plugin fully. Please upgrade to a new version', 'if you have any trouble playing streams')
-
 def file_read(filename):
     text = ''
     fh = open(filename, "r")
@@ -263,8 +252,6 @@ def list_tvradio():
     folders.append(('TV', 'tv', make_url(tvradio='tv')))
     folders.append(('Radio', 'radio', make_url(tvradio='radio')))
     folders.append(('Settings', 'settings', make_url(tvradio='Settings')))
-    if is_old_xbmc():
-        folders.append(('Old XBMC Warning', 'old_xbmc', make_url(tvradio='old_xbmc')))
 
     for i, (label, tn, url) in enumerate(folders):
         listitem = xbmcgui.ListItem(label=label)
@@ -328,7 +315,7 @@ def get_setting_videostream(feed=None,default='h264 800'):
             return 'h264 1500'
         
     videostream = addoncompat.get_setting('video_stream')
-    #Auto|H.264 (480kb)|H.264 (800kb)|H.264 (1500kb)|H.264 (3200kb)
+    # Auto|H.264 (480kb)|H.264 (800kb)|H.264 (1500kb)|H.264 (3200kb)
     if videostream:
         if videostream == 'H.264 (480kb)' or videostream == '1':
             return 'h264 480'
@@ -961,20 +948,6 @@ def watch(feed, pid, showDialog):
 
     logging.info('Playing preference %s' % pref)
     times.append(['logging.info',time.clock()])
-    
-    if media.connection_protocol == 'rtmp':
-        if media.SWFPlayer:
-            listitem.setProperty("SWFPlayer", media.SWFPlayer)
-            logging.info("SWFPlayer : " + media.SWFPlayer)
-        if media.PlayPath:
-            listitem.setProperty("PlayPath", media.PlayPath)
-            logging.info("PlayPath  : " + media.PlayPath)
-        if media.PageURL:
-            listitem.setProperty("PageURL", media.PageURL)
-            logging.info("PageURL  : " + media.PageURL)
-        #if media.tcUrl:
-        #    listitem.setProperty("tcUrl", media.tcUrl)
-        #    print "tcUrl  : " + media.tcUrl
     times.append(['listitem.setproperty x 3',time.clock()])
 
     if thumbfile: 
@@ -1075,11 +1048,6 @@ if old_version != __version__:
     file_write(VERSION_FILE, __version__)
     d = xbmcgui.Dialog()
     d.ok('Welcome to BBC IPlayer plugin', 'Please be aware this plugin only works in the UK.', 'The IPlayer service checks to ensure UK IP addresses.')
-
-    if is_old_xbmc():
-         show_version_warning()
-
-
 
 if __name__ == "__main__":
     try:
