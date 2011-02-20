@@ -14,7 +14,7 @@ import xbmc, xbmcgui, xbmcplugin
 __scriptname__ = "IPlayer"
 __author__     = 'Dink [dink12345@googlemail.com] / BuZz [buzz@exotica.org.uk]'
 __svn_url__    = "http://xbmc-iplayerv2.googlecode.com/svn/trunk/IPlayer"
-__version__    = "2.3.2"
+__version__    = "2.4.0"
 
 sys.path.insert(0, os.path.join(os.getcwd(), 'lib'))
 
@@ -141,6 +141,11 @@ def read_url():
     elif feed_atoz:
         feed = iplayer.feed(tvradio or 'auto', atoz=feed_atoz, radio=radio)
 
+    if not (feed or listing):
+        section = addoncompat.get_setting('start_section')
+        if   section == '1': tvradio = 'tv'
+        elif section == '2': tvradio = 'radio'
+
     return (feed, listing, pid, tvradio, category, series, url, label, deletesearch, radio)
     
 def list_feeds(feeds, tvradio='tv', radio=None):
@@ -261,7 +266,7 @@ def list_tvradio():
         if thumbnail:
             listitem.setThumbnailImage(get_plugin_thumbnail(tn))
         folder=True
-        if label == 'Settings' or label == 'Old XBMC Warning':
+        if label == 'Settings':
             # fix for reported bug where loading dialog would overlay settings dialog 
             folder = False
         ok = xbmcplugin.addDirectoryItem(

@@ -24,7 +24,7 @@ except:
     # python 2.4 has to use the plugin's version of elementtree
     from elementtree import ElementTree as ET
 import httplib2
-sys.path.insert(0, os.path.join(os.getcwd(), 'lib', 'socksipy'))
+sys.path.append(os.path.join(os.getcwd(), 'lib', 'socksipy'))
 import socks
 
 #print "iplayer2 logging to stdout"
