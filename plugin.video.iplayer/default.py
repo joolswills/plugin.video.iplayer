@@ -14,7 +14,7 @@ import xbmc, xbmcgui, xbmcplugin
 __scriptname__ = "IPlayer"
 __author__     = 'Dink [dink12345@googlemail.com] / BuZz [buzz@exotica.org.uk]'
 __svn_url__    = "http://xbmc-iplayerv2.googlecode.com/svn/trunk/IPlayer"
-__version__    = "2.4.1"
+__version__    = "2.4.2"
 
 sys.path.insert(0, os.path.join(os.getcwd(), 'lib'))
 
@@ -303,37 +303,39 @@ def list_radio_types():
     
     xbmcplugin.endOfDirectory(handle=PLUGIN_HANDLE, succeeded=True)
 
-def get_setting_videostream(default='h264 1500'):  
+def get_setting_videostream():  
 
-    environment = os.environ.get( "OS", "xbox" )
- 
-    # check for xbox as we set a lower default for xbox (although it can do 1500kbit streams)
-    if environment == 'xbox':
-        return 'h264 800'
-    else:
-        # play full HD if the screen is large enough (not all programmes have this resolution)
-        Y = int(xbmc.getInfoLabel('System.ScreenHeight'))
-        X = int(xbmc.getInfoLabel('System.ScreenWidth'))
-        if Y > 832 and X > 468:
-            # The screen is large enough for HD
-            return 'h264 3200'
-        else:
-            # The screen is not large enough for HD
-            return 'h264 1500'
+    stream = 'h264 1500'
 
-    videostream = addoncompat.get_setting('video_stream')
+    stream_prefs = '0'
+    try:
+        stream_prefs = addoncompat.get_setting('video_stream')
+    except:
+        pass
+        
     # Auto|H.264 (480kb)|H.264 (800kb)|H.264 (1500kb)|H.264 (3200kb)
-    if videostream:
-        if videostream == '1':
-            return 'h264 480'
-        elif videostream == '2':
-            return 'h264 800'        
-        elif videostream == '3':
-            return 'h264 1500'        
-        elif videostream == '4':
-            return 'h264 3200'
+    if stream_prefs == '0':
+        environment = os.environ.get( "OS" )
+        # check for xbox as we set a lower default for xbox (although it can do 1500kbit streams)
+        if environment == 'xbox':
+            stream = 'h264 800'
+        else:
+            # play full HD if the screen is large enough (not all programmes have this resolution)
+            Y = int(xbmc.getInfoLabel('System.ScreenHeight'))
+            X = int(xbmc.getInfoLabel('System.ScreenWidth'))
+            # if the screen is large enough for HD
+            if Y > 832 and X > 468:
+                stream = 'h264 3200'
+    elif stream_prefs == '1':
+        stream = 'h264 480'
+    elif stream_prefs == '2':
+        stream = 'h264 800'
+    elif stream_prefs == '3':
+        stream = 'h264 1500'
+    elif stream_prefs == '4':
+        stream = 'h264 3200'
     
-    return default
+    return stream
 
 def get_setting_audiostream(default='wma'):
     audiostream = addoncompat.get_setting('audio_stream')
