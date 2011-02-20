@@ -298,22 +298,24 @@ def list_radio_types():
     
     xbmcplugin.endOfDirectory(handle=PLUGIN_HANDLE, succeeded=True)
 
-def get_setting_videostream(feed=None,default='h264 800'):  
+def get_setting_videostream(default='h264 1500'):  
 
-    # check for xbox as it can't do HD
     environment = os.environ.get( "OS", "xbox" )
-    
-    # If viewing BBC HD on an xbmc build that supports it play full HD if the screen is large enough 
-    if environment != 'xbox' and feed and feed == 'BBC HD':   
+ 
+    # check for xbox as we set a lower default for xbox (although it can do 1500kbit streams)
+    if environment == 'xbox':
+        return 'h264 800'
+    else:
+        # play full HD if the screen is large enough (not all programmes have this resolution)
         Y = int(xbmc.getInfoLabel('System.ScreenHeight'))
         X = int(xbmc.getInfoLabel('System.ScreenWidth'))
-        if Y > 576 and X > 720:
+        if Y > 832 and X > 468:
             # The screen is large enough for HD
             return 'h264 3200'
         else:
             # The screen is not large enough for HD
             return 'h264 1500'
-        
+
     videostream = addoncompat.get_setting('video_stream')
     # Auto|H.264 (480kb)|H.264 (800kb)|H.264 (1500kb)|H.264 (3200kb)
     if videostream:
@@ -824,7 +826,7 @@ def watch(feed, pid, showDialog):
             pDialog.update(50, 'Fetching video stream info')
             if pDialog.iscanceled(): raise
             times.append(['update dialog',time.clock()])
-        pref = get_setting_videostream(channel)        
+        pref = get_setting_videostream()        
         times.append(['get_setting_videostream',time.clock()])
         opref = pref
         if showDialog:
@@ -844,7 +846,7 @@ def watch(feed, pid, showDialog):
 
         while not media and i < len(streams)-1:
             i += 1
-            logging.info('Steam %s not available, falling back to flash %s stream' % (pref, streams[i]) )
+            logging.info('Stream %s not available, falling back to flash %s stream' % (pref, streams[i]) )
             pref = streams[i]
             media = item.get_media_for(pref)
 
@@ -1080,7 +1082,7 @@ if __name__ == "__main__":
             if not label:
                 watch(feed, pid, showDialog)
             else:
-                pref = get_setting_videostream(label)
+                pref = get_setting_videostream()
                 bitrate = pref.split(' ')[1]
                 live_tv.play_stream(label, bitrate, showDialog)
         elif url:
