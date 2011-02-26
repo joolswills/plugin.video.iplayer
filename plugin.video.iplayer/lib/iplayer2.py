@@ -24,14 +24,15 @@ except:
     # python 2.4 has to use the plugin's version of elementtree
     from elementtree import ElementTree as ET
 import httplib2
-sys.path.append(os.path.join(os.getcwd(), 'lib', 'socksipy'))
+sys.path.append(os.path.join(os.getcwd(), 'lib', 'httplib2'))
 import socks
 
 #print "iplayer2 logging to stdout"
 logging.basicConfig(
     stream=sys.stdout,
     level=logging.DEBUG,
-    format='iplayer2.py: %(levelname)4s %(message)s',)    
+    format='iplayer2.py: %(levelname)4s %(message)s',)
+
 # me want 2.5!!!
 def any(iterable):
      for element in iterable:
@@ -63,20 +64,52 @@ rss_cache = {}
 
 self_closing_tags = ['alternate', 'mediator']
 
-http = None
-try:
-    if addoncompat.get_setting('proxy_use') == 'true':
-
-        server = addoncompat.get_setting('proxy_server')
-        port = int(addoncompat.get_setting('proxy_port'))
-        logging.info("Using proxy %s port %s", server, port )
-        http = httplib2.Http(proxy_info = httplib2.ProxyInfo(socks.PROXY_TYPE_HTTP, server, port))
-    else:
-        http = httplib2.Http()
-except:
-    logging.error('Failed to initialize httplib2 module')
-
 re_selfclose = re.compile('<([a-zA-Z0-9]+)( ?.*)/>', re.M | re.S)
+
+def get_proxy():
+    proxy_server = None
+    proxy_type_id = 0
+    proxy_port = 8080
+    proxy_dns = False
+    proxy_user = None
+    proxy_pass = None
+    try:
+        proxy_server = addoncompat.get_setting('proxy_server')
+        proxy_type_id = addoncompat.get_setting('proxy_type')
+        proxy_port = int(addoncompat.get_setting('proxy_port'))
+        proxy_dns = addoncompat.get_setting('proxy_dns')
+        proxy_user = addoncompat.get_setting('proxy_user')
+        proxy_pass = addoncompat.get_setting('proxy_pass')
+    except:
+        pass
+
+    if   proxy_type_id == '0': proxy_type = socks.PROXY_TYPE_HTTP
+    elif proxy_type_id == '1': proxy_type = socks.PROXY_TYPE_SOCKS4
+    elif proxy_type_id == '2': proxy_type = socks.PROXY_TYPE_SOCKS5
+
+    if proxy_dns == 'true':
+        proxy_dns = True
+    else:
+        proxy_dns = False
+    
+    return (proxy_type, proxy_server, proxy_port, proxy_dns, proxy_user, proxy_pass)
+
+def get_httplib():
+    http = None
+    try:
+        if addoncompat.get_setting('proxy_use') == 'true':
+            (proxy_type, proxy_server, proxy_port, proxy_dns, proxy_user, proxy_pass) = get_proxy()
+            logging.info("Using Proxy: type %i server: %s port: %s user: %s pass: %s", proxy_type, proxy_server, proxy_port, proxy_user, proxy_pass)
+            http = httplib2.Http(proxy_info = httplib2.ProxyInfo(proxy_type, proxy_server, proxy_port, proxy_dns, proxy_user, proxy_pass))
+        else:
+          http = httplib2.Http()
+    except:
+        raise
+        logging.error('Failed to initialize httplib2 module')
+
+    return http
+
+http = get_httplib()
 
 def fix_selfclosing(xml):
     return re_selfclose.sub('<\\1\\2></\\1>', xml)
