@@ -43,6 +43,7 @@ mainly to merge bug fixes found in Sourceforge
 import socket
 import struct
 import sys
+import base64
 
 PROXY_TYPE_SOCKS4 = 1
 PROXY_TYPE_SOCKS5 = 2
@@ -168,7 +169,14 @@ class socksocket(socket.socket):
             hdrs.insert(0, "%s http://%s%s %s" % (endpt[0], host, endpt[1], endpt[2]))
             hdrs.insert(1, "Host: %s" % host)
 
+            if (self.__proxy[4] != None and self.__proxy[5] != None):
+                hdrs.insert(2, self.__getauthheader())
+
         return "\r\n".join(hdrs)
+
+    def __getauthheader(self):
+        auth = self.__proxy[4] + ":" + self.__proxy[5]
+        return "Proxy-Authorization: Basic " + base64.b64encode(auth)
 
     def setproxy(self, proxytype=None, addr=None, port=None, rdns=True, username=None, password=None):
         """setproxy(proxytype, addr[, port[, rdns[, username[, password]]]])
@@ -357,7 +365,12 @@ class socksocket(socket.socket):
             addr = socket.gethostbyname(destaddr)
         else:
             addr = destaddr
-        self.sendall(("CONNECT " + addr + ":" + str(destport) + " HTTP/1.1\r\n" + "Host: " + destaddr + "\r\n\r\n").encode())
+        headers =  "CONNECT " + addr + ":" + str(destport) + " HTTP/1.1\r\n"
+        headers += "Host: " + destaddr + "\r\n"
+        if (self.__proxy[4] != None and self.__proxy[5] != None):
+                headers += self.__getauthheader()
+        headers += "\r\n"
+        self.sendall(headers.encode())
         # We read the response until we get the string "\r\n\r\n"
         resp = self.recv(1)
         while resp.find("\r\n\r\n".encode()) == -1:
