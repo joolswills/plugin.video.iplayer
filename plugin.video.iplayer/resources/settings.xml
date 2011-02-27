@@ -20,7 +20,7 @@
     <setting id="proxy_server" label="30320" type="text" default="" enable="eq(-2,true)" />
     <setting id="proxy_port" label="30330" type="number" default="" enable="eq(-3,true)" />
     <setting id="proxy_user" label="30340" type="text" enable="eq(-4,true)"  />
-    <setting id="proxy_pass" label="30350" type="text" enable="!eq(-4,2) + eq(-5,true)" />
+    <setting id="proxy_pass" label="30350" type="text" option="hidden" enable="!eq(-4,2) + eq(-5,true)" />
   </category>
   <!-- Advanced -->
   <category label="30400">
