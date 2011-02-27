@@ -166,11 +166,10 @@ class socksocket(socket.socket):
             hdrs.remove(endpt)
             host = host.split(" ")[1]
             endpt = endpt.split(" ")
-            hdrs.insert(0, "%s http://%s%s %s" % (endpt[0], host, endpt[1], endpt[2]))
-            hdrs.insert(1, "Host: %s" % host)
-
             if (self.__proxy[4] != None and self.__proxy[5] != None):
-                hdrs.insert(2, self.__getauthheader())
+                hdrs.insert(0, self.__getauthheader())
+            hdrs.insert(0, "Host: %s" % host)
+            hdrs.insert(0, "%s http://%s%s %s" % (endpt[0], host, endpt[1], endpt[2]))
 
         return "\r\n".join(hdrs)
 
@@ -368,7 +367,7 @@ class socksocket(socket.socket):
         headers =  "CONNECT " + addr + ":" + str(destport) + " HTTP/1.1\r\n"
         headers += "Host: " + destaddr + "\r\n"
         if (self.__proxy[4] != None and self.__proxy[5] != None):
-                headers += self.__getauthheader()
+                headers += self.__getauthheader() + "\r\n"
         headers += "\r\n"
         self.sendall(headers.encode())
         # We read the response until we get the string "\r\n\r\n"
