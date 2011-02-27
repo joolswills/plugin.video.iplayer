@@ -70,27 +70,23 @@ def get_proxy():
     proxy_server = None
     proxy_type_id = 0
     proxy_port = 8080
-    proxy_dns = False
     proxy_user = None
     proxy_pass = None
     try:
         proxy_server = addoncompat.get_setting('proxy_server')
         proxy_type_id = addoncompat.get_setting('proxy_type')
         proxy_port = int(addoncompat.get_setting('proxy_port'))
-        proxy_dns = addoncompat.get_setting('proxy_dns')
         proxy_user = addoncompat.get_setting('proxy_user')
         proxy_pass = addoncompat.get_setting('proxy_pass')
     except:
         pass
 
-    if   proxy_type_id == '0': proxy_type = socks.PROXY_TYPE_HTTP
-    elif proxy_type_id == '1': proxy_type = socks.PROXY_TYPE_SOCKS4
-    elif proxy_type_id == '2': proxy_type = socks.PROXY_TYPE_SOCKS5
+    if   proxy_type_id == '0': proxy_type = socks.PROXY_TYPE_HTTP_NO_TUNNEL
+    elif proxy_type_id == '1': proxy_type = socks.PROXY_TYPE_HTTP
+    elif proxy_type_id == '2': proxy_type = socks.PROXY_TYPE_SOCKS4
+    elif proxy_type_id == '3': proxy_type = socks.PROXY_TYPE_SOCKS5
 
-    if proxy_dns == 'true':
-        proxy_dns = True
-    else:
-        proxy_dns = False
+    proxy_dns = True
     
     return (proxy_type, proxy_server, proxy_port, proxy_dns, proxy_user, proxy_pass)
 
@@ -99,7 +95,7 @@ def get_httplib():
     try:
         if addoncompat.get_setting('proxy_use') == 'true':
             (proxy_type, proxy_server, proxy_port, proxy_dns, proxy_user, proxy_pass) = get_proxy()
-            logging.info("Using Proxy: type %i server: %s port: %s user: %s pass: %s", proxy_type, proxy_server, proxy_port, proxy_user, proxy_pass)
+            logging.info("Using proxy: type %i rdns: %i server: %s port: %s user: %s pass: %s", proxy_type, proxy_dns, proxy_server, proxy_port, proxy_user, proxy_pass)
             http = httplib2.Http(proxy_info = httplib2.ProxyInfo(proxy_type, proxy_server, proxy_port, proxy_dns, proxy_user, proxy_pass))
         else:
           http = httplib2.Http()

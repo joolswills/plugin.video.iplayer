@@ -13,8 +13,12 @@
 
   <string id="30300">Proxy</string>
   <string id="30310">Use Proxy</string>
+  <string id="30315">Proxy Type</string>
   <string id="30320">Proxy Server/IP</string>
   <string id="30330">Proxy Port</string>
+  <string id="30340">Proxy Username</string>
+  <string id="30350">Proxy Password</string>
+  <!-- <string id="30360">Resolve host on Proxy</string> -->
 
   <string id="30400">Advanced</string>
   <string id="30410">Socket timeout (seconds) [0=disabled]</string>
