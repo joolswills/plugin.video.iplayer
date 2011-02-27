@@ -34,14 +34,15 @@ def parseXML(url):
 def fetch_stream_info(channel, bitrate, req_provider):
     (sort, stream_id, label, thumb) = live_tv_channels[channel]
 
-    if bitrate == 480: quality = 'iplayer_streaming_h264_flv_lo_live'
+    if bitrate <= 480: quality = 'iplayer_streaming_h264_flv_lo_live'
     elif bitrate == 800: quality = 'iplayer_streaming_h264_flv_live'
     elif bitrate >= 1500: quality = 'iplayer_streaming_h264_flv_high_live'
 
-    # bbc news 24 is only available as 800kbit maximum currently
+    # bbc news 24 uses different service names for the streams 
     if channel == "bbc_news24":
-        if bitrate < 800 : quality = 'journalism_uk_stream_h264_flv_lo_live'
-        else : quality = 'journalism_uk_stream_h264_flv_med_live'
+        if bitrate <= 480: quality = 'journalism_uk_stream_h264_flv_lo_live'
+        elif bitrate == 800: quality = 'journalism_uk_stream_h264_flv_med_live'
+        elif bitrate >= 1500: quality = 'journalism_uk_stream_h264_flv_high_live'
 
     if channel == "bbc_parliament" or channel == "bbc_alba":
         quality = 'iplayer_streaming_vp6_flv_lo_live'
