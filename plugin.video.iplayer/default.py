@@ -877,7 +877,7 @@ def watch(feed, pid, showDialog):
 
         streams = ['h264 3200', 'h264 1500', 'h264 800', 'h264 480', 'h264 400']
         (media, pref) = get_matching_stream(item, pref, streams)
-        print streams
+
         # A potentially usable stream was found (higher bitrate than the default) offer it to the user
         if not media:
             # Nothing usable was found
