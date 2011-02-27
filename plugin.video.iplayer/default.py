@@ -337,19 +337,24 @@ def get_setting_videostream():
     
     return stream
 
-def get_setting_audiostream(default='wma'):
-    audiostream = addoncompat.get_setting('audio_stream')
-    #Auto|MP3|Real|AAC|WMA
+def get_setting_audiostream():
+    stream = 'wma'
+
+    stream_prefs = '0'
+    try:
+        audiostream = addoncompat.get_setting('audio_stream')
+    except:
+        pass
+
+    # Auto|MP3|AAC|WMA
     if audiostream:
         if audiostream == '1': 
-            return 'mp3'
+            stream = 'mp3'
         elif audiostream == '2':
-            return 'real'
+            stream = 'aac'        
         elif audiostream == '3':
-            return 'aac'        
-        elif audiostream == '4':
-            return 'wma'
-    return default
+            stream = 'wma'
+    return stream
 
 
 def get_setting_thumbnail_size():
@@ -776,6 +781,36 @@ def download_subtitles(url):
     fw.close()    
     return outfile
 
+def get_matching_stream(item, pref, streams):
+    """
+    tries to return a media object for requested stream,
+    falling back on a lower stream if requested one is not available. if there are no lower ones, it will
+    return the first stream it finds.
+    """
+    media = item.get_media_for(pref)
+
+    for i, stream in enumerate(streams):
+        if pref == stream:
+            break
+
+    while not media and i < len(streams)-1:
+        i += 1
+        logging.info('Stream %s not available, falling back to %s stream' % (pref, streams[i]) )
+        pref = streams[i]
+        media = item.get_media_for(pref)
+
+    streams.reverse();
+    # problem - no media found for default or lower
+    if not media:
+        # find the first available stream in ascending order
+        for apref in streams:
+            media = item.get_media_for(apref)
+            if media:
+                pref=apref
+                break
+
+    return (media, pref)
+
 def watch(feed, pid, showDialog):
 
     times = []
@@ -840,45 +875,21 @@ def watch(feed, pid, showDialog):
             pDialog.update(70, 'Selecting video stream')
             if pDialog.iscanceled(): raise
             times.append(['update dialog',time.clock()])
-        
-        media = item.get_media_for(pref)
-        times.append(['fetch media',time.clock()])
 
-        # fall down to find a supported stream. 
-        streams = ['h264 3200', 'h264 1500', 'h264 800', 'h264 480', 'h264 400']
+        (media, pref) = get_matching_stream(item, pref, ['h264 3200', 'h264 1500', 'h264 800', 'h264 480', 'h264 400'])
 
-        for i, stream in enumerate(streams):
-          if pref == stream:
-              break
-
-        while not media and i < len(streams)-1:
-            i += 1
-            logging.info('Stream %s not available, falling back to flash %s stream' % (pref, streams[i]) )
-            pref = streams[i]
-            media = item.get_media_for(pref)
-
-        times.append(['media 1',time.clock()])
-
-        streams.reverse();
-        # problem - no media found for default or lower
+        # A potentially usable stream was found (higher bitrate than the default) offer it to the user
         if not media:
-            # find the first available stream in ascending order
-            for apref in streams:
-                media = item.get_media_for(apref)
-                if media:
-                    pref=apref
-                    break
-
-            # A potentially usable stream was found (higher bitrate than the default) offer it to the user
-            if media:
-                d = xbmcgui.Dialog()
-                if d.yesno('Default %s Stream Not Available' % opref, 'Play higher bitrate %s stream ?' % pref ) == False:
-                   return False
-            else:
-                # Nothing usable was found
-                d = xbmcgui.Dialog()
-                d.ok('Stream Error', 'Can\'t locate any usable TV streams.')            
+            # Nothing usable was found
+            d = xbmcgui.Dialog()
+            d.ok('Stream Error', 'Can\'t locate any usable TV streams.')            
+            return False
+          
+        if opref != pref:
+            d = xbmcgui.Dialog()
+            if d.yesno('Default %s Stream Not Available' % opref, 'Play higher bitrate %s stream ?' % pref ) == False:
                 return False
+  
         times.append(['media 2',time.clock()])    
         url = media.url
         times.append(['media.url',time.clock()]) 
@@ -919,32 +930,14 @@ def watch(feed, pid, showDialog):
             pDialog.update(50, 'Selecting radio stream')
             if pDialog.iscanceled(): raise
             times.append(['update dialog',time.clock()])
-        media = item.get_media_for(pref)
-        if not media:
-            # fallback to mp3 
-            logging.info('Steam %s not available, trying mp3 stream' % pref)
-            pref = 'mp3'
-            media = item.get_media_for(pref)
-        if not media:
-            # fallback to wma 
-            logging.info('Steam %s not available, trying wma stream' % pref)
-            pref = 'wma'
-            media = item.get_media_for(pref)            
-        if not media:
-            # fallback to real 
-            logging.info('Steam %s not available, trying real stream' % pref)
-            pref = 'real'
-            media = item.get_media_for(pref)
+ 
+        (media, pref) = get_matching_stream(item, pref, ['wma', 'mp3', 'aac'])
+
         if not media:            
             d = xbmcgui.Dialog()
             d.ok('Stream Error', 'Error: can\'t locate radio stream')            
             return False
-        if pref == 'real':
-            # fetch the rtsp link from the .ram file
-            url = iplayer.httpget(media.url)
-        else :
-            # else use the direct link
-            url = media.url
+        url = media.url
             
         logging.info('Listening to url=%s' % url)
 

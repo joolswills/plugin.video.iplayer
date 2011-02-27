@@ -238,6 +238,7 @@ class media(object):
 
     @property
     def url(self):
+        # no longer used. will remove later
         if self.connection_method == 'resolve':
             logging.info("Resolving URL %s", self.connection_href)
             page = urllib2.urlopen(self.connection_href)
@@ -265,14 +266,13 @@ class media(object):
         tep['video', 'video/x-flv', 'spark', 'rtmp', 800] = 'flashwii'
         tep['video', 'video/mpeg', 'h264', 'http', 184]   = 'mobile'
         tep['audio', 'audio/mpeg', 'mp3', 'rtmp', None]   = 'mp3'
-        tep['audio', 'audio/real', 'real', 'http', None]  = 'real'
         tep['audio', 'audio/mp4',  'aac', 'rtmp', None]   = 'aac'
         tep['audio', 'audio/wma',  'wma', 'http', None]   = 'wma'
         tep['video', 'video/mp4', 'h264', 'http', 516]    = 'iphonemp3'
         me = (self.kind, self.mimetype, self.encoding, self.connection_protocol, self.bitrate)
         return tep.get(me, None)
 
-    def read_media_node(self, media, resolve=False):
+    def read_media_node(self, media):
         """
         Reads media info from a media XML node
         media: media node from BeautifulStoneSoup
@@ -311,42 +311,23 @@ class media(object):
             return
             
         self.connection_kind = conn.get('kind')
-        self.connection_live = conn.get('live') == 'true'
+        self.connection_protocol = conn.get('protocol')
 
-        if self.mimetype == 'audio/wma':
-            self.connection_href = conn.get('href')
-            self.connection_protocol = 'http'
+        if self.mimetype[:5] == 'audio':
             self.kind = 'audio'
             self.bitrate = None
-        if self.mimetype == 'audio/real':
+
+        if self.connection_kind in ['http', 'sis']:
             self.connection_href = conn.get('href')
             self.connection_protocol = 'http'
-            self.kind = 'audio'
-            self.bitrate = None            
-        elif self.connection_kind in ['http', 'sis']: # http
-            self.connection_href = conn.get('href')
-            self.connection_protocol = 'http'
-            if self.mimetype == 'video/mp4' and self.encoding == 'h264':
-                # iPhone, don't redirect or it goes to license failure page
-                self.connection_method = 'iphone'
-            elif self.kind == 'captions':
-                self.connection_method = None                
-            else:
-                self.connection_method = 'resolve' 
-        elif self.connection_kind in ['akamai', 'limelight', 'level3']:
+            if self.kind == 'captions':
+                self.connection_method = None
+        elif self.connection_protocol == 'rtmp':
 
-            if self.connection_live:
-                logging.error("No support for live streams!")   
-                return
-
-            self.connection_protocol = 'rtmp'
             server = conn.get('server')
             identifier = conn.get('identifier')
             auth = conn.get('authString')
             application = conn.get('application')
-
-            if application == None:
-                application = 'ondemand'
 
             timeout = addoncompat.get_setting('stream_timeout')
             swfplayer = 'http://www.bbc.co.uk/emp/10player.swf'       
