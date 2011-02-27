@@ -328,16 +328,19 @@ class media(object):
             identifier = conn.get('identifier')
             auth = conn.get('authString')
             application = conn.get('application')
+            # sometimes we don't get a rtmp application for akamai
+            if application == None and self.connection_kind == 'akamai':
+                application = "ondemand"
 
             timeout = addoncompat.get_setting('stream_timeout')
             swfplayer = 'http://www.bbc.co.uk/emp/10player.swf'       
             params = dict(protocol = get_protocol(), port = get_port(), server = server, auth = auth, ident = identifier, app = application)
 
-            if self.connection_kind == 'akamai' or self.connection_kind == 'level3':
-                self.connection_href = "%(protocol)s://%(server)s:%(port)s/%(app)s?%(auth)s playpath=%(ident)s" % params
-            elif self.connection_kind == 'limelight':
+            if self.connection_kind == 'limelight':
                 # note that librtmp has a small issue with constructing the tcurl here. we construct it ourselves for now (fixed in later librtmp)
                 self.connection_href = "%(protocol)s://%(server)s:%(port)s/ app=%(app)s?%(auth)s tcurl=%(protocol)s://%(server)s:%(port)s/%(app)s?%(auth)s playpath=%(ident)s" % params
+            else:
+                self.connection_href = "%(protocol)s://%(server)s:%(port)s/%(app)s?%(auth)s playpath=%(ident)s" % params
 
             self.connection_href += " swfurl=%s swfvfy=true timeout=%s" % (swfplayer, timeout)
 
