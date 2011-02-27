@@ -309,7 +309,7 @@ class media(object):
             conn = media.find('connection')
         if conn == None:
             return
-            
+        
         self.connection_kind = conn.get('kind')
         self.connection_protocol = conn.get('protocol')
 
@@ -317,13 +317,17 @@ class media(object):
             self.kind = 'audio'
             self.bitrate = None
 
+        # some akamai rtmp streams (radio) don't specify rtmp protocol
+        if self.connection_protocol == None and self.connection_kind == 'akamai':
+            self.connection_protocol = 'rtmp'
+
         if self.connection_kind in ['http', 'sis']:
             self.connection_href = conn.get('href')
             self.connection_protocol = 'http'
             if self.kind == 'captions':
                 self.connection_method = None
-        elif self.connection_protocol == 'rtmp':
 
+        elif self.connection_protocol == 'rtmp':
             server = conn.get('server')
             identifier = conn.get('identifier')
             auth = conn.get('authString')
