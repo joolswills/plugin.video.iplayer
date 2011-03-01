@@ -14,6 +14,7 @@
     <setting id="protocol" label="30240" type="enum" values="rtmp (port 1935)|rtmpt (port 80)" default="r0" />
   </category>
   <!-- Proxy -->
+  <!--
   <category label="30300">
     <setting id="proxy_use" label="30310" type="bool" default="false" />
     <setting id="proxy_type" label="30315" type="enum" values="HTTP|HTTP (Tunneled)|SOCKS4|SOCKS5" enable="eq(-1,true)" default="0" />
@@ -21,6 +22,16 @@
     <setting id="proxy_port" label="30330" type="number" default="" enable="eq(-3,true)" />
     <setting id="proxy_user" label="30340" type="text" enable="eq(-4,true)"  />
     <setting id="proxy_pass" label="30350" type="text" option="hidden" enable="!eq(-4,2) + eq(-5,true)" />
+  </category>
+  temporarily disabled until the enable= code is working on xbmc4xbox (in progress)
+  -->
+  <category label="30300">
+    <setting id="proxy_use" label="30310" type="bool" default="false" />
+    <setting id="proxy_type" label="30315" type="enum" values="HTTP|HTTP (Tunneled)|SOCKS4|SOCKS5" default="0" />
+    <setting id="proxy_server" label="30320" type="text" default="" />
+    <setting id="proxy_port" label="30330" type="number" default="" />
+    <setting id="proxy_user" label="30340" type="text" />
+    <setting id="proxy_pass" label="30350" type="text" option="hidden" />
   </category>
   <!-- Advanced -->
   <category label="30400">
