@@ -334,7 +334,8 @@ def get_setting_videostream():
         stream = 'h264 1500'
     elif stream_prefs == '4':
         stream = 'h264 3200'
-    
+
+    logging.info("Video stream prefs %s - %s", stream_prefs, stream)
     return stream
 
 def get_setting_audiostream():
@@ -342,18 +343,19 @@ def get_setting_audiostream():
 
     stream_prefs = '0'
     try:
-        audiostream = addoncompat.get_setting('audio_stream')
+        stream_prefs = addoncompat.get_setting('audio_stream')
     except:
         pass
 
     # Auto|MP3|AAC|WMA
-    if audiostream:
-        if audiostream == '1': 
-            stream = 'mp3'
-        elif audiostream == '2':
-            stream = 'aac'        
-        elif audiostream == '3':
-            stream = 'wma'
+    if stream_prefs == '1': 
+        stream = 'mp3'
+    elif stream_prefs == '2':
+        stream = 'aac'        
+    elif stream_prefs == '3':
+        stream = 'wma'
+
+    logging.info("Audio stream prefs %s - %s", stream_prefs, stream)
     return stream
 
 
