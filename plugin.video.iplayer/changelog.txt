@@ -1,6 +1,10 @@
 Changes
 
-2.4.6
+2.4.8
+
+  * fixed path issue that was present when using unwrapped/external python
+
+2.4.7
 
   * allow disabling of http cache used for caching iplayer rss/xml
   * use correct storage location for addon data
