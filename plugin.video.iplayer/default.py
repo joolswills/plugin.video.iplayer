@@ -37,9 +37,9 @@ logging.basicConfig(
     )
 
 if addoncompat.__has_addons__:
-    DIR_USERDATA = addoncompat.__addon__.getAddonInfo('profile')
+    DIR_USERDATA = xbmc.translatePath(addoncompat.__addon__.getAddonInfo('profile'))
 else:
-    DIR_USERDATA   = xbmc.translatePath(os.path.join( 'T:' + os.sep, "plugin_data", __scriptname__ ))
+    DIR_USERDATA = xbmc.translatePath(os.path.join( 'T:' + os.sep, "plugin_data", __scriptname__ ))
 
 HTTP_CACHE_DIR = os.path.join(DIR_USERDATA, 'iplayer_http_cache')
 SUBTITLES_DIR  = os.path.join(DIR_USERDATA, 'Subtitles')
