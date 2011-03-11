@@ -35,6 +35,7 @@
   </category>
   <!-- Advanced -->
   <category label="30400">
+    <setting id="http_cache_disable" label="30405" type="bool" default="false" />
     <setting id="socket_timeout" label="30410" type="number" default="5" />
     <setting id="stream_timeout" label="30420" type="number" default="180" />
     <setting id="displaydialog" label="30430" type="bool" default="true" />

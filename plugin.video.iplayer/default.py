@@ -11,10 +11,10 @@ import operator
 import xbmc, xbmcgui, xbmcplugin
 
 # Script constants
-__scriptname__ = "IPlayer"
-__author__     = 'Dink [dink12345@googlemail.com] / BuZz [buzz@exotica.org.uk]'
+__scriptname__ = "iPlayer"
+__author__     = 'BuZz [buzz@exotica.org.uk], Dink [dink12345@googlemail.com]'
 __svn_url__    = "http://xbmc-iplayerv2.googlecode.com/svn/trunk/IPlayer"
-__version__    = "2.4.6"
+__version__    = "2.4.7"
 
 sys.path.insert(0, os.path.join(os.getcwd(), 'lib'))
 
@@ -36,7 +36,11 @@ logging.basicConfig(
     format='iplayer2.py: %(levelname)4s %(message)s',
     )
 
-DIR_USERDATA   = xbmc.translatePath(os.path.join( "T:"+os.sep,"plugin_data", __scriptname__ ))    
+if addoncompat.__has_addons__:
+    DIR_USERDATA = addoncompat.__addon__.getAddonInfo('profile')
+else:
+    DIR_USERDATA   = xbmc.translatePath(os.path.join( 'T:' + os.sep, "plugin_data", __scriptname__ ))
+
 HTTP_CACHE_DIR = os.path.join(DIR_USERDATA, 'iplayer_http_cache')
 SUBTITLES_DIR  = os.path.join(DIR_USERDATA, 'Subtitles')
 SEARCH_FILE    = os.path.join(DIR_USERDATA, 'search.txt')
@@ -1051,13 +1055,13 @@ if os.path.isfile(VERSION_FILE):
 if old_version != __version__:
     file_write(VERSION_FILE, __version__)
     d = xbmcgui.Dialog()
-    d.ok('Welcome to BBC IPlayer plugin', 'Please be aware this plugin only works in the UK.', 'The IPlayer service checks to ensure UK IP addresses.')
+    d.ok('Welcome to the BBC IPlayer addon', 'Please be aware this addon only works in the UK.', 'The IPlayer service checks to ensure UK IP addresses.')
 
 if __name__ == "__main__":
     try:
 
         # setup and check script environment 
-        iplayer.set_http_cache(HTTP_CACHE_DIR)
+        if addoncompat.get_setting('http_cache_disable') == 'false': iplayer.set_http_cache(HTTP_CACHE_DIR)
     
         environment = os.environ.get( "OS", "xbox" )
         try:

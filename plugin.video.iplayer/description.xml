@@ -20,19 +20,19 @@
     <type>8</type>
 
     <!-- (required) Title -->
-    <title>IPlayer</title>
+    <title>iPlayer</title>
 
     <!-- (required) Major.minor.build -->
-    <version>2.4.6</version>
+    <version>2.4.7</version>
 
     <!-- (required) author name & email.  at least one author name is required -->
     <authors>
-        <author name="Dink" email="dink12345@gmail.com" />
         <author name="BuZz" email="buzz@exotica.org.uk" />
+        <author name="Dink" email="dink12345@gmail.com" />
     </authors>
 
     <!-- (required) Short description of addon. -->
-    <summary>BBC IPlayer plugin</summary>
+    <summary>BBC iPlayer plugin</summary>
 
     <!-- Longer descrption of addon.  Usage instructions should go here if required. -->
     <description>This XBMC plugin enables (UK only) the playing of TV and Radio catchup content from the BBC IPlayer website. Live radio and TV feeds are also supported. </description>

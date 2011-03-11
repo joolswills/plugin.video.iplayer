@@ -1,0 +1,41 @@
+Changes
+
+2.4.6
+
+  * allow disabling of http cache used for caching iplayer rss/xml
+  * use correct storage location for addon data
+  * rename from IPlayer to iPlayer
+  * make addon appear in both audio and video sections. Thanks Hitcher.
+  * added this changelog
+
+2.4.6
+
+  * version bump to fix problems with the 2.4.5 on Hitcher's repo.
+
+2.4.5
+
+  * addition of non tunnel http proxy plus socks 4/5 proxy options
+  * http proxy authentication (also sent upstream)
+  * update radio stream support
+  * fixed up lots internal stream logic that wasn't quite working
+  * added bbc news 24 live @ 1500kbit
+
+2.4.2
+
+  * video stream settings fix
+
+2.4.1
+
+  * documentation and icon fix
+
+2.4.0
+
+  * http tunnelled and socks 4 / 5 support (needs work)
+  * start on radio or tv screen
+  * level 3 stream support
+  * optimised icons
+
+Older changes are available at
+http://code.google.com/p/xbmc-iplayerv2/source/list
+  
+  

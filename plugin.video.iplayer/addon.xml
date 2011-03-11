@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="plugin.video.iplayer"
-       name="IPlayer"
-       version="2.4.6"
-       provider-name="Dink,BuZz">
+       name="iPlayer"
+       version="2.4.7"
+       provider-name="BuZz, Dink">
     <requires>
         <import addon="xbmc.python" version="1.0"/>
     </requires>
     <extension point="xbmc.python.pluginsource"
                library="default.py">
-        <provides>video</provides>
+        <provides>video audio</provides>
     </extension>
     <extension point="xbmc.addon.metadata">
         <platform>all</platform>
-        <summary>IPlayer</summary>
+        <summary>Watch TV and listen to radio from the BBC's iPlayer website</summary>
         <description>This XBMC plugin enables (UK only) the playing of TV and Radio catchup content from the BBC IPlayer website. Live radio and TV feeds are also supported.</description>
     </extension>
 </addon>
