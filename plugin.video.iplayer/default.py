@@ -9,17 +9,16 @@ import logging
 import operator
 
 import xbmc, xbmcgui, xbmcplugin
+import utils
 
-# Script constants
-__scriptname__ = "iPlayer"
-__author__     = 'BuZz [buzz@exotica.org.uk], Dink [dink12345@googlemail.com]'
-__svn_url__    = "http://xbmc-iplayerv2.googlecode.com/svn/trunk/IPlayer"
-__version__    = "2.4.8"
+__scriptid__ = "plugin.video.iplayer"
+__addoninfo__ = utils.get_addoninfo(__scriptid__)
+__addon__ = __addoninfo__["addon"]
+__version__ = __addoninfo__["version"]
 
-sys.path.insert(0, os.path.join(os.getcwd(), 'lib'))
+sys.path.insert(0, os.path.join(__addoninfo__['path'], 'lib'))
 
 try:
-    import addoncompat
     import iplayer2 as iplayer
     import live_tv
     import iplayer_search
@@ -36,17 +35,13 @@ logging.basicConfig(
     format='iplayer2.py: %(levelname)4s %(message)s',
     )
 
-if addoncompat.__has_addons__:
-    DIR_USERDATA = xbmc.translatePath(addoncompat.__addon__.getAddonInfo('profile'))
-else:
-    DIR_USERDATA = xbmc.translatePath(os.path.join( 'T:' + os.sep, "plugin_data", __scriptname__ ))
-
+DIR_USERDATA   = xbmc.translatePath(__addoninfo__["profile"])
 HTTP_CACHE_DIR = os.path.join(DIR_USERDATA, 'iplayer_http_cache')
 SUBTITLES_DIR  = os.path.join(DIR_USERDATA, 'Subtitles')
 SEARCH_FILE    = os.path.join(DIR_USERDATA, 'search.txt')
 VERSION_FILE   = os.path.join(DIR_USERDATA, 'version.txt')
 
-PLUGIN_HANDLE = int(sys.argv[1])
+__plugin_handle__ = utils.__plugin_handle__
 
 def file_read(filename):
     text = ''
@@ -69,7 +64,6 @@ def sort_by_attr(seq, attr):
     intermed.sort()
     return map(operator.getitem, intermed, (-1,) * len(intermed))
 
-
 def get_plugin_thumbnail(image):
 
     # support user supplied .png files
@@ -81,7 +75,6 @@ def get_plugin_thumbnail(image):
         return userpng
     
     return None
-    
 
 def get_feed_thumbnail(feed):
     thumbfn = ''
@@ -146,14 +139,14 @@ def read_url():
         feed = iplayer.feed(tvradio or 'auto', atoz=feed_atoz, radio=radio)
 
     if not (feed or listing):
-        section = addoncompat.get_setting('start_section')
+        section = __addon__.getSetting('start_section')
         if   section == '1': tvradio = 'tv'
         elif section == '2': tvradio = 'radio'
 
     return (feed, listing, pid, tvradio, category, series, url, label, deletesearch, radio)
     
 def list_feeds(feeds, tvradio='tv', radio=None):
-    xbmcplugin.addSortMethod(handle=PLUGIN_HANDLE, sortMethod=xbmcplugin.SORT_METHOD_TRACKNUM )   
+    xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_TRACKNUM )   
 
     folders = []
     if tvradio == 'tv' or radio == 'national':
@@ -176,7 +169,7 @@ def list_feeds(feeds, tvradio='tv', radio=None):
         listitem.setThumbnailImage(get_plugin_thumbnail(tn))
         listitem.setProperty('tracknumber', str(i + j))            
         ok = xbmcplugin.addDirectoryItem(
-            handle=PLUGIN_HANDLE,
+            handle=__plugin_handle__,
             url=url,
             listitem=listitem,
             isFolder=True,
@@ -190,18 +183,18 @@ def list_feeds(feeds, tvradio='tv', radio=None):
         listitem.setProperty('tracknumber', str(i + j))
         url = make_url(feed=f, listing='list')
         ok = xbmcplugin.addDirectoryItem(
-            handle=PLUGIN_HANDLE,
+            handle=__plugin_handle__,
             url=url,
             listitem=listitem,
             isFolder=True,
         )
-    xbmcplugin.endOfDirectory(handle=PLUGIN_HANDLE, succeeded=True)
+    xbmcplugin.endOfDirectory(handle=__plugin_handle__, succeeded=True)
 
 
 def list_live_feeds(feeds, tvradio='tv'):
     #print 'list_live_feeds %s' % feeds
-    xbmcplugin.setContent(PLUGIN_HANDLE, 'songs')
-    xbmcplugin.addSortMethod(handle=PLUGIN_HANDLE, sortMethod=xbmcplugin.SORT_METHOD_TRACKNUM)
+    xbmcplugin.setContent(__plugin_handle__, 'songs')
+    xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_TRACKNUM)
 
     if tvradio == 'tv':
         return
@@ -241,13 +234,13 @@ def list_live_feeds(feeds, tvradio='tv'):
         listitem.setPath(stream_url)
                           
         ok = xbmcplugin.addDirectoryItem(
-            handle=PLUGIN_HANDLE,
+            handle=__plugin_handle__,
             url=stream_url,
             listitem=listitem,
             isFolder=False,
         )
     
-    xbmcplugin.endOfDirectory(handle=PLUGIN_HANDLE, succeeded=True)
+    xbmcplugin.endOfDirectory(handle=__plugin_handle__, succeeded=True)
 
 
 
@@ -256,7 +249,7 @@ def list_tvradio():
     """
     Lists five folders - one for TV and one for Radio, plus A-Z, highlights and popular
     """
-    xbmcplugin.addSortMethod(handle=PLUGIN_HANDLE, sortMethod=xbmcplugin.SORT_METHOD_TRACKNUM)
+    xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_TRACKNUM)
         
     folders = []
     folders.append(('TV', 'tv', make_url(tvradio='tv')))
@@ -274,19 +267,19 @@ def list_tvradio():
             # fix for reported bug where loading dialog would overlay settings dialog 
             folder = False
         ok = xbmcplugin.addDirectoryItem(
-            handle=PLUGIN_HANDLE, 
+            handle=__plugin_handle__, 
             url=url,
             listitem=listitem,
             isFolder=folder,
         )
     
-    xbmcplugin.endOfDirectory(handle=PLUGIN_HANDLE, succeeded=True)
+    xbmcplugin.endOfDirectory(handle=__plugin_handle__, succeeded=True)
     
 def list_radio_types():
     """
     Lists folders - National, Regional & Local Radio + Search 
     """
-    xbmcplugin.addSortMethod(handle=PLUGIN_HANDLE, sortMethod=xbmcplugin.SORT_METHOD_TRACKNUM)
+    xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_TRACKNUM)
         
     folders = []
     folders.append(('National Radio Stations', 'national', make_url(tvradio='radio',radio='national')))
@@ -299,13 +292,13 @@ def list_radio_types():
         listitem.setThumbnailImage(get_plugin_thumbnail('bbc_radio'))
         folder=True
         ok = xbmcplugin.addDirectoryItem(
-            handle=PLUGIN_HANDLE, 
+            handle=__plugin_handle__, 
             url=url,
             listitem=listitem,
             isFolder=folder,
         )
     
-    xbmcplugin.endOfDirectory(handle=PLUGIN_HANDLE, succeeded=True)
+    xbmcplugin.endOfDirectory(handle=__plugin_handle__, succeeded=True)
 
 def get_setting_videostream():  
 
@@ -313,7 +306,7 @@ def get_setting_videostream():
 
     stream_prefs = '0'
     try:
-        stream_prefs = addoncompat.get_setting('video_stream')
+        stream_prefs = __addon__.getSetting('video_stream')
     except:
         pass
         
@@ -347,7 +340,7 @@ def get_setting_audiostream():
 
     stream_prefs = '0'
     try:
-        stream_prefs = addoncompat.get_setting('audio_stream')
+        stream_prefs = __addon__.getSetting('audio_stream')
     except:
         pass
 
@@ -364,7 +357,7 @@ def get_setting_audiostream():
 
 
 def get_setting_thumbnail_size():
-    size = addoncompat.get_setting('thumbnail_size')
+    size = __addon__.getSetting('thumbnail_size')
     #Biggest|Large|Small|Smallest|None
     if size:
         if size == '0':
@@ -381,7 +374,7 @@ def get_setting_thumbnail_size():
     return 'large'
 
 def get_setting_subtitles():
-    subtitles = addoncompat.get_setting('subtitles_control')
+    subtitles = __addon__.getSetting('subtitles_control')
     #values="None|Download and Play|Download to File" default="None"
     if subtitles:
         if subtitles == 'None' or subtitles == '0':
@@ -430,7 +423,7 @@ def add_programme(feed, programme, totalItems=None, tracknumber=None, thumbnail_
     url=make_url(feed=feed, pid=programme.pid)
 
     xbmcplugin.addDirectoryItem(
-        handle=PLUGIN_HANDLE, 
+        handle=__plugin_handle__, 
         url=url,
         listitem=listitem,
         totalItems=totalItems
@@ -442,7 +435,7 @@ def add_programme(feed, programme, totalItems=None, tracknumber=None, thumbnail_
 def list_categories(tvradio='tv', feed=None, channels=None, progcount=True):
 
     # list of categories within a channel
-    xbmcplugin.addSortMethod(handle=PLUGIN_HANDLE, sortMethod=xbmcplugin.SORT_METHOD_NONE)
+    xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_NONE)
     for label, category in feed.categories():
         url = make_url(feed=feed, listing='list', category=category, tvradio=tvradio)
         listitem = xbmcgui.ListItem(label=label)
@@ -451,13 +444,13 @@ def list_categories(tvradio='tv', feed=None, channels=None, progcount=True):
         else:
             listitem.setThumbnailImage(get_plugin_thumbnail('radio'))
         ok = xbmcplugin.addDirectoryItem(            
-            handle=PLUGIN_HANDLE, 
+            handle=__plugin_handle__, 
             url=url,
             listitem=listitem,
             isFolder=True,
         )
         
-    xbmcplugin.endOfDirectory(handle=PLUGIN_HANDLE, succeeded=True)
+    xbmcplugin.endOfDirectory(handle=__plugin_handle__, succeeded=True)
     
 def series_match(name):
     # match the series name part of a programme name
@@ -539,7 +532,7 @@ def list_series(feed, listing, category=None, progcount=True):
         date=dates[s][8:10] + '/' + dates[s][5:7] + '/' +dates[s][:4] #date ==dd/mm/yyyy
         listitem.setInfo('video', {'Title': s, 'Date': date, 'Size': episodes[s], 'Genre': "/".join(categories[s])})
         ok = xbmcplugin.addDirectoryItem(            
-            handle=PLUGIN_HANDLE, 
+            handle=__plugin_handle__, 
             url=url,
             listitem=listitem,
             isFolder=True,
@@ -551,12 +544,12 @@ def list_series(feed, listing, category=None, progcount=True):
         label = "(no programmes available - try again later)"
         listitem = xbmcgui.ListItem(label=label)
         ok = xbmcplugin.addDirectoryItem(
-            handle=PLUGIN_HANDLE,
+            handle=__plugin_handle__,
             url="",
             listitem=listitem,
         )
 
-    xbmcplugin.endOfDirectory(handle=PLUGIN_HANDLE, succeeded=True)
+    xbmcplugin.endOfDirectory(handle=__plugin_handle__, succeeded=True)
     
     
 def search(tvradio, searchterm):
@@ -575,7 +568,7 @@ def search(tvradio, searchterm):
     
     url = "%s?deletesearch=%s&tvradio=%s" % (sys.argv[0], urllib.quote_plus(searchterm), urllib.quote_plus(tvradio))
     ok = xbmcplugin.addDirectoryItem(
-                handle=PLUGIN_HANDLE,
+                handle=__plugin_handle__,
                 url=url,             
                 listitem=listitem,
                 isFolder=False,
@@ -589,7 +582,7 @@ def search_delete(tvradio, searchterm):
     
 def search_list(tvradio):
     # provide a list of saved search terms
-    xbmcplugin.addSortMethod(handle=PLUGIN_HANDLE, sortMethod=xbmcplugin.SORT_METHOD_NONE)
+    xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_NONE)
     searchimg = get_plugin_thumbnail('search')
     
     # First item allows a new search to be created
@@ -597,7 +590,7 @@ def search_list(tvradio):
     listitem.setThumbnailImage(searchimg)
     url = make_url(listing='search', tvradio=tvradio)
     ok = xbmcplugin.addDirectoryItem(            
-          handle=PLUGIN_HANDLE, 
+          handle=__plugin_handle__, 
           url=url,
           listitem=listitem,
           isFolder=True) 
@@ -613,19 +606,19 @@ def search_list(tvradio):
         listitem.addContextMenuItems( [ ('Delete saved search', cmd) ] )
         
         ok = xbmcplugin.addDirectoryItem(            
-            handle=PLUGIN_HANDLE, 
+            handle=__plugin_handle__, 
             url=url,
             listitem=listitem,
             isFolder=True,
         )        
          
-    xbmcplugin.endOfDirectory(handle=PLUGIN_HANDLE, succeeded=True)
+    xbmcplugin.endOfDirectory(handle=__plugin_handle__, succeeded=True)
         
 def list_feed_listings(feed, listing, category=None, series=None, channels=None):
     if channels or listing == 'popular' or listing == 'highlights': 
-        xbmcplugin.addSortMethod(handle=PLUGIN_HANDLE, sortMethod=xbmcplugin.SORT_METHOD_NONE)
+        xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_NONE)
     else:
-        xbmcplugin.addSortMethod(handle=PLUGIN_HANDLE, sortMethod=xbmcplugin.SORT_METHOD_LABEL)
+        xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_LABEL)
       
     d = {}
     d['list'] = feed.list
@@ -671,7 +664,7 @@ def list_feed_listings(feed, listing, category=None, series=None, channels=None)
         label = "(no programmes available - try again later)"
         listitem = xbmcgui.ListItem(label=label)
         ok = xbmcplugin.addDirectoryItem(
-            handle=PLUGIN_HANDLE,
+            handle=__plugin_handle__,
             url="",
             listitem=listitem
         )
@@ -688,14 +681,14 @@ def list_feed_listings(feed, listing, category=None, series=None, channels=None)
             count = count + 1
             url = make_url(feed=f, listing=listing, tvradio=feed.tvradio, category=category)
             ok = xbmcplugin.addDirectoryItem(
-                handle=PLUGIN_HANDLE,
+                handle=__plugin_handle__,
                 url=url,
                 listitem=listitem,
                 isFolder=True,
             )
 
-    xbmcplugin.setContent(handle=PLUGIN_HANDLE, content='episodes')
-    xbmcplugin.endOfDirectory(handle=PLUGIN_HANDLE, succeeded=True)
+    xbmcplugin.setContent(handle=__plugin_handle__, content='episodes')
+    xbmcplugin.endOfDirectory(handle=__plugin_handle__, succeeded=True)
 
 
 def get_item(pid): 
@@ -989,7 +982,7 @@ def watch(feed, pid, showDialog):
     if showDialog: pDialog.close()
     times.append(['pDialog.close()',time.clock()])
     
-    if addoncompat.get_setting('enhanceddebug') == 'true':
+    if __addon__.getSetting('enhanceddebug') == 'true':
         pt = times[0][1]
         for t in times:
             logging.info('Took %2.2f sec for %s' % (t[1] - pt, t[0]))
@@ -1061,18 +1054,18 @@ if __name__ == "__main__":
     try:
 
         # setup and check script environment 
-        if addoncompat.get_setting('http_cache_disable') == 'false': iplayer.set_http_cache(HTTP_CACHE_DIR)
+        if __addon__.getSetting('http_cache_disable') == 'false': iplayer.set_http_cache(HTTP_CACHE_DIR)
     
         environment = os.environ.get( "OS", "xbox" )
         try:
-            timeout = int(addoncompat.get_setting('socket_timeout'))
+            timeout = int(__addon__.getSetting('socket_timeout'))
         except:
             timeout = 5
         if environment in ['Linux', 'xbox'] and timeout > 0:
             setdefaulttimeout(timeout)
     
         progcount = True
-        if addoncompat.get_setting('progcount') == 'false':  progcount = False   
+        if __addon__.getSetting('progcount') == 'false':  progcount = False   
       
         # get current state parameters
         (feed, listing, pid, tvradio, category, series, url, label, deletesearch, radio) = read_url()
@@ -1084,7 +1077,7 @@ if __name__ == "__main__":
     
         # state engine
         if pid:
-            showDialog = addoncompat.get_setting('displaydialog') == 'true'
+            showDialog = __addon__.getSetting('displaydialog') == 'true'
             if not label:
                 watch(feed, pid, showDialog)
             else:
@@ -1099,7 +1092,7 @@ if __name__ == "__main__":
             if not tvradio:
                 list_tvradio()
             elif tvradio == 'Settings':
-                addoncompat.open_settings()
+                __addon__.openSettings()
             elif (tvradio == 'radio' and radio == None):
                 list_radio_types()
             elif tvradio:

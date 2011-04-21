@@ -16,7 +16,7 @@ import xbmcgui
 # external libs
 import listparser
 import stations
-import addoncompat
+
 try:
     # python >= 2.5
     from xml.etree import ElementTree as ET
@@ -24,7 +24,13 @@ except:
     # python 2.4 has to use the plugin's version of elementtree
     from elementtree import ElementTree as ET
 import httplib2
-sys.path.append(os.path.join(os.getcwd(), 'lib', 'httplib2'))
+
+import utils
+__scriptid__ = "plugin.video.iplayer"
+__addoninfo__ = utils.get_addoninfo(__scriptid__)
+__addon__ = __addoninfo__["addon"]
+
+sys.path.append(os.path.join(__addoninfo__["path"], 'lib', 'httplib2'))
 import socks
 
 #print "iplayer2 logging to stdout"
@@ -73,11 +79,11 @@ def get_proxy():
     proxy_user = None
     proxy_pass = None
     try:
-        proxy_server = addoncompat.get_setting('proxy_server')
-        proxy_type_id = addoncompat.get_setting('proxy_type')
-        proxy_port = int(addoncompat.get_setting('proxy_port'))
-        proxy_user = addoncompat.get_setting('proxy_user')
-        proxy_pass = addoncompat.get_setting('proxy_pass')
+        proxy_server = __addon__.getSetting('proxy_server')
+        proxy_type_id = __addon__.getSetting('proxy_type')
+        proxy_port = int(__addon__.getSetting('proxy_port'))
+        proxy_user = __addon__.getSetting('proxy_user')
+        proxy_pass = __addon__.getSetting('proxy_pass')
     except:
         pass
 
@@ -93,7 +99,7 @@ def get_proxy():
 def get_httplib():
     http = None
     try:
-        if addoncompat.get_setting('proxy_use') == 'true':
+        if __addon__.getSetting('proxy_use') == 'true':
             (proxy_type, proxy_server, proxy_port, proxy_dns, proxy_user, proxy_pass) = get_proxy()
             logging.info("Using proxy: type %i rdns: %i server: %s port: %s user: %s pass: %s", proxy_type, proxy_dns, proxy_server, proxy_port, "***", "***")
             http = httplib2.Http(proxy_info = httplib2.ProxyInfo(proxy_type, proxy_server, proxy_port, proxy_dns, proxy_user, proxy_pass))
@@ -193,7 +199,7 @@ def parse_entry_id(entry_id):
 def get_provider():
     provider = ""
     try:
-        provider_id = addoncompat.get_setting('provider')
+        provider_id = __addon__.getSetting('provider')
     except:
         pass
 
@@ -206,7 +212,7 @@ def get_provider():
 def get_protocol():
     protocol = "rtmp"
     try:
-        protocol_id = addoncompat.get_setting('protocol')
+        protocol_id = __addon__.getSetting('protocol')
     except:
         pass
 
@@ -221,8 +227,8 @@ def get_port():
     return port
 
 def get_thumb_dir():
-    thumb_dir = os.path.join(os.getcwd(), 'resources', 'media')
-    if addoncompat.get_os() == "xbox":
+    thumb_dir = os.path.join(__addoninfo__['path'], 'resources', 'media')
+    if utils.get_os() == "xbox":
         thumb_dir = os.path.join(thumb_dir, 'xbox')
     return thumb_dir
 
@@ -336,7 +342,7 @@ class media(object):
             if application == None and self.connection_kind == 'akamai':
                 application = "ondemand"
 
-            timeout = addoncompat.get_setting('stream_timeout')
+            timeout = __addon__.getSetting('stream_timeout')
             swfplayer = 'http://www.bbc.co.uk/emp/10player.swf'       
             params = dict(protocol = get_protocol(), port = get_port(), server = server, auth = auth, ident = identifier, app = application)
 
@@ -351,7 +357,7 @@ class media(object):
         else:
             logging.error("connectionkind %s unknown", self.connection_kind)
 
-        if self.connection_protocol and addoncompat.get_setting('enhanceddebug') == 'true':
+        if self.connection_protocol and __addon__.getSetting('enhanceddebug') == 'true':
             logging.info("protocol: %s - kind: %s - type: %s - encoding: %s, - bitrate: %s" % 
                          (self.connection_protocol, self.connection_kind, self.mimetype, self.encoding, self.bitrate))
             logging.info("conn href: %s", self.connection_href)

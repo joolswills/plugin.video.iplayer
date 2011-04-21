@@ -1,5 +1,13 @@
 Changes
 
+2.4.9
+
+  * compatibility with xbmc git releases post internal python removal - getcwd no
+    longer returns the path of the running script
+  * removed addon compatibility code for xbmc4xbox (no longer needed since we
+    have an addon compatibility module shipped with xbmc4xbox)
+  * misc clean-ups
+
 2.4.8
 
   * fixed path issue that was present when using unwrapped/external python
