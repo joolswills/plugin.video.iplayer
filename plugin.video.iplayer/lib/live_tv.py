@@ -47,6 +47,14 @@ def fetch_stream_info(channel, bitrate, req_provider):
     if channel == "bbc_parliament" or channel == "bbc_alba":
         quality = 'iplayer_streaming_vp6_flv_lo_live'
 
+    # if user chooses a stream type that doesn't exist for live, switch to "auto" mode
+    if req_provider != "akamai" and req_provider != "limelight":
+        req_provider = ""
+
+    # bbc one has switched to "akamai_hd" instead of "akamai"
+    if channel == "bbc_one_london" and req_provider == "akamai":
+        req_provider == "akamai_hd"
+
     surl = 'http://www.bbc.co.uk/mediaselector/4/mtis/stream/%s/%s/%s' % (stream_id, quality, req_provider)
     logging.info("getting media information from %s" % surl)
     root = parseXML(surl)
@@ -76,9 +84,10 @@ def fetch_stream_info(channel, bitrate, req_provider):
         if supplier == "limelight":
             url = "%(protocol)s://%(server)s:%(port)s/ app=%(app)s?%(auth)s tcurl=%(protocol)s://%(server)s:%(port)s/%(app)s?%(auth)s playpath=%(ident)s" % params
         url += " swfurl=http://www.bbc.co.uk/emp/10player.swf swfvfy=1 live=1"
+    elif supplier == "akamai_hd":
+        url = conn.attributes['href'].nodeValue
 
     return (url)
-
 
 def play_stream(channel, bitrate, showDialog):
     bitrate = int(bitrate)
@@ -103,7 +112,7 @@ def play_stream(channel, bitrate, showDialog):
     url = fetch_stream_info(channel, bitrate, provider)
 
     if url == "":
-        Dialog = xbmcgui.Dialog()
+        pDialog = xbmcgui.Dialog()
         pDialog.ok('IPlayer', "Sorry, stream is currently unavailable")
 
     if showDialog:

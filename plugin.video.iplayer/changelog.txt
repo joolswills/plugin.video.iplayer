@@ -1,5 +1,10 @@
 Changes
 
+2.4.10
+
+  * Support akamai_hd live stream (bbc1 switched to http stream for akamai)
+  * Fix python error in dialog code
+
 2.4.9
 
   * compatibility with xbmc git releases post internal python removal - getcwd no
