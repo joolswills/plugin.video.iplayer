@@ -1,5 +1,9 @@
 Changes
 
+2.4.11
+
+  * Fixed code typo from last release.
+
 2.4.10
 
   * Support akamai_hd live stream (bbc1 switched to http stream for akamai)

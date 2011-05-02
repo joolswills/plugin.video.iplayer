@@ -53,7 +53,7 @@ def fetch_stream_info(channel, bitrate, req_provider):
 
     # bbc one has switched to "akamai_hd" instead of "akamai"
     if channel == "bbc_one_london" and req_provider == "akamai":
-        req_provider == "akamai_hd"
+        req_provider = "akamai_hd"
 
     surl = 'http://www.bbc.co.uk/mediaselector/4/mtis/stream/%s/%s/%s' % (stream_id, quality, req_provider)
     logging.info("getting media information from %s" % surl)
