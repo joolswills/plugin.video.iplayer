@@ -1,5 +1,9 @@
 Changes
 
+2.4.12
+
+  * revert akamai_hd changes (bbc switched back to akamai)
+
 2.4.11
 
   * Fixed code typo from last release.

@@ -51,9 +51,9 @@ def fetch_stream_info(channel, bitrate, req_provider):
     if req_provider != "akamai" and req_provider != "limelight":
         req_provider = ""
 
-    # bbc one has switched to "akamai_hd" instead of "akamai"
-    if channel == "bbc_one_london" and req_provider == "akamai":
-        req_provider = "akamai_hd"
+    # bbc one switched to "akamai_hd" instead of "akamai" (29/04/2011 - beg/05/2011)
+    #if channel == "bbc_one_london" and req_provider == "akamai":
+    #    req_provider = "akamai_hd"
 
     surl = 'http://www.bbc.co.uk/mediaselector/4/mtis/stream/%s/%s/%s' % (stream_id, quality, req_provider)
     logging.info("getting media information from %s" % surl)
@@ -71,7 +71,7 @@ def fetch_stream_info(channel, bitrate, req_provider):
     supplier    = conn.attributes['supplier'].nodeValue
 
     # not always listed for some reason
-    try: 
+    try:
         application = conn.attributes['application'].nodeValue
     except:
         application = 'live'
