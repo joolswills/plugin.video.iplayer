@@ -52,6 +52,12 @@ radio_station_info = [
      'type': 'national',
      'stream': 'http://www.bbc.co.uk/radio4/wm_asx/aod/radio4.asx'},
 
+    {'id': 'bbc_radio_four_extra',
+     'name': 'Radio 4 Extra',
+     'logo': None,
+     'type': 'national',
+     'stream': 'http://www.bbc.co.uk/bbc7/realplayer/bbc7_hi.asx'},
+
     {'id': 'bbc_radio_five_live',
      'name': 'Radio 5 Live',
      'logo': None,
@@ -71,12 +77,6 @@ radio_station_info = [
      'type': 'national',
      'webcam': 'http://www.bbc.co.uk/6music/webcam/live/6music.jpg',
      'stream': 'http://bbc.co.uk/radio/listen/live/r6.asx'},
-
-    {'id': 'bbc_7',
-     'name': 'Radio 7',
-     'logo': None,
-     'type': 'national',
-     'stream': 'http://www.bbc.co.uk/bbc7/realplayer/bbc7_hi.asx'},
 
     {'id': 'bbc_asian_network',
      'name': 'Asian Network',
