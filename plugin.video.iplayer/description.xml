@@ -23,7 +23,7 @@
     <title>IPlayer</title>
 
     <!-- (required) Major.minor.build -->
-    <version>2.4.12</version>
+    <version>2.4.13</version>
 
     <!-- (required) author name & email.  at least one author name is required -->
     <authors>

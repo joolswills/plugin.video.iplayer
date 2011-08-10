@@ -1,5 +1,10 @@
 Changes
 
+2.4.13
+
+  * bbc one / bbc two back on akamai_hd
+  * bbc radio 7 became bbc radio 4 extra
+
 2.4.12
 
   * revert akamai_hd changes (bbc switched back to akamai)
