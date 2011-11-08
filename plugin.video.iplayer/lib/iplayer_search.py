@@ -2,7 +2,7 @@
 
 # Python libs
 import os, string, sys, xbmc
-from sets import Set 
+from sets import Set
 
 def load_search(file, tvradio):
     # load the list of search terms for the current search type
@@ -54,10 +54,11 @@ def save_search(file, tvradio, search):
 def prompt_for_search():
     # prompt the user to input search text
     kb = xbmc.Keyboard('', 'Search for')
+    
     kb.doModal()
     if not kb.isConfirmed():
-        xbmcplugin.endOfDirectory(handle=handle, succeeded=False)
-
-    searchterm = kb.getText()
+        return None;
+  
+    searchterm = kb.getText().strip()
     return searchterm
             

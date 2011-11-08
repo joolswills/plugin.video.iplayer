@@ -556,23 +556,13 @@ def search(tvradio, searchterm):
    
     if not searchterm:
         searchterm = iplayer_search.prompt_for_search()
-        iplayer_search.save_search(SEARCH_FILE, tvradio, searchterm)
-    
+        if searchterm != None and len(searchterm) >= 3:
+            iplayer_search.save_search(SEARCH_FILE, tvradio, searchterm)
+        else:
+            return
+
     logging.info("searchterm=" + searchterm)
     feed = iplayer.feed(tvradio, searchterm=searchterm)
-    
-    listitem = xbmcgui.ListItem(label=' Delete this search - ' + searchterm)
-    listitem.setIconImage(get_plugin_thumbnail('search'))
-    listitem.setThumbnailImage(get_plugin_thumbnail('search'))
-    listitem.setProperty('tracknumber', '0')
-    
-    url = "%s?deletesearch=%s&tvradio=%s" % (sys.argv[0], urllib.quote_plus(searchterm), urllib.quote_plus(tvradio))
-    ok = xbmcplugin.addDirectoryItem(
-                handle=__plugin_handle__,
-                url=url,             
-                listitem=listitem,
-                isFolder=False,
-    )
     
     list_feed_listings(feed, 'list')
 
