@@ -130,7 +130,7 @@ def play_stream(channel, bitrate, showDialog):
     play = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
     play.clear()
     play.add(url,listitem)
-    player = xbmc.Player(xbmc.PLAYER_CORE_DVDPLAYER)
+    player = xbmc.Player(xbmc.PLAYER_CORE_AUTO)
     player.play(play)
     if showDialog: pDialog.close()
     
