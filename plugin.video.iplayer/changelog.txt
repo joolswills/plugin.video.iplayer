@@ -1,5 +1,11 @@
 Changes
 
+2.4.14
+
+  * bbc one / bbc two back on akamai
+  * search code changes
+  * don't force dvdplayer for live streams
+
 2.4.13
 
   * bbc one / bbc two back on akamai_hd
