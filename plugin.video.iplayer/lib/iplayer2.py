@@ -783,7 +783,7 @@ class feed(object):
             path = ['search']
             if self.tvradio:
                 path += [self.tvradio]
-            path += ['?q=%s' % self.searchterm]
+            path += ['?q=%s' % urllib.quote_plus(self.searchterm)]
         elif self.channel: 
             path = [self.channel]
             if self.atoz:
