@@ -20,7 +20,7 @@ live_tv_channels = {
     'cbbc' : (5, 'bbc_three_live', 'CBBC', 'cbbc.png'),
     'cbeebies' : (6, 'bbc_four_live', 'Cbeebies', 'cbeebies.png'),
     'bbc_news24' : (7, 'journalism_bbc_news_channel', 'BBC News', 'bbc_news24.png'),
-    'bbc_parliament' : (8, 'bbc_parliament_live', 'BBC Parliament', 'bbc_parliament.png'),
+    'bbc_parliament' : (8, 'bbc_parliament', 'BBC Parliament', 'bbc_parliament.png'),
     'bbc_alba' : (9, 'bbc_alba_live', 'BBC ALBA', 'bbc_alba.png'),
     'bbc_redbutton' : (10, 'bbc_redbutton_live', 'BBC Red Button', 'bbc_one.png')
     }
@@ -45,7 +45,8 @@ def fetch_stream_info(channel, bitrate, req_provider):
         elif bitrate >= 1500: quality = 'journalism_uk_stream_h264_flv_high_live'
 
     if channel == "bbc_parliament" or channel == "bbc_alba":
-        quality = 'iplayer_streaming_vp6_flv_lo_live'
+        quality = ""
+        req_provider = ""
 
     # if user chooses a stream type that doesn't exist for live, switch to "auto" mode
     if req_provider != "akamai" and req_provider != "limelight":
