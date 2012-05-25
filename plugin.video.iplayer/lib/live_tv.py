@@ -15,13 +15,13 @@ from iplayer2 import get_provider, httpget, get_protocol, get_port, get_thumb_di
 live_tv_channels = {
     'bbc_one_london' : (1, 'bbc_one_live', 'BBC One', 'bbc_one.png'),
     'bbc_two_england': (2, 'bbc_two_live', 'BBC Two', 'bbc_two.png'),
-    'bbc_three' : (3, 'bbc_three_live', 'BBC Three', 'bbc_three.png'),
-    'bbc_four' : (4, 'bbc_four_live', 'BBC Four', 'bbc_four.png'),
-    'cbbc' : (5, 'bbc_three_live', 'CBBC', 'cbbc.png'),
-    'cbeebies' : (6, 'bbc_four_live', 'Cbeebies', 'cbeebies.png'),
+    'bbc_three' : (3, 'bbc_three', 'BBC Three', 'bbc_three.png'),
+    'bbc_four' : (4, 'bbc_four', 'BBC Four', 'bbc_four.png'),
+    'cbbc' : (5, 'bbc_three', 'CBBC', 'cbbc.png'),
+    'cbeebies' : (6, 'bbc_four', 'Cbeebies', 'cbeebies.png'),
     'bbc_news24' : (7, 'journalism_bbc_news_channel', 'BBC News', 'bbc_news24.png'),
     'bbc_parliament' : (8, 'bbc_parliament', 'BBC Parliament', 'bbc_parliament.png'),
-    'bbc_alba' : (9, 'bbc_alba_live', 'BBC ALBA', 'bbc_alba.png'),
+    'bbc_alba' : (9, 'bbc_alba', 'BBC ALBA', 'bbc_alba.png'),
     'bbc_redbutton' : (10, 'bbc_redbutton_live', 'BBC Red Button', 'bbc_one.png')
     }
 
@@ -31,32 +31,46 @@ def parseXML(url):
     root = doc.documentElement
     return root
 
-def fetch_stream_info(channel, bitrate, req_provider):
+def fetch_stream_info(channel, req_bitrate, req_provider):
     (sort, stream_id, label, thumb) = live_tv_channels[channel]
 
-    if bitrate <= 480: quality = 'iplayer_streaming_h264_flv_lo_live'
-    elif bitrate == 800: quality = 'iplayer_streaming_h264_flv_live'
-    elif bitrate >= 1500: quality = 'iplayer_streaming_h264_flv_high_live'
+    provider = req_provider;
+
+    if   req_bitrate <= 480: quality = 1
+    elif req_bitrate == 800: quality = 2
+    elif req_bitrate >= 1500: quality = 3
+
+    if   quality == 1: quality_attr = 'iplayer_streaming_h264_flv_lo_live'
+    elif quality == 2: quality_attr = 'iplayer_streaming_h264_flv_live'
+    elif quality == 3: quality_attr = 'iplayer_streaming_h264_flv_high_live'
 
     # bbc news 24 uses different service names for the streams 
-    if channel == "bbc_news24":
-        if bitrate <= 480: quality = 'journalism_uk_stream_h264_flv_lo_live'
-        elif bitrate == 800: quality = 'journalism_uk_stream_h264_flv_med_live'
-        elif bitrate >= 1500: quality = 'journalism_uk_stream_h264_flv_high_live'
+    if channel == 'bbc_news24':
+        if   quality == 1: quality_attr = 'journalism_uk_stream_h264_flv_lo_live'
+        elif quality == 2: quality_attr = 'journalism_uk_stream_h264_flv_med_live'
+        elif quality == 3: quality_attr = 'journalism_uk_stream_h264_flv_high_live'
+        
+    if stream_id == 'bbc_three' or stream_id == 'bbc_four':
+        if   quality == 1: quality_attr = 'pc_stream_audio_video_simulcast_uk_v_lm_p004'
+        elif quality == 2: quality_attr = 'pc_stream_audio_video_simulcast_uk_v_lm_p005'
+        elif quality == 3: quality_attr = 'pc_stream_audio_video_simulcast_uk_v_lm_p006'
 
-    if channel == "bbc_parliament" or channel == "bbc_alba":
-        quality = ""
-        req_provider = ""
+    if channel == 'bbc_parliament' or channel == 'bbc_alba':
+        quality_attr = ''
+        provider = ''
+        
+    if channel == 'bbc_redbutton':
+        provider = ''
 
     # if user chooses a stream type that doesn't exist for live, switch to "auto" mode
-    if req_provider != "akamai" and req_provider != "limelight":
-        req_provider = ""
+    if req_provider != 'akamai' and req_provider != 'limelight':
+        provider = ''
 
     # bbc one seem to switch between "akamai_hd" and "akamai"
     #if ( channel == "bbc_one_london" or channel == "bbc_two_england" ) and req_provider == "akamai":
     #    req_provider = "akamai_hd"
 
-    surl = 'http://www.bbc.co.uk/mediaselector/4/mtis/stream/%s/%s/%s' % (stream_id, quality, req_provider)
+    surl = 'http://www.bbc.co.uk/mediaselector/4/mtis/stream/%s/%s/%s' % (stream_id, quality_attr, provider)
     logging.info("getting media information from %s" % surl)
     root = parseXML(surl)
     mbitrate = 0
