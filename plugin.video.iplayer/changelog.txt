@@ -1,5 +1,9 @@
 Changes
 
+2.4.15
+  * quick fix-ups for live channels
+  * properly quote search string - thanks to alastair
+
 2.4.14
 
   * bbc one / bbc two back on akamai
