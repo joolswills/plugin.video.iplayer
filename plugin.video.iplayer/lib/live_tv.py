@@ -13,16 +13,16 @@ from iplayer2 import get_provider, httpget, get_protocol, get_port, get_thumb_di
 # channel id : order, stream id, display name, logo
 # note: some channel ids used in www urls are different from the stream urls
 live_tv_channels = {
-    'bbc_one_london' : (1, 'bbc_one_live', 'BBC One', 'bbc_one.png'),
-    'bbc_two_england': (2, 'bbc_two_live', 'BBC Two', 'bbc_two.png'),
+    'bbc_one_london' : (1, 'bbc_one_london', 'BBC One', 'bbc_one.png'),
+    'bbc_two_england': (2, 'bbc_two_england', 'BBC Two', 'bbc_two.png'),
     'bbc_three' : (3, 'bbc_three', 'BBC Three', 'bbc_three.png'),
     'bbc_four' : (4, 'bbc_four', 'BBC Four', 'bbc_four.png'),
     'cbbc' : (5, 'bbc_three', 'CBBC', 'cbbc.png'),
     'cbeebies' : (6, 'bbc_four', 'Cbeebies', 'cbeebies.png'),
-    'bbc_news24' : (7, 'journalism_bbc_news_channel', 'BBC News', 'bbc_news24.png'),
+    'bbc_news24' : (7, 'bbc_news24', 'BBC News', 'bbc_news24.png'),
     'bbc_parliament' : (8, 'bbc_parliament', 'BBC Parliament', 'bbc_parliament.png'),
     'bbc_alba' : (9, 'bbc_alba', 'BBC ALBA', 'bbc_alba.png'),
-    'bbc_redbutton' : (10, 'bbc_redbutton_live', 'BBC Red Button', 'bbc_one.png')
+    #'bbc_redbutton' : (10, 'bbc_redbutton_live', 'BBC Red Button', 'bbc_one.png')
     }
 
 def parseXML(url):
@@ -40,20 +40,9 @@ def fetch_stream_info(channel, req_bitrate, req_provider):
     elif req_bitrate == 800: quality = 2
     elif req_bitrate >= 1500: quality = 3
 
-    if   quality == 1: quality_attr = 'iplayer_streaming_h264_flv_lo_live'
-    elif quality == 2: quality_attr = 'iplayer_streaming_h264_flv_live'
-    elif quality == 3: quality_attr = 'iplayer_streaming_h264_flv_high_live'
-
-    # bbc news 24 uses different service names for the streams 
-    if channel == 'bbc_news24':
-        if   quality == 1: quality_attr = 'journalism_uk_stream_h264_flv_lo_live'
-        elif quality == 2: quality_attr = 'journalism_uk_stream_h264_flv_med_live'
-        elif quality == 3: quality_attr = 'journalism_uk_stream_h264_flv_high_live'
-        
-    if stream_id == 'bbc_three' or stream_id == 'bbc_four':
-        if   quality == 1: quality_attr = 'pc_stream_audio_video_simulcast_uk_v_lm_p004'
-        elif quality == 2: quality_attr = 'pc_stream_audio_video_simulcast_uk_v_lm_p005'
-        elif quality == 3: quality_attr = 'pc_stream_audio_video_simulcast_uk_v_lm_p006'
+    if   quality == 1: quality_attr = 'pc_stream_audio_video_simulcast_uk_v_lm_p004'
+    elif quality == 2: quality_attr = 'pc_stream_audio_video_simulcast_uk_v_lm_p005'
+    elif quality == 3: quality_attr = 'pc_stream_audio_video_simulcast_uk_v_lm_p006'
 
     if channel == 'bbc_parliament' or channel == 'bbc_alba':
         quality_attr = ''
@@ -75,6 +64,7 @@ def fetch_stream_info(channel, req_bitrate, req_provider):
     root = parseXML(surl)
     mbitrate = 0
     url = ""
+    if root.getElementsByTagName( "error" ) and root.getElementsByTagName( "error" )[0].attributes["id"].nodeValue == 'notavailable': return ""
     media = root.getElementsByTagName( "media" )[0]
 
     conn  = media.getElementsByTagName( "connection" )[0]
