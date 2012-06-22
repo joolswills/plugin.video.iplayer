@@ -1,5 +1,8 @@
 Changes
 
+2.4.17
+  * fix up hd streams (bitrate changed from 3200 to 2800kbit)
+
 2.4.16
   * fix up live channels again
   * disable bbc red button (currently unsure about stream id)

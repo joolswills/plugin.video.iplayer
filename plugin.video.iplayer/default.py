@@ -310,7 +310,7 @@ def get_setting_videostream():
     except:
         pass
         
-    # Auto|H.264 (480kb)|H.264 (800kb)|H.264 (1500kb)|H.264 (3200kb)
+    # Auto|H.264 (480kb)|H.264 (800kb)|H.264 (1500kb)|H.264 (2800kb)
     if stream_prefs == '0':
         environment = os.environ.get( "OS" )
         # check for xbox as we set a lower default for xbox (although it can do 1500kbit streams)
@@ -322,7 +322,7 @@ def get_setting_videostream():
             X = int(xbmc.getInfoLabel('System.ScreenWidth'))
             # if the screen is large enough for HD
             if Y > 832 and X > 468:
-                stream = 'h264 3200'
+                stream = 'h264 2800'
     elif stream_prefs == '1':
         stream = 'h264 480'
     elif stream_prefs == '2':
@@ -330,7 +330,7 @@ def get_setting_videostream():
     elif stream_prefs == '3':
         stream = 'h264 1500'
     elif stream_prefs == '4':
-        stream = 'h264 3200'
+        stream = 'h264 2800'
 
     logging.info("Video stream prefs %s - %s", stream_prefs, stream)
     return stream
@@ -864,7 +864,7 @@ def watch(feed, pid, showDialog):
             if pDialog.iscanceled(): raise
             times.append(['update dialog',time.clock()])
 
-        streams = ['h264 3200', 'h264 1500', 'h264 800', 'h264 480', 'h264 400']
+        streams = ['h264 2800', 'h264 1500', 'h264 800', 'h264 480', 'h264 400']
         (media, pref) = get_matching_stream(item, pref, streams)
 
         # A potentially usable stream was found (higher bitrate than the default) offer it to the user
