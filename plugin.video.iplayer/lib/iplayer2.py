@@ -449,8 +449,8 @@ class item(object):
     
     def mediaselector_url(self, suffix):
         if suffix == None:
-            return "http://www.bbc.co.uk/mediaselector/4/mtis/stream/%s" % self.identifier         
-        return "http://www.bbc.co.uk/mediaselector/4/mtis/stream/%s/%s" % (self.identifier, suffix)
+            return "http://open.live.bbc.co.uk/mediaselector/4/mtis/stream/%s" % self.identifier         
+        return "http://open.live.bbc.co.uk/mediaselector/4/mtis/stream/%s/%s" % (self.identifier, suffix)
 
     def medialist(self, suffix = None):
         """
