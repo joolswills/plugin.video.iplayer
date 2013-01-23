@@ -55,6 +55,9 @@ def fetch_stream_info(channel, req_bitrate, req_provider):
     if req_provider != 'akamai' and req_provider != 'limelight':
         provider = ''
 
+    # hack - force akamai provider for now
+    provider = 'akamai'
+
     # bbc one seem to switch between "akamai_hd" and "akamai"
     #if ( channel == "bbc_one_london" or channel == "bbc_two_england" ) and req_provider == "akamai":
     #    req_provider = "akamai_hd"
