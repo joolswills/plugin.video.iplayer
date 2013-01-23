@@ -943,7 +943,7 @@ def watch(feed, pid, showDialog):
 
     logging.info('Playing preference %s' % pref)
     times.append(['logging.info',time.clock()])
-    listitem.setInfo(type='Music', infoLabels = {'url': url, 'title': title})
+    listitem.setInfo(type='Music', infoLabels = {'title': title})
     times.append(['listitem.setproperty x 3',time.clock()])
 
     if thumbfile: 
