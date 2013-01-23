@@ -9,7 +9,7 @@
   <!-- Streams -->
   <category label="30200">
     <setting id="video_stream" label="30210" type="enum" values="Auto|H.264 (480Kb)|H.264 (800kb)|H.264 (1500kb)|H.264 (2800kb)" default="0" />
-    <setting id="audio_stream" label="30220" type="enum" values="Auto|MP3|AAC|WMA" default="0" />
+    <setting id="audio_stream" label="30220" type="enum" values="Auto|AAC (320Kb)|AAC (128Kb)|WMA (128Kb)|AAC (48Kb or 32Kb)" default="0" />
     <setting id="provider" label="30230" type="enum" values="Any|Akamai|Limelight|Level3" default="0" />
     <setting id="protocol" label="30240" type="enum" values="rtmp (port 1935)|rtmpt (port 80)" default="r0" />
   </category>

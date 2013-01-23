@@ -202,48 +202,36 @@ def list_live_feeds(feeds, tvradio='tv'):
     i = 0        
     
     for j, f in enumerate(feeds):
-        if not iplayer.stations.live_radio_stations.has_key(f.name):
-            #print "no key for %s" % f.name
-            continue
-        listitem = xbmcgui.ListItem(label=f.name)
-        listitem.setIconImage('defaultFolder.png')
-        if iplayer.stations.live_webcams.has_key(f.name):
-            listitem.setThumbnailImage(iplayer.stations.live_webcams[f.name])
-        else:
-            listitem.setThumbnailImage(get_feed_thumbnail(f))
-        listitem.setProperty('tracknumber', str(i + j))
-        
-        # Real & ASX url's are just redirects that are not always well
-        # handled by XBMC so if present load and process redirect
-        radio_url   = iplayer.stations.live_radio_stations[f.name]
-        stream_asx  = re.compile('\.asx$', re.IGNORECASE)
-        stream_mms  = re.compile('href\s*\=\s*"(mms.*?)"', re.IGNORECASE)
                
-        match_asx   = stream_asx.search(radio_url) 
+        try: logging.info('Processing feed %s' % str(f.name))
+        except: continue
         
-        if match_asx:
-            txt = iplayer.httpget(radio_url)
-            match_mms  = stream_mms.search(txt)
-            if  match_mms:
-                stream_url = match_mms.group(1)
-            else:
-                stream_url = radio_url
-        else:
-            stream_url = radio_url
+        # === Set up the XBMC ListItem
+        listitem = xbmcgui.ListItem(label=f.name)
         
-        listitem.setPath(stream_url)
+        listitem.setIconImage(get_feed_thumbnail(f))
+        listitem.setThumbnailImage(get_feed_thumbnail(f))
+        listitem.setProperty('tracknumber', str(i + j))
                           
         ok = xbmcplugin.addDirectoryItem(
             handle=__plugin_handle__,
-            url=stream_url,
+            url=make_url(pid=f.channel, feed=f),
             listitem=listitem,
             isFolder=False,
         )
     
     xbmcplugin.endOfDirectory(handle=__plugin_handle__, succeeded=True)
 
+def parse_asx(radio_url):
+    stream_mms  = re.compile('href\s*\=\s*"(mms.*?)"', re.IGNORECASE)
+    txt = iplayer.httpget(radio_url)
+    match_mms  = stream_mms.search(txt)
+    if  match_mms:
+        stream_url = match_mms.group(1)
+    else:
+        stream_url = radio_url
 
-
+    return stream_url
 
 def list_tvradio():
     """
@@ -336,7 +324,7 @@ def get_setting_videostream():
     return stream
 
 def get_setting_audiostream():
-    stream = 'wma'
+    stream = 'Auto'
 
     stream_prefs = '0'
     try:
@@ -344,13 +332,21 @@ def get_setting_audiostream():
     except:
         pass
 
-    # Auto|MP3|AAC|WMA
-    if stream_prefs == '1': 
-        stream = 'mp3'
+    # Auto|AAC (320Kb)|AAC (128Kb)|WMA (128Kb)|AAC (48Kb or 32Kb)
+    if stream_prefs == '0':
+        # Auto - default to highest bitrate AAC
+        stream = 'aac320'
+    elif stream_prefs == '1': 
+        stream = 'aac320'
     elif stream_prefs == '2':
-        stream = 'aac'        
+        stream = 'aac128'        
     elif stream_prefs == '3':
-        stream = 'wma'
+        # Live feeds have a wma+asx application type
+        # In this case the wma9 type is not available, and the plugin should default over to wma+asx
+        stream = 'wma9'
+    elif stream_prefs == '4':
+        # As above, live feeds only have a 32Kb AAC stream, which should be defaulted to after trying 48 bit
+        stream = 'aac48'
 
     logging.info("Audio stream prefs %s - %s", stream_prefs, stream)
     return stream
@@ -829,10 +825,14 @@ def watch(feed, pid, showDialog):
     times.append(['get_setting_subtitles',time.clock()])
 
     if thumbnail: 
-        # attempt to use the existing thumbnail file
-        thumbcache = xbmc.getCacheThumbName( sys.argv[ 0 ] + sys.argv[ 2 ] )
-        thumbfile  = os.path.join( xbmc.translatePath( "special://profile" ), "Thumbnails", "Video", thumbcache[ 0 ], thumbcache )
-        logging.info('Reusing existing thumbfile =%s for url %s%s' % (thumbfile, sys.argv[ 0 ], sys.argv[ 2 ]))
+        if pid == feed.channel:
+            # Listening to a live radio station, use the pre-downloaded file
+            thumbfile = get_feed_thumbnail(feed)
+        else:
+            # attempt to use the existing thumbnail file
+            thumbcache = xbmc.getCacheThumbName( sys.argv[ 0 ] + sys.argv[ 2 ] )
+            thumbfile  = os.path.join( xbmc.translatePath( "special://profile" ), "Thumbnails", "Video", thumbcache[ 0 ], thumbcache )
+            logging.info('Reusing existing thumbfile =%s for url %s%s' % (thumbfile, sys.argv[ 0 ], sys.argv[ 2 ]))
         
     if thumbnail and not os.path.isfile(thumbfile):
         # thumbnail wasn't available locally so download    
@@ -920,17 +920,21 @@ def watch(feed, pid, showDialog):
             if pDialog.iscanceled(): raise
             times.append(['update dialog',time.clock()])
  
-        (media, pref) = get_matching_stream(item, pref, ['wma', 'mp3', 'aac'])
+        (media, pref) = get_matching_stream(item, pref, ['aac320', 'aac128', 'wma9', 'wma+asx', 'aac48', 'aac32'])
 
         if not media:            
             d = xbmcgui.Dialog()
             d.ok('Stream Error', 'Error: can\'t locate radio stream')            
             return False
-        url = media.url
+
+        if media.application in ['wma9', 'wma+asx']:
+            url = parse_asx(media.url)
+        else:
+            url = media.url
             
         logging.info('Listening to url=%s' % url)
 
-        listitem = xbmcgui.ListItem(title)
+        listitem = xbmcgui.ListItem(label=title)
         times.append(['listitem create',time.clock()])
         listitem.setIconImage('defaultAudio.png')
         times.append(['listitem.setIconImage',time.clock()])
@@ -939,6 +943,7 @@ def watch(feed, pid, showDialog):
 
     logging.info('Playing preference %s' % pref)
     times.append(['logging.info',time.clock()])
+    listitem.setInfo(type='Music', infoLabels = {'url': url, 'title': title})
     times.append(['listitem.setproperty x 3',time.clock()])
 
     if thumbfile: 
@@ -947,7 +952,6 @@ def watch(feed, pid, showDialog):
         listitem.setThumbnailImage(thumbfile)
         times.append(['listitem.setThumbnailImage(thumbfile)',time.clock()])
     
-    del item
     del media
     
     if showDialog:
@@ -958,7 +962,10 @@ def watch(feed, pid, showDialog):
     times.append(['play.clear()',time.clock()])
     play.add(url,listitem)
     times.append(['play.add',time.clock()])
-    player = xbmc.Player(xbmc.PLAYER_CORE_AUTO)
+    if url.startswith( 'rtmp://' ):
+        player = xbmc.Player(xbmc.PLAYER_CORE_DVDPLAYER)
+    else:
+        player = xbmc.Player(xbmc.PLAYER_CORE_AUTO)
     times.append(['xbmc.Player()',time.clock()])
     player.play(play)
     times.append(['player.play',time.clock()])
@@ -972,41 +979,17 @@ def watch(feed, pid, showDialog):
     if showDialog: pDialog.close()
     times.append(['pDialog.close()',time.clock()])
     
+    if not item.is_tv:
+        # Switch to a nice visualisation if playing a radio stream
+        xbmc.executebuiltin('ActivateWindow(Visualisation)')
+
+    del item
+
     if __addon__.getSetting('enhanceddebug') == 'true':
         pt = times[0][1]
         for t in times:
             logging.info('Took %2.2f sec for %s' % (t[1] - pt, t[0]))
             pt = t[1]
-
-
-def listen_live(label='', url=None):
-    
-    if not url:
-        return
-    
-    txt = iplayer.httpget(url)
-    
-    # some of the the urls passed in are .asx. These are text files with multiple mss stream hrefs
-    stream = re.compile('href\="(mms.*?)"', re.IGNORECASE)
-    match  = stream.search(txt) 
-    stream_url = None
-    if match:
-        stream_url = match.group(1)
-    else:
-        # pass it to xbmc and see if it is directly supported 
-        stream_url = url
-        
-    listitem = xbmcgui.ListItem(label=label, label2=label)
-    if thumbnail: listitem.setThumbnailImage(thumbnail)
-    
-    play=xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
-
-    play.clear()
-    play.add(stream_url,listitem)
-        
-    player = xbmc.Player(xbmc.PLAYER_CORE_AUTO)
-
-    player.play(play)
 
 
 logging.info("IPlayer: version: %s" % __version__)
@@ -1074,8 +1057,6 @@ if __name__ == "__main__":
                 pref = get_setting_videostream()
                 bitrate = pref.split(' ')[1]
                 live_tv.play_stream(label, bitrate, showDialog)
-        elif url:
-            listen_live(label, url)
         elif deletesearch:
             search_delete(tvradio or 'tv', deletesearch)        
         elif not (feed or listing):

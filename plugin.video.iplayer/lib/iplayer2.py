@@ -274,6 +274,12 @@ class media(object):
         tep['audio', 'audio/mpeg', 'mp3', 'rtmp', None]   = 'mp3'
         tep['audio', 'audio/mp4',  'aac', 'rtmp', None]   = 'aac'
         tep['audio', 'audio/wma',  'wma', 'http', None]   = 'wma'
+        tep['audio', 'audio/mp4', 'aac', 'rtmp', 320]     = 'aac320'
+        tep['audio', 'audio/mp4', 'aac', 'rtmp', 128]     = 'aac128'
+        tep['audio', 'audio/wma', 'wma9', 'http', 128]    = 'wma9'
+        tep['audio', 'audio/x-ms-asf', 'wma', 'http', 128] = 'wma+asx'
+        tep['audio', 'audio/mp4', 'aac', 'rtmp', 48]      = 'aac48'
+        tep['audio', 'audio/mp4', 'aac', 'rtmp', 32]      = 'aac32'
         tep['video', 'video/mp4', 'h264', 'http', 516]    = 'iphonemp3'
         me = (self.kind, self.mimetype, self.encoding, self.connection_protocol, self.bitrate)
         return tep.get(me, None)
@@ -319,15 +325,11 @@ class media(object):
         self.connection_kind = conn.get('kind')
         self.connection_protocol = conn.get('protocol')
 
-        if self.mimetype[:5] == 'audio':
-            self.kind = 'audio'
-            self.bitrate = None
-
         # some akamai rtmp streams (radio) don't specify rtmp protocol
         if self.connection_protocol == None and self.connection_kind == 'akamai':
             self.connection_protocol = 'rtmp'
 
-        if self.connection_kind in ['http', 'sis']:
+        if self.connection_kind in ['http', 'sis', 'asx']:
             self.connection_href = conn.get('href')
             self.connection_protocol = 'http'
             if self.kind == 'captions':
@@ -350,9 +352,11 @@ class media(object):
                 # note that librtmp has a small issue with constructing the tcurl here. we construct it ourselves for now (fixed in later librtmp)
                 self.connection_href = "%(protocol)s://%(server)s:%(port)s/ app=%(app)s?%(auth)s tcurl=%(protocol)s://%(server)s:%(port)s/%(app)s?%(auth)s playpath=%(ident)s" % params
             else:
-                self.connection_href = "%(protocol)s://%(server)s:%(port)s/%(app)s?%(auth)s playpath=%(ident)s" % params
+                self.connection_href = "%(protocol)s://%(server)s:%(port)s/%(app)s?%(auth)s playpath=%(ident)s?%(auth)s" % params
 
-            self.connection_href += " swfurl=%s swfvfy=true timeout=%s" % (swfplayer, timeout)
+            self.connection_href += " swfurl=%(swfplayer)s swfvfy=1 timeout=%(timeout)s" % dict(swfplayer=swfplayer, timeout=timeout)
+            if application == 'live':
+                self.connection_href += " live=1"
 
         else:
             logging.error("connectionkind %s unknown", self.connection_kind)
@@ -545,7 +549,10 @@ class programme(object):
 
         logging.info('Found programme: %s', tree.find('title').text)
         self.meta['title'] = tree.find('title').text
-        self.meta['summary'] = string.lstrip(tree.find('summary').text, ' ')
+        self.meta['summary'] = tree.find('summary').text
+        # Live radio feeds have no text node in the summary node
+        if self.meta['summary']:
+            self.meta['summary'] = string.lstrip(self.meta['summary'], ' ')
         self.meta['updated'] = tree.find('updated').text
         
         if tree.find('noitems'):
