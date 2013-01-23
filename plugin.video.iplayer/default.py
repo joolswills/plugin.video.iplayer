@@ -824,8 +824,8 @@ def watch(feed, pid, showDialog):
     subtitles = get_setting_subtitles()
     times.append(['get_setting_subtitles',time.clock()])
 
-    if thumbnail: 
-        if pid == feed.channel:
+    if thumbnail:
+        if feed is not None and pid == feed.channel:
             # Listening to a live radio station, use the pre-downloaded file
             thumbfile = get_feed_thumbnail(feed)
         else:
