@@ -29,6 +29,8 @@
     <setting id="stream_timeout" label="30420" type="number" default="180" />
     <setting id="displaydialog" label="30430" type="bool" default="true" />
     <setting id="enhanceddebug" label="30440" type="bool" default="false" />
+    <setting id="resume_days_to_keep" label="30450" type="number" default="40" />
+    <setting label="30460" type="action" action="XBMC.RunPlugin(plugin://plugin.video.iplayer/?force_resume_unlock=1)" />
   </category>
 
 </settings>

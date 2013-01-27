@@ -1006,6 +1006,198 @@ class feed(object):
 
     name = property(get_name)
 
+import xbmc
+import threading
+
+class IPlayerLockException(Exception):
+    """
+    Exception raised when IPlayer fails to obtain a resume lock
+    """
+    pass
+
+class IPlayer(xbmc.Player):
+    """
+    An XBMC player object, for supporting iPlayer features suring playback of iPlayer programmes
+    """
+    
+    # Static constants for resume db and lockfile paths, set by default.py on plugin startup
+    RESUME_FILE = None
+    RESUME_LOCK_FILE = None
+    
+    def __init__( self, core_player, pid, live ):
+        logging.info("iPlayer %s: IPlayer initialised (core_player: %d, pid: %s, live: %s)" % (self, core_player, pid, live))
+        self.paused = False
+        self.live = live
+        self.pid = pid
+        if live:
+            # Live feed - no resume
+            # Setup scheduling?
+            pass
+        else:
+            # Acquire the resume lock, store the pid and load the resume file
+            self._acquire_lock()
+            self.resume, self.dates_added = IPlayer.load_resume_file()
+
+    def __del__( self ):
+        logging.info("iPlayer %s: De-initialising..." % self)
+        # If resume is enabled, try to release the resume lock
+        if not self.live:
+            self._release_lock()
+        # Refresh container to ensure '(resumeable)' is added if necessary
+        xbmc.executebuiltin('Container.Refresh')
+
+
+    def _acquire_lock( self ):
+        if os.path.isfile(IPlayer.RESUME_LOCK_FILE):
+            raise IPlayerLockException("Only one instance of iPlayer can be run at a time. Please stop any other streams you may be watching before opening a new stream")
+        else:
+            with open(IPlayer.RESUME_LOCK_FILE, 'w') as lock_fh:
+                lock_fh.write("%s" % self)
+
+    def _release_lock( self ):
+        self_has_lock = False
+        with open(IPlayer.RESUME_LOCK_FILE) as lock_fh:
+            self_has_lock = (lock_fh.read() == "%s" % self)
+            
+        logging.debug("Lock owner test: %s" % self_has_lock)
+        if self_has_lock:
+            logging.info("iPlayer %s: Removing lock file." % self)
+            try:
+                os.remove(IPlayer.RESUME_LOCK_FILE)
+            except Exception, e:
+                logging.warning("Error removing iPlayer resume lock file! (%s)" % e)
+
+    @staticmethod
+    def force_release_lock():
+        """
+        If something goes wrong and the lock file is present after the IPlayer object that made it dies,
+        it can be force deleted here (accessible from advanced plugin options)
+        """
+        os.remove(IPlayer.RESUME_LOCK_FILE)
+
+    def run_heartbeat( self ):
+        """
+        Method is run every second to perform housekeeping tasks, e.g. updating the current seek time of the player.
+        Heartbeat will continue until player stops playing.
+        """
+        logging.debug("iPlayer %s: Heartbeat %d" % (self, time.time()))
+        self.heartbeat = threading.Timer(1.0, self.run_heartbeat)
+        self.heartbeat.setDaemon(True)
+        self.heartbeat.start()
+        if not self.live and self.isPlaying():
+            self.current_seek_time = self.getTime()
+            logging.debug("%s iPlayer: current_seek_time %s" % (self, self.current_seek_time))
+                                           
+    def onPlayBackStarted( self ):
+        # Will be called when xbmc starts playing the stream
+        logging.info( "iPlayer %s: Begin playback of pid %s" % (self, self.pid) )
+        self.paused = False
+        self.run_heartbeat()
+    
+    def onPlayBackEnded( self ):
+        # Will be called when xbmc stops playing the stream
+        if self.heartbeat: self.heartbeat.cancel()
+        logging.info( "iPlayer %s: Playback ended." % self)
+        if not self.live:
+            logging.info( "Saving resume point for pid %s at %fs." % (self, self.pid, self.current_seek_time) )
+            self.save_resume_point( self.current_seek_time )
+    
+    def onPlayBackStopped( self ):
+        if self.heartbeat: self.heartbeat.cancel()
+        # Will be called when user stops xbmc playing the stream
+        # The player needs to be unloaded to release the resume lock
+        logging.info( "iPlayer %s: Playback stopped." % self)
+        if not self.live:
+            logging.info("iPlayer %s: Saving resume point for pid %s at %fs." % (self, self.pid, self.current_seek_time) )
+            self.save_resume_point( self.current_seek_time )
+        self.__del__()
+    
+    def onPlayBackPaused( self ):
+        if self.heartbeat: self.heartbeat.cancel()
+        # Will be called when user pauses playback on a stream
+        logging.info( "iPlayer %s: Playback paused." % self)
+        if not self.live:
+            logging.info("iPlayer %s: Saving resume point for pid %s at %fs." % (self, self.pid, self.getTime()) )
+            self.save_resume_point( self.current_seek_time )
+        self.paused = True
+    
+    def save_resume_point( self, resume_point ):
+        """
+        Updates the current resume point for the currently playing pid to resume_point, and commits the result to the resume db file
+        """
+        self.resume[self.pid] = resume_point
+        self.dates_added[self.pid] = time.time()
+        logging.info("iPlayer %s: Saving resume point (pid %s, seekTime %fs, dateAdded %d) to resume file" % (self, self.pid, self.resume[self.pid], self.dates_added[self.pid]))
+        IPlayer.save_resume_file(self.resume, self.dates_added)
+
+    @staticmethod
+    def load_resume_file():
+        """
+        Loads and parses the resume file, and returns a dictionary mapping pid -> resume_point
+        Resume file format is three columns, separated by a single space, with platform dependent newlines
+        First column is pid (string), second column is resume point (float), third column is date added
+        If date added is more than thirty days ago, the pid entry will be ignored for cleanup
+        """
+        # Load resume file
+        resume = {}
+        dates_added = {}
+        if os.path.isfile(IPlayer.RESUME_FILE):
+            logging.info("iPlayer: Loading resume file: %s" % (IPlayer.RESUME_FILE))
+            with open(IPlayer.RESUME_FILE, 'rU') as resume_fh:
+                resume_str = resume_fh.read()
+            tokens = resume_str.split()
+            # Three columns, pid, seekTime (which is a float) and date added (which is an integer, datetime in seconds), per line
+            pids = tokens[0::3]
+            seekTimes = [float(seekTime) for seekTime in tokens[1::3]]
+            datesAdded = [int(dateAdded) for dateAdded in tokens[2::3]]
+            pid_to_resume_point_map = []
+            pid_to_date_added_map = []
+            for i in range(len(pids)):
+                # if row was added less than days_to_keep days ago, add it to valid_mappings
+                try: days_to_keep = int(__addon__.getSetting('resume_days_to_keep'))
+                except: days_to_keep = 40
+                if datesAdded[i] > time.time() - 60*60*24*days_to_keep:
+                    pid_to_resume_point_map.append( (pids[i], seekTimes[i]) )
+                    pid_to_date_added_map.append( (pids[i], datesAdded[i]) )
+            resume = dict(pid_to_resume_point_map)
+            dates_added = dict(pid_to_date_added_map)
+            logging.info("iPlayer: Found %d resume entries" % (len(resume.keys())))
+        return resume, dates_added
+
+    @staticmethod
+    def delete_resume_point(pid_to_delete):
+        logging.info("iPlayer: Deleting resume point for pid %s" % pid_to_delete)
+        resume = IPlayer.load_resume_file()
+        del resume[pid_to_delete]
+        IPlayer.save_resume_file(resume)
+            
+    @staticmethod
+    def save_resume_file(resume, dates_added):
+        """
+        Saves the current resume dictionary to disk. See load_resume_file for file format
+        """
+        str = ""
+        logging.info("iPlayer: Saving %d entries to %s" % (len(resume.keys()), IPlayer.RESUME_FILE))
+        for pid, seekTime in resume.items():
+            str += "%s %f %d%s" % (pid, seekTime, dates_added[pid], os.linesep)
+            with open(IPlayer.RESUME_FILE, 'w') as resume_fh:
+                resume_fh.write(str)
+
+    def resume_and_play( self, playlist ):
+        """
+        Intended to replace xbmc.Player.play(playlist), this method begins playback and seeks to any recorded resume point.
+        XBMC is muted during seeking, as there is often a pause before seeking begins.
+        """
+        if not self.live and not self.paused and self.pid in self.resume.keys():
+            xbmc.executebuiltin('Mute', True)
+            self.play(playlist)
+            logging.info("iPlayer %s: Resume point found for pid %s at %f, seeking..." % (self, self.pid, self.resume[self.pid]))
+            self.seekTime(0.0)
+            self.seekTime(self.resume[self.pid])
+            xbmc.executebuiltin('Mute')
+        else:
+            self.play(playlist)
+
 
 tv = feed('tv')
 radio = feed('radio')
