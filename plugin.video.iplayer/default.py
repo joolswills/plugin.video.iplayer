@@ -135,12 +135,19 @@ def read_url():
     radio        = args.get('radio', [None])[0]
     deleteresume = args.get('deleteresume', [None])[0]
     force_resume_unlock = args.get('force_resume_unlock', [None])[0]
+    content_type = args.get('content_type', [None])[0]
 
     feed = None
     if feed_channel:
         feed = iplayer.feed('auto', channel=feed_channel, atoz=feed_atoz, radio=radio)
     elif feed_atoz:
         feed = iplayer.feed(tvradio or 'auto', atoz=feed_atoz, radio=radio)
+
+    if content_type:
+        if content_type == 'video':
+            tvradio = 'tv'
+        elif content_type == 'audio':
+            tvradio = 'radio'
 
     if not (feed or listing):
         section = __addon__.getSetting('start_section')
