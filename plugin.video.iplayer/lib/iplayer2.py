@@ -264,7 +264,9 @@ class media(object):
         tep = {}
         tep['captions', 'application/ttaf+xml', None, 'http', None] = 'captions'
         tep['video', 'video/mp4', 'h264', 'rtmp', 2800]   = 'h264 2800'
+        tep['video', 'video/mp4', 'h264', 'rtmp', 1520]   = 'h264 1520'
         tep['video', 'video/mp4', 'h264', 'rtmp', 1500]   = 'h264 1500'
+        tep['video', 'video/mp4', 'h264', 'rtmp', 816]    = 'h264 820'
         tep['video', 'video/mp4', 'h264', 'rtmp', 796]    = 'h264 800'
         tep['video', 'video/mp4', 'h264', 'rtmp', 480]    = 'h264 480'
         tep['video', 'video/mp4', 'h264', 'rtmp', 396]    = 'h264 400'

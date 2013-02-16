@@ -301,7 +301,7 @@ def list_radio_types():
 
 def get_setting_videostream():  
 
-    stream = 'h264 1500'
+    stream = 'h264 1520'
 
     stream_prefs = '0'
     try:
@@ -314,7 +314,7 @@ def get_setting_videostream():
         environment = os.environ.get( "OS" )
         # check for xbox as we set a lower default for xbox (although it can do 1500kbit streams)
         if environment == 'xbox':
-            stream = 'h264 800'
+            stream = 'h264 820'
         else:
             # play full HD if the screen is large enough (not all programmes have this resolution)
             Y = int(xbmc.getInfoLabel('System.ScreenHeight'))
@@ -325,9 +325,9 @@ def get_setting_videostream():
     elif stream_prefs == '1':
         stream = 'h264 480'
     elif stream_prefs == '2':
-        stream = 'h264 800'
+        stream = 'h264 820'
     elif stream_prefs == '3':
-        stream = 'h264 1500'
+        stream = 'h264 1520'
     elif stream_prefs == '4':
         stream = 'h264 2800'
 
@@ -880,7 +880,7 @@ def watch(feed, pid, showDialog):
             if pDialog.iscanceled(): raise
             times.append(['update dialog',time.clock()])
 
-        streams = ['h264 2800', 'h264 1500', 'h264 800', 'h264 480', 'h264 400']
+        streams = ['h264 2800', 'h264 1520', 'h264 1500', 'h264 820', 'h264 800', 'h264 480', 'h264 400']
         (media, pref) = get_matching_stream(item, pref, streams)
 
         # A potentially usable stream was found (higher bitrate than the default) offer it to the user
