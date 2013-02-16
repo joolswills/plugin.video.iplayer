@@ -918,8 +918,7 @@ def watch(feed, pid, showDialog):
         listitem.setInfo('video', {
                                    "TVShowTitle": title,
                                    'Plot': summary + ' ' + updated,
-                                   'PlotOutline': summary,
-                                   "Date": updated,})
+                                   'PlotOutline': summary,})
         times.append(['listitem setinfo',time.clock()])
         play=xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
         times.append(['xbmc.PlayList',time.clock()])
@@ -974,10 +973,7 @@ def watch(feed, pid, showDialog):
         pDialog.update(80, 'Playing')
         if pDialog.iscanceled(): raise
         times.append(['update dialog',time.clock()])
-    play.clear()
-    times.append(['play.clear()',time.clock()])
-    play.add(url,listitem)
-    times.append(['play.add',time.clock()])
+
     if url.startswith( 'rtmp://' ):
         core_player = xbmc.PLAYER_CORE_DVDPLAYER
     else:
@@ -991,7 +987,7 @@ def watch(feed, pid, showDialog):
         return
 
     times.append(['xbmc.Player()',time.clock()])
-    player.resume_and_play(play)
+    player.resume_and_play(url, listitem, item.is_tv)
 
     times.append(['player.play',time.clock()])
     # Auto play subtitles if they have downloaded 
@@ -1019,8 +1015,8 @@ def watch(feed, pid, showDialog):
     while player.isPlaying() and not xbmc.abortRequested:
         xbmc.sleep(500)
 
-    logging.debug("Exiting playback loop...")
-    del player
+    logging.debug("Exiting playback loop... (isPlaying %s, abortRequested %s)" % (player.isPlaying(), xbmc.abortRequested))
+    player.cancelled.set()
 
 logging.info("IPlayer: version: %s" % __version__)
 logging.info("IPlayer: Subtitles dir: %s" % SUBTITLES_DIR)

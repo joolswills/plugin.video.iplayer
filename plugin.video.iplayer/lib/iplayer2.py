@@ -1029,6 +1029,7 @@ class IPlayer(xbmc.Player):
         self.paused = False
         self.live = live
         self.pid = pid
+        self.cancelled = threading.Event()
         if live:
             # Live feed - no resume
             # Setup scheduling?
@@ -1042,6 +1043,8 @@ class IPlayer(xbmc.Player):
         logging.info("iPlayer %s: De-initialising..." % self)
         # If resume is enabled, try to release the resume lock
         if not self.live:
+            try: self.heartbeat.cancel()
+            except: logging.warning('iPlayer %s: No heartbeat on destruction' % self)
             self._release_lock()
         # Refresh container to ensure '(resumeable)' is added if necessary
         xbmc.executebuiltin('Container.Refresh')
@@ -1073,7 +1076,13 @@ class IPlayer(xbmc.Player):
         If something goes wrong and the lock file is present after the IPlayer object that made it dies,
         it can be force deleted here (accessible from advanced plugin options)
         """
-        os.remove(IPlayer.RESUME_LOCK_FILE)
+        try:
+            os.remove(IPlayer.RESUME_LOCK_FILE)
+            dialog = xbmcgui.Dialog()
+            dialog.ok('Lock released', 'Successfully released lock')
+        except:
+            dialog = xbmcgui.Dialog()
+            dialog.ok('Failed to force release lock', 'Failed to release lock')
 
     def run_heartbeat( self ):
         """
@@ -1084,9 +1093,11 @@ class IPlayer(xbmc.Player):
         self.heartbeat = threading.Timer(1.0, self.run_heartbeat)
         self.heartbeat.setDaemon(True)
         self.heartbeat.start()
-        if not self.live and self.isPlaying():
+        if not self.live and not self.cancelled.is_set():
             self.current_seek_time = self.getTime()
             logging.debug("%s iPlayer: current_seek_time %s" % (self, self.current_seek_time))
+        elif self.cancelled.is_set():
+            self.onPlayBackEnded()
                                            
     def onPlayBackStarted( self ):
         # Will be called when xbmc starts playing the stream
@@ -1099,8 +1110,9 @@ class IPlayer(xbmc.Player):
         if self.heartbeat: self.heartbeat.cancel()
         logging.info( "iPlayer %s: Playback ended." % self)
         if not self.live:
-            logging.info( "Saving resume point for pid %s at %fs." % (self, self.pid, self.current_seek_time) )
+            logging.info( "iPlayer %s: Saving resume point for pid %s at %fs." % (self, self.pid, self.current_seek_time) )
             self.save_resume_point( self.current_seek_time )
+        self.__del__()
     
     def onPlayBackStopped( self ):
         if self.heartbeat: self.heartbeat.cancel()
@@ -1113,7 +1125,6 @@ class IPlayer(xbmc.Player):
         self.__del__()
     
     def onPlayBackPaused( self ):
-        if self.heartbeat: self.heartbeat.cancel()
         # Will be called when user pauses playback on a stream
         logging.info( "iPlayer %s: Playback paused." % self)
         if not self.live:
@@ -1183,20 +1194,23 @@ class IPlayer(xbmc.Player):
             with open(IPlayer.RESUME_FILE, 'w') as resume_fh:
                 resume_fh.write(str)
 
-    def resume_and_play( self, playlist ):
+    def resume_and_play( self, url, listitem, is_tv ):
         """
         Intended to replace xbmc.Player.play(playlist), this method begins playback and seeks to any recorded resume point.
         XBMC is muted during seeking, as there is often a pause before seeking begins.
         """
-        if not self.live and not self.paused and self.pid in self.resume.keys():
-            xbmc.executebuiltin('Mute', True)
-            self.play(playlist)
+        if not self.live and self.pid in self.resume.keys():
             logging.info("iPlayer %s: Resume point found for pid %s at %f, seeking..." % (self, self.pid, self.resume[self.pid]))
-            self.seekTime(0.0)
-            self.seekTime(self.resume[self.pid])
-            xbmc.executebuiltin('Mute')
+            listitem.setProperty('StartOffset', '%d' % self.resume[self.pid])
+            if is_tv:
+                play = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
+            else:
+                play = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
+            play.clear()
+            play.add(url, listitem)
+            self.play(play)
         else:
-            self.play(playlist)
+            self.play(url, listitem)
 
 
 tv = feed('tv')
