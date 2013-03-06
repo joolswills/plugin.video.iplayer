@@ -1180,9 +1180,10 @@ class IPlayer(xbmc.Player):
     @staticmethod
     def delete_resume_point(pid_to_delete):
         logging.info("iPlayer: Deleting resume point for pid %s" % pid_to_delete)
-        resume = IPlayer.load_resume_file()
+        resume, dates_added = IPlayer.load_resume_file()
         del resume[pid_to_delete]
-        IPlayer.save_resume_file(resume)
+        del dates_added[pid_to_delete]
+        IPlayer.save_resume_file(resume, dates_added)
             
     @staticmethod
     def save_resume_file(resume, dates_added):
@@ -1204,16 +1205,14 @@ class IPlayer(xbmc.Player):
         if not self.live and self.pid in self.resume.keys():
             logging.info("iPlayer %s: Resume point found for pid %s at %f, seeking..." % (self, self.pid, self.resume[self.pid]))
             listitem.setProperty('StartOffset', '%d' % self.resume[self.pid])
-            if is_tv:
-                play = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
-            else:
-                play = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
-            play.clear()
-            play.add(url, listitem)
-            self.play(play)
+        
+        if is_tv:
+            play = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
         else:
-            self.play(url, listitem)
-
+            play = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
+        play.clear()
+        play.add(url, listitem)
+        self.play(play)
 
 tv = feed('tv')
 radio = feed('radio')
