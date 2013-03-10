@@ -1192,9 +1192,9 @@ class IPlayer(xbmc.Player):
         """
         str = ""
         logging.info("iPlayer: Saving %d entries to %s" % (len(resume.keys()), IPlayer.RESUME_FILE))
-        for pid, seekTime in resume.items():
-            str += "%s %f %d%s" % (pid, seekTime, dates_added[pid], os.linesep)
-            with open(IPlayer.RESUME_FILE, 'w') as resume_fh:
+        with open(IPlayer.RESUME_FILE, 'w') as resume_fh:
+            for pid, seekTime in resume.items():
+                str += "%s %f %d%s" % (pid, seekTime, dates_added[pid], os.linesep)
                 resume_fh.write(str)
 
     def resume_and_play( self, url, listitem, is_tv ):
