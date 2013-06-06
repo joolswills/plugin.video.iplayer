@@ -1037,17 +1037,19 @@ class IPlayer(xbmc.Player):
             # Setup scheduling?
             pass
         else:
-            # Acquire the resume lock, store the pid and load the resume file
-            self._acquire_lock()
-            self.resume, self.dates_added = IPlayer.load_resume_file()
+            if os.environ.get( "OS" ) != "xbox":
+                # Acquire the resume lock, store the pid and load the resume file
+                self._acquire_lock()
+                self.resume, self.dates_added = IPlayer.load_resume_file()
 
     def __del__( self ):
         logging.info("iPlayer %s: De-initialising..." % self)
         # If resume is enabled, try to release the resume lock
-        if not self.live:
-            try: self.heartbeat.cancel()
-            except: logging.warning('iPlayer %s: No heartbeat on destruction' % self)
-            self._release_lock()
+        if os.environ.get( "OS" ) != "xbox":
+            if not self.live:
+                try: self.heartbeat.cancel()
+                except: logging.warning('iPlayer %s: No heartbeat on destruction' % self)
+                self._release_lock()
         # Refresh container to ensure '(resumeable)' is added if necessary
         xbmc.executebuiltin('Container.Refresh')
 
@@ -1056,13 +1058,19 @@ class IPlayer(xbmc.Player):
         if os.path.isfile(IPlayer.RESUME_LOCK_FILE):
             raise IPlayerLockException("Only one instance of iPlayer can be run at a time. Please stop any other streams you may be watching before opening a new stream")
         else:
-            with open(IPlayer.RESUME_LOCK_FILE, 'w') as lock_fh:
+            lock_fh = open(IPlayer.RESUME_LOCK_FILE, 'w')
+            try:
                 lock_fh.write("%s" % self)
+            finally:
+                lock_fh.close()
 
     def _release_lock( self ):
         self_has_lock = False
-        with open(IPlayer.RESUME_LOCK_FILE) as lock_fh:
+        lock_fh = open(IPlayer.RESUME_LOCK_FILE)
+        try:
             self_has_lock = (lock_fh.read() == "%s" % self)
+        finally:
+            lock_fh.close()
             
         logging.debug("Lock owner test: %s" % self_has_lock)
         if self_has_lock:
@@ -1156,8 +1164,11 @@ class IPlayer(xbmc.Player):
         dates_added = {}
         if os.path.isfile(IPlayer.RESUME_FILE):
             logging.info("iPlayer: Loading resume file: %s" % (IPlayer.RESUME_FILE))
-            with open(IPlayer.RESUME_FILE, 'rU') as resume_fh:
+            resume_fh = open(IPlayer.RESUME_FILE, 'rU')
+            try:
                 resume_str = resume_fh.read()
+            finally:
+                resume_fh.close()
             tokens = resume_str.split()
             # Three columns, pid, seekTime (which is a float) and date added (which is an integer, datetime in seconds), per line
             pids = tokens[0::3]
@@ -1192,19 +1203,23 @@ class IPlayer(xbmc.Player):
         """
         str = ""
         logging.info("iPlayer: Saving %d entries to %s" % (len(resume.keys()), IPlayer.RESUME_FILE))
-        with open(IPlayer.RESUME_FILE, 'w') as resume_fh:
+        resume_fh = open(IPlayer.RESUME_FILE, 'w')
+        try:
             for pid, seekTime in resume.items():
                 str += "%s %f %d%s" % (pid, seekTime, dates_added[pid], os.linesep)
                 resume_fh.write(str)
+        finally:
+             resume_fh.close()
 
     def resume_and_play( self, url, listitem, is_tv ):
         """
         Intended to replace xbmc.Player.play(playlist), this method begins playback and seeks to any recorded resume point.
         XBMC is muted during seeking, as there is often a pause before seeking begins.
         """
-        if not self.live and self.pid in self.resume.keys():
-            logging.info("iPlayer %s: Resume point found for pid %s at %f, seeking..." % (self, self.pid, self.resume[self.pid]))
-            listitem.setProperty('StartOffset', '%d' % self.resume[self.pid])
+        if os.environ.get( "OS" ) != "xbox":
+            if not self.live and self.pid in self.resume.keys():
+                logging.info("iPlayer %s: Resume point found for pid %s at %f, seeking..." % (self, self.pid, self.resume[self.pid]))
+                listitem.setProperty('StartOffset', '%d' % self.resume[self.pid])
         
         if is_tv:
             play = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)

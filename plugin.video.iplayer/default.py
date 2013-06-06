@@ -1012,11 +1012,12 @@ def watch(feed, pid, showDialog):
             logging.info('Took %2.2f sec for %s' % (t[1] - pt, t[0]))
             pt = t[1]
 
-    while player.isPlaying() and not xbmc.abortRequested:
-        xbmc.sleep(500)
+    if os.environ.get( "OS" ) != "xbox":
+        while player.isPlaying() and not xbmc.abortRequested:
+            xbmc.sleep(500)
 
-    logging.debug("Exiting playback loop... (isPlaying %s, abortRequested %s)" % (player.isPlaying(), xbmc.abortRequested))
-    player.cancelled.set()
+        logging.debug("Exiting playback loop... (isPlaying %s, abortRequested %s)" % (player.isPlaying(), xbmc.abortRequested))
+        player.cancelled.set()
 
 logging.info("IPlayer: version: %s" % __version__)
 logging.info("IPlayer: Subtitles dir: %s" % SUBTITLES_DIR)
