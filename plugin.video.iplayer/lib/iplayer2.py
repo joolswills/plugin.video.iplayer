@@ -1009,7 +1009,8 @@ class feed(object):
     name = property(get_name)
 
 import xbmc
-import threading
+if os.environ.get( "OS" ) != "xbox":
+    import threading
 
 class IPlayerLockException(Exception):
     """
@@ -1031,7 +1032,8 @@ class IPlayer(xbmc.Player):
         self.paused = False
         self.live = live
         self.pid = pid
-        self.cancelled = threading.Event()
+        if os.environ.get( "OS" ) != "xbox":
+            self.cancelled = threading.Event()
         if live:
             # Live feed - no resume
             # Setup scheduling?
@@ -1050,8 +1052,8 @@ class IPlayer(xbmc.Player):
                 try: self.heartbeat.cancel()
                 except: logging.warning('iPlayer %s: No heartbeat on destruction' % self)
                 self._release_lock()
-        # Refresh container to ensure '(resumeable)' is added if necessary
-        xbmc.executebuiltin('Container.Refresh')
+            # Refresh container to ensure '(resumeable)' is added if necessary
+            xbmc.executebuiltin('Container.Refresh')
 
 
     def _acquire_lock( self ):
@@ -1113,15 +1115,17 @@ class IPlayer(xbmc.Player):
         # Will be called when xbmc starts playing the stream
         logging.info( "iPlayer %s: Begin playback of pid %s" % (self, self.pid) )
         self.paused = False
-        self.run_heartbeat()
+        if os.environ.get( "OS" ) != "xbox":
+            self.run_heartbeat()
     
     def onPlayBackEnded( self ):
         # Will be called when xbmc stops playing the stream
         if self.heartbeat: self.heartbeat.cancel()
         logging.info( "iPlayer %s: Playback ended." % self)
-        if not self.live:
-            logging.info( "iPlayer %s: Saving resume point for pid %s at %fs." % (self, self.pid, self.current_seek_time) )
-            self.save_resume_point( self.current_seek_time )
+        if os.environ.get( "OS" ) != "xbox":
+            if not self.live:
+                logging.info( "iPlayer %s: Saving resume point for pid %s at %fs." % (self, self.pid, self.current_seek_time) )
+                self.save_resume_point( self.current_seek_time )
         self.__del__()
     
     def onPlayBackStopped( self ):
@@ -1129,17 +1133,19 @@ class IPlayer(xbmc.Player):
         # Will be called when user stops xbmc playing the stream
         # The player needs to be unloaded to release the resume lock
         logging.info( "iPlayer %s: Playback stopped." % self)
-        if not self.live:
-            logging.info("iPlayer %s: Saving resume point for pid %s at %fs." % (self, self.pid, self.current_seek_time) )
-            self.save_resume_point( self.current_seek_time )
+        if os.environ.get( "OS" ) != "xbox":
+            if not self.live:
+                logging.info("iPlayer %s: Saving resume point for pid %s at %fs." % (self, self.pid, self.current_seek_time) )
+                self.save_resume_point( self.current_seek_time )
         self.__del__()
     
     def onPlayBackPaused( self ):
         # Will be called when user pauses playback on a stream
         logging.info( "iPlayer %s: Playback paused." % self)
-        if not self.live:
-            logging.info("iPlayer %s: Saving resume point for pid %s at %fs." % (self, self.pid, self.getTime()) )
-            self.save_resume_point( self.current_seek_time )
+        if os.environ.get( "OS" ) != "xbox":
+            if not self.live:
+                logging.info("iPlayer %s: Saving resume point for pid %s at %fs." % (self, self.pid, self.getTime()) )
+                self.save_resume_point( self.current_seek_time )
         self.paused = True
     
     def save_resume_point( self, resume_point ):
@@ -1227,6 +1233,7 @@ class IPlayer(xbmc.Player):
             play = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
         play.clear()
         play.add(url, listitem)
+            
         self.play(play)
 
 tv = feed('tv')
