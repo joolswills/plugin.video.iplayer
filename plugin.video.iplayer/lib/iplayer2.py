@@ -347,7 +347,7 @@ class media(object):
                 application = "ondemand"
 
             timeout = __addon__.getSetting('stream_timeout')
-            swfplayer = 'http://www.bbc.co.uk/emp/10player.swf'       
+            swfplayer = 'http://www.bbc.co.uk/emp/releases/iplayer/revisions/617463_618125_4/617463_618125_4_emp.swf'       
             params = dict(protocol = get_protocol(), port = get_port(), server = server, auth = auth, ident = identifier, app = application)
 
             if self.connection_kind == 'limelight':

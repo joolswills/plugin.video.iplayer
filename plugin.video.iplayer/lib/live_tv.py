@@ -91,7 +91,7 @@ def fetch_stream_info(channel, req_bitrate, req_provider):
             url = "%(protocol)s://%(server)s:%(port)s/%(app)s/?%(auth)s playpath=%(ident)s?%(auth)s" % params
         if supplier == "limelight":
             url = "%(protocol)s://%(server)s:%(port)s/ app=%(app)s?%(auth)s tcurl=%(protocol)s://%(server)s:%(port)s/%(app)s?%(auth)s playpath=%(ident)s" % params
-        url += " swfurl=http://www.bbc.co.uk/emp/10player.swf swfvfy=1 live=1"
+        url += " swfurl=http://www.bbc.co.uk/emp/releases/iplayer/revisions/617463_618125_4/617463_618125_4_emp.swf swfvfy=1 live=1"
     elif supplier == "akamai_hd":
         url = conn.attributes['href'].nodeValue
 
