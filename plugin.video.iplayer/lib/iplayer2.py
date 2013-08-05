@@ -1074,7 +1074,7 @@ class IPlayer(xbmc.Player):
         finally:
             lock_fh.close()
             
-        logging.debug("Lock owner test: %s" % self_has_lock)
+        xbmc.log("Lock owner test: %s" % self_has_lock, level=xbmc.LOGDEBUG)
         if self_has_lock:
             logging.info("iPlayer %s: Removing lock file." % self)
             try:
@@ -1101,13 +1101,13 @@ class IPlayer(xbmc.Player):
         Method is run every second to perform housekeeping tasks, e.g. updating the current seek time of the player.
         Heartbeat will continue until player stops playing.
         """
-        logging.debug("iPlayer %s: Heartbeat %d" % (self, time.time()))
+        xbmc.log("iPlayer %s: Heartbeat %d" % (self, time.time()), level=xbmc.LOGDEBUG)
         self.heartbeat = threading.Timer(1.0, self.run_heartbeat)
         self.heartbeat.setDaemon(True)
         self.heartbeat.start()
         if not self.live and not self.cancelled.is_set():
             self.current_seek_time = self.getTime()
-            logging.debug("%s iPlayer: current_seek_time %s" % (self, self.current_seek_time))
+            xbmc.log("%s iPlayer: current_seek_time %s" % (self, self.current_seek_time), level=xbmc.LOGDEBUG)
         elif self.cancelled.is_set():
             self.onPlayBackEnded()
                                            

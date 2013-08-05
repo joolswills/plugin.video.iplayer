@@ -31,7 +31,7 @@ except ImportError, error:
 
 logging.basicConfig(
     stream=sys.stdout,
-    level=logging.DEBUG,
+    level=logging.INFO,
     format='iplayer2.py: %(levelname)4s %(message)s',
     )
 
@@ -42,6 +42,11 @@ SEARCH_FILE    = os.path.join(DIR_USERDATA, 'search.txt')
 VERSION_FILE   = os.path.join(DIR_USERDATA, 'version.txt')
 iplayer.IPlayer.RESUME_FILE    = os.path.join(DIR_USERDATA, 'iplayer_resume.txt')
 iplayer.IPlayer.RESUME_LOCK_FILE = os.path.join(DIR_USERDATA, 'iplayer_resume_lock.txt')
+
+if os.path.isfile(iplayer.IPlayer.RESUME_LOCK_FILE):
+    if not xbmc.Player().isPlaying():
+        logging.warn("Detected stale resume lock file, deleting...")
+        os.remove(iplayer.IPlayer.RESUME_LOCK_FILE)
 
 __plugin_handle__ = utils.__plugin_handle__
 
@@ -983,14 +988,23 @@ def watch(feed, pid, showDialog):
         player = iplayer.IPlayer(core_player, pid=pid, live=item.is_live)
     except iplayer.IPlayerLockException:
         exception_dialog = xbmcgui.Dialog()
-        exception_dialog.ok("Stream Already Playing", "Unable to open stream", " - To continue, stop all other streams (try pressing 'x')")
+        exception_dialog.ok("Stream Already Playing", "Unable to open stream", " - To continue, stop all other streams (try pressing 'x')[CR] - If you are sure there are no other streams [CR]playing, remove the resume lock (check addon settings -> advanced)")
         return
 
     times.append(['xbmc.Player()',time.clock()])
-    player.resume_and_play(url, listitem, item.is_tv)
-
+    if os.environ.get("OS") == "xbox":
+        if is_tv:
+            play = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
+        else:
+            play = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
+        play.clear()
+        play.add(url, listitem)
+    
+        self.play(play)
+    else:
+        player.resume_and_play(url, listitem, item.is_tv)
     times.append(['player.play',time.clock()])
-    # Auto play subtitles if they have downloaded 
+    # Auto play subtitles if they have downloaded
     logging.info("subtitles: %s   - subtitles_file %s " % (subtitles,subtitles_file))
     times.append(['logging.info',time.clock()])
     if subtitles == 'autoplay' and subtitles_file: 
@@ -1016,7 +1030,7 @@ def watch(feed, pid, showDialog):
         while player.isPlaying() and not xbmc.abortRequested:
             xbmc.sleep(500)
 
-        logging.debug("Exiting playback loop... (isPlaying %s, abortRequested %s)" % (player.isPlaying(), xbmc.abortRequested))
+        xbmc.log("Exiting playback loop... (isPlaying %s, abortRequested %s)" % (player.isPlaying(), xbmc.abortRequested), level=xbmc.LOGDEBUG)
         player.cancelled.set()
 
 logging.info("IPlayer: version: %s" % __version__)
