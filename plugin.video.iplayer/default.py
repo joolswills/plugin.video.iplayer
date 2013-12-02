@@ -218,7 +218,9 @@ def list_live_feeds(feeds, tvradio='tv'):
                
         try: logging.info('Processing feed %s' % str(f.name))
         except: continue
-        
+
+        if f.channel == 'bbc_hd': continue
+
         # === Set up the XBMC ListItem
         listitem = xbmcgui.ListItem(label=f.name)
         
