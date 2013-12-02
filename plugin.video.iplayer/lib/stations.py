@@ -16,8 +16,6 @@ channels_tv_list = [
     ('bbc_alba', 'BBC Alba'),
 ]
 
-channels_tv = dict(channels_tv_list)
-
 radio_station_info = [   
     {'id': 'bbc_radio_one',
      'name': 'Radio 1',

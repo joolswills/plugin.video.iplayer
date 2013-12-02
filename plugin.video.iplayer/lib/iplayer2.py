@@ -295,7 +295,7 @@ class media(object):
         self.mimetype = media.get('type')
         self.encoding = media.get('encoding')
         self.width, self.height = media.get('width'), media.get('height')
-        self.live = media.get('live') == 'true'
+        self.live = ( media.get('live') == 'true' or self.item.live == True )
         self.service = media.get('service')
         try:
             self.bitrate = int(media.get('bitrate'))
@@ -313,6 +313,10 @@ class media(object):
         # try to find a stream from users preference
         conn = None
         provider = get_provider()
+        
+        # force akamai for live video streams (limelight seems to be non working at least via the credentials from the current mediaselector)
+        if self.kind == 'video' and self.live:
+            provider = 'akamai'
 
         if provider != "":
             for c in media.findall('connection'):
@@ -347,18 +351,23 @@ class media(object):
                 application = "ondemand"
 
             timeout = __addon__.getSetting('stream_timeout')
-            swfplayer = 'http://www.bbc.co.uk/emp/releases/iplayer/revisions/617463_618125_4/617463_618125_4_emp.swf'       
+            swfplayer = 'http://www.bbc.co.uk/emp/releases/iplayer/revisions/617463_618125_4/617463_618125_4_emp.swf'
             params = dict(protocol = get_protocol(), port = get_port(), server = server, auth = auth, ident = identifier, app = application)
 
             if self.connection_kind == 'limelight':
                 # note that librtmp has a small issue with constructing the tcurl here. we construct it ourselves for now (fixed in later librtmp)
                 self.connection_href = "%(protocol)s://%(server)s:%(port)s/ app=%(app)s?%(auth)s tcurl=%(protocol)s://%(server)s:%(port)s/%(app)s?%(auth)s playpath=%(ident)s" % params
             else:
+                # akamai needs the auth string included in the playpath
                 self.connection_href = "%(protocol)s://%(server)s:%(port)s/%(app)s?%(auth)s playpath=%(ident)s?%(auth)s" % params
 
-            self.connection_href += " swfurl=%(swfplayer)s swfvfy=1 timeout=%(timeout)s" % dict(swfplayer=swfplayer, timeout=timeout)
-            if application == 'live':
+            # swf authention only needed for the ondemand streams
+            if self.live:
                 self.connection_href += " live=1"
+            elif self.kind == 'video':
+                self.connection_href += " swfurl=%s swfvfy=1" % swfplayer
+            
+            self.connection_href += " timeout=%s" % timeout
 
         else:
             logging.error("connectionkind %s unknown", self.connection_kind)

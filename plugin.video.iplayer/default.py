@@ -20,7 +20,6 @@ sys.path.insert(0, os.path.join(__addoninfo__['path'], 'lib'))
 
 try:
     import iplayer2 as iplayer
-    import live_tv
     import iplayer_search
 except ImportError, error:
     print error
@@ -209,11 +208,9 @@ def list_feeds(feeds, tvradio='tv', radio=None):
 
 def list_live_feeds(feeds, tvradio='tv'):
     #print 'list_live_feeds %s' % feeds
-    xbmcplugin.setContent(__plugin_handle__, 'songs')
+    if tvradio == 'radio':
+        xbmcplugin.setContent(__plugin_handle__, 'songs')
     xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_TRACKNUM)
-
-    if tvradio == 'tv':
-        return
         
     i = 0        
     
@@ -227,7 +224,8 @@ def list_live_feeds(feeds, tvradio='tv'):
         
         listitem.setIconImage(get_feed_thumbnail(f))
         listitem.setThumbnailImage(get_feed_thumbnail(f))
-        listitem.setProperty('tracknumber', str(i + j))
+        if tvradio == 'radio':
+            listitem.setProperty('tracknumber', str(i + j))
                           
         ok = xbmcplugin.addDirectoryItem(
             handle=__plugin_handle__,
@@ -920,10 +918,11 @@ def watch(feed, pid, showDialog):
         listitem = xbmcgui.ListItem(title)
         times.append(['create listitem',time.clock()])
         #listitem.setIconImage(iconimage)
-        listitem.setInfo('video', {
-                                   "TVShowTitle": title,
-                                   'Plot': summary + ' ' + updated,
-                                   'PlotOutline': summary,})
+        if not item.live:
+            listitem.setInfo('video', {
+                                       "TVShowTitle": title,
+                                       'Plot': summary + ' ' + updated,
+                                       'PlotOutline': summary,})
         times.append(['listitem setinfo',time.clock()])
         play=xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
         times.append(['xbmc.PlayList',time.clock()])
@@ -1092,12 +1091,7 @@ if __name__ == "__main__":
         # state engine
         if pid:
             showDialog = __addon__.getSetting('displaydialog') == 'true'
-            if not label:
-                watch(feed, pid, showDialog)
-            else:
-                pref = get_setting_videostream()
-                bitrate = pref.split(' ')[1]
-                live_tv.play_stream(label, bitrate, showDialog)
+            watch(feed, pid, showDialog)
         elif deletesearch:
             search_delete(tvradio or 'tv', deletesearch)
         elif deleteresume:
@@ -1125,11 +1119,8 @@ if __name__ == "__main__":
             search(tvradio or 'tv', label)   
         elif listing == 'livefeeds':
             tvradio = tvradio or 'tv'
-            if tvradio == 'radio':
-                channels = iplayer.feed(tvradio or 'tv', radio=radio).channels_feed()
-                list_live_feeds(channels, tvradio)
-            else:
-                live_tv.list_channels()
+            channels = iplayer.feed(tvradio or 'tv', radio=radio).channels_feed()
+            list_live_feeds(channels, tvradio)
         elif listing == 'list' and not series and not category:
             feed = feed or iplayer.feed(tvradio or 'tv', category=category, radio=radio)
             list_series(feed, listing, category=category, progcount=progcount)
