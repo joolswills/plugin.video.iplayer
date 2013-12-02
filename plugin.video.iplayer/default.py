@@ -79,7 +79,7 @@ def get_plugin_thumbnail(image):
     userpng = os.path.join(iplayer.get_thumb_dir(), image + '.png')
     if os.path.isfile(userpng):
         return userpng
-    
+
     return None
 
 def get_feed_thumbnail(feed):
@@ -89,32 +89,32 @@ def get_feed_thumbnail(feed):
     # support user supplied .png files
     userpng = get_plugin_thumbnail(feed.channel)
     if userpng: return userpng
-    
+
     # check for a preconfigured logo
     if iplayer.stations.channels_logos.has_key(feed.channel):
         url = iplayer.stations.channels_logos[feed.channel]
         if url == None:
             url = os.path.join(iplayer.get_thumb_dir(), 'bbc_local_radio.png')
         return url
-        
+
     # national TV and Radio stations have easy to find online logos
     if feed.tvradio == 'radio':
         url = "http://www.bbc.co.uk/iplayer/img/radio/%s.gif" % feed.channel
     else:
         url = "http://www.bbc.co.uk/iplayer/img/tv/%s.jpg" % feed.channel
-        
+
     return url
-    
+
 def make_url(feed=None, listing=None, pid=None, tvradio=None, category=None, series=None, url=None, label=None, radio=None):
     base = sys.argv[0]
     d = {}
-    if series: d['series'] = series       
+    if series: d['series'] = series
     if feed:
-        if feed.channel: 
+        if feed.channel:
             d['feed_channel'] = feed.channel
-        if feed.atoz: 
+        if feed.atoz:
             d['feed_atoz'] = feed.atoz
-    if category: d['category'] = category 
+    if category: d['category'] = category
     if listing: d['listing'] = listing
     if pid: d['pid'] = pid
     if tvradio: d['tvradio'] = tvradio
@@ -132,7 +132,7 @@ def read_url():
     pid          = args.get('pid', [None])[0]
     tvradio      = args.get('tvradio', [None])[0]
     category     = args.get('category', [None])[0]
-    series       = args.get('series', [None])[0]    
+    series       = args.get('series', [None])[0]
     url          = args.get('url', [None])[0]
     label        = args.get('label', [None])[0]
     deletesearch = args.get('deletesearch', [None])[0]
@@ -159,13 +159,13 @@ def read_url():
         elif section == '2': tvradio = 'radio'
 
     return (feed, listing, pid, tvradio, category, series, url, label, deletesearch, radio, deleteresume, force_resume_unlock)
-    
+
 def list_feeds(feeds, tvradio='tv', radio=None):
-    xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_TRACKNUM )   
+    xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_TRACKNUM )
 
     folders = []
     if tvradio == 'tv' or radio == 'national':
-        folders.append(('Categories', 'categories', make_url(listing='categories', tvradio=tvradio)))    
+        folders.append(('Categories', 'categories', make_url(listing='categories', tvradio=tvradio)))
         folders.append(('Highlights', 'highlights', make_url(listing='highlights', tvradio=tvradio)))
     if tvradio == 'radio':
         folders.append(('Listen Live', 'listenlive', make_url(listing='livefeeds', tvradio=tvradio, radio=radio)))
@@ -177,12 +177,12 @@ def list_feeds(feeds, tvradio='tv', radio=None):
 
     total = len(folders) + len(feeds) + 1
 
-    i = 1        
+    i = 1
     for j, (label, tn, url) in enumerate(folders):
         listitem = xbmcgui.ListItem(label=label)
         listitem.setIconImage('defaultFolder.png')
         listitem.setThumbnailImage(get_plugin_thumbnail(tn))
-        listitem.setProperty('tracknumber', str(i + j))            
+        listitem.setProperty('tracknumber', str(i + j))
         ok = xbmcplugin.addDirectoryItem(
             handle=__plugin_handle__,
             url=url,
@@ -211,11 +211,11 @@ def list_live_feeds(feeds, tvradio='tv'):
     if tvradio == 'radio':
         xbmcplugin.setContent(__plugin_handle__, 'songs')
     xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_TRACKNUM)
-        
-    i = 0        
-    
+
+    i = 0
+
     for j, f in enumerate(feeds):
-               
+
         try: logging.info('Processing feed %s' % str(f.name))
         except: continue
 
@@ -223,19 +223,19 @@ def list_live_feeds(feeds, tvradio='tv'):
 
         # === Set up the XBMC ListItem
         listitem = xbmcgui.ListItem(label=f.name)
-        
+
         listitem.setIconImage(get_feed_thumbnail(f))
         listitem.setThumbnailImage(get_feed_thumbnail(f))
         if tvradio == 'radio':
             listitem.setProperty('tracknumber', str(i + j))
-                          
+
         ok = xbmcplugin.addDirectoryItem(
             handle=__plugin_handle__,
             url=make_url(pid=f.channel, feed=f),
             listitem=listitem,
             isFolder=False,
         )
-    
+
     xbmcplugin.endOfDirectory(handle=__plugin_handle__, succeeded=True)
 
 def parse_asx(radio_url):
@@ -254,7 +254,7 @@ def list_tvradio():
     Lists five folders - one for TV and one for Radio, plus A-Z, highlights and popular
     """
     xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_TRACKNUM)
-        
+
     folders = []
     folders.append(('TV', 'tv', make_url(tvradio='tv')))
     folders.append(('Radio', 'radio', make_url(tvradio='radio')))
@@ -268,43 +268,43 @@ def list_tvradio():
             listitem.setThumbnailImage(get_plugin_thumbnail(tn))
         folder=True
         if label == 'Settings':
-            # fix for reported bug where loading dialog would overlay settings dialog 
+            # fix for reported bug where loading dialog would overlay settings dialog
             folder = False
         ok = xbmcplugin.addDirectoryItem(
-            handle=__plugin_handle__, 
+            handle=__plugin_handle__,
             url=url,
             listitem=listitem,
             isFolder=folder,
         )
-    
+
     xbmcplugin.endOfDirectory(handle=__plugin_handle__, succeeded=True)
-    
+
 def list_radio_types():
     """
-    Lists folders - National, Regional & Local Radio + Search 
+    Lists folders - National, Regional & Local Radio + Search
     """
     xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_TRACKNUM)
-        
+
     folders = []
     folders.append(('National Radio Stations', 'national', make_url(tvradio='radio',radio='national')))
     folders.append(('Regional Radio Stations', 'regional', make_url(tvradio='radio',radio='regional')))
     folders.append(('Local Radio Stations',    'local',    make_url(tvradio='radio',radio='local')))
-        
+
     for i, (label, tn, url) in enumerate(folders):
         listitem = xbmcgui.ListItem(label=label)
         listitem.setIconImage(get_plugin_thumbnail('bbc_radio'))
         listitem.setThumbnailImage(get_plugin_thumbnail('bbc_radio'))
         folder=True
         ok = xbmcplugin.addDirectoryItem(
-            handle=__plugin_handle__, 
+            handle=__plugin_handle__,
             url=url,
             listitem=listitem,
             isFolder=folder,
         )
-    
+
     xbmcplugin.endOfDirectory(handle=__plugin_handle__, succeeded=True)
 
-def get_setting_videostream():  
+def get_setting_videostream():
 
     stream = 'h264 1520'
 
@@ -313,7 +313,7 @@ def get_setting_videostream():
         stream_prefs = __addon__.getSetting('video_stream')
     except:
         pass
-        
+
     # Auto|H.264 (480kb)|H.264 (800kb)|H.264 (1500kb)|H.264 (2800kb)
     if stream_prefs == '0':
         environment = os.environ.get( "OS" )
@@ -352,10 +352,10 @@ def get_setting_audiostream():
     if stream_prefs == '0':
         # Auto - default to highest bitrate AAC
         stream = 'aac320'
-    elif stream_prefs == '1': 
+    elif stream_prefs == '1':
         stream = 'aac320'
     elif stream_prefs == '2':
-        stream = 'aac128'        
+        stream = 'aac128'
     elif stream_prefs == '3':
         # Live feeds have a wma+asx application type
         # In this case the wma9 type is not available, and the plugin should default over to wma+asx
@@ -402,10 +402,10 @@ def add_programme(feed, programme, totalItems=None, tracknumber=None, thumbnail_
     title     = programme.title
     thumbnail = programme.get_thumbnail(thumbnail_size, tvradio)
     summary   = programme.summary
-    
-    listitem = xbmcgui.ListItem(label=title, 
+
+    listitem = xbmcgui.ListItem(label=title,
                                 label2=summary,
-                                iconImage='defaultVideo.png', 
+                                iconImage='defaultVideo.png',
                                 thumbnailImage=thumbnail)
 
     datestr = programme.updated[:10]
@@ -416,7 +416,7 @@ def add_programme(feed, programme, totalItems=None, tracknumber=None, thumbnail_
         for cat in programme.categories:
             genre += cat + ' / '
         genre=genre[:-2]
-    else: 
+    else:
         genre = ''
 
     listitem.setInfo('video', {
@@ -428,7 +428,7 @@ def add_programme(feed, programme, totalItems=None, tracknumber=None, thumbnail_
     })
     listitem.setProperty('Title', str(title))
     if tracknumber: listitem.setProperty('tracknumber', str(tracknumber))
-        
+
     #print "Getting URL for %s ..." % (programme.title)
 
     # tv catchup url
@@ -440,7 +440,7 @@ def add_programme(feed, programme, totalItems=None, tracknumber=None, thumbnail_
         listitem.addContextMenuItems([('Remove resume point', cmd)])
 
     xbmcplugin.addDirectoryItem(
-        handle=__plugin_handle__, 
+        handle=__plugin_handle__,
         url=url,
         listitem=listitem,
         totalItems=totalItems
@@ -460,29 +460,29 @@ def list_categories(tvradio='tv', feed=None, channels=None, progcount=True):
             listitem.setThumbnailImage(get_plugin_thumbnail('tv'))
         else:
             listitem.setThumbnailImage(get_plugin_thumbnail('radio'))
-        ok = xbmcplugin.addDirectoryItem(            
-            handle=__plugin_handle__, 
+        ok = xbmcplugin.addDirectoryItem(
+            handle=__plugin_handle__,
             url=url,
             listitem=listitem,
             isFolder=True,
         )
-        
+
     xbmcplugin.endOfDirectory(handle=__plugin_handle__, succeeded=True)
-    
+
 def series_match(name):
     # match the series name part of a programme name
     seriesmatch = []
-    
+
     seriesmatch.append(re.compile('^(Late\s+Kick\s+Off\s+)'))
     seriesmatch.append(re.compile('^(Inside\s+Out\s+)'))
-    seriesmatch.append(re.compile('^(.*?):'))  
+    seriesmatch.append(re.compile('^(.*?):'))
     match = None
 
     for s in seriesmatch:
         match = s.match(name)
         if match:
             break
-        
+
     return match
 
 def list_series(feed, listing, category=None, progcount=True):
@@ -495,7 +495,7 @@ def list_series(feed, listing, category=None, progcount=True):
     d['popular'] = feed.popular
     d['highlights'] = feed.highlights
     programmes = d[listing]()
- 
+
     ## filter by category
     if category:
         temp_prog = []
@@ -503,21 +503,21 @@ def list_series(feed, listing, category=None, progcount=True):
         # in that category
         for p in programmes:
             for cat in p.categories:
-                if cat == category: 
+                if cat == category:
                     temp_prog.append(p)
                     continue
         programmes = temp_prog
- 
+
     ## extract the list of series names
     series = {}
     episodes = {}
     categories = {}
     dates = {}
-  
+
     thumbnail_size = get_setting_thumbnail_size()
     for p in programmes:
 
-        match = series_match(p.title)            
+        match = series_match(p.title)
         thumb = p.get_thumbnail(thumbnail_size, feed.tvradio)
 
         if match:
@@ -525,19 +525,19 @@ def list_series(feed, listing, category=None, progcount=True):
         else:
             # the programme title doesn't have a series delimiter
             seriesname = p.title
-            
+
         series[seriesname] = thumb
         datestr = p.updated[:10]
-        if not episodes.has_key(seriesname): 
+        if not episodes.has_key(seriesname):
             episodes[seriesname] = 0
             dates[seriesname] = datestr
 
         episodes[seriesname] += 1
         categories[seriesname] = p.categories
-        
+
     serieslist = series.keys()
     serieslist.sort()
- 
+
     for s in serieslist:
         url = make_url(feed=feed, listing='list', category=category, series=s )
         if progcount:
@@ -548,14 +548,14 @@ def list_series(feed, listing, category=None, progcount=True):
         listitem.setThumbnailImage(series[s])
         date=dates[s][8:10] + '/' + dates[s][5:7] + '/' +dates[s][:4] #date ==dd/mm/yyyy
         listitem.setInfo('video', {'Title': s, 'Date': date, 'Size': episodes[s], 'Genre': "/".join(categories[s])})
-        ok = xbmcplugin.addDirectoryItem(            
-            handle=__plugin_handle__, 
+        ok = xbmcplugin.addDirectoryItem(
+            handle=__plugin_handle__,
             url=url,
             listitem=listitem,
             isFolder=True,
         )
-        c += 1        
-    
+        c += 1
+
     if c == 0:
         # and yes it does happen once in a while
         label = "(no programmes available - try again later)"
@@ -567,10 +567,10 @@ def list_series(feed, listing, category=None, progcount=True):
         )
 
     xbmcplugin.endOfDirectory(handle=__plugin_handle__, succeeded=True)
-    
-    
+
+
 def search(tvradio, searchterm):
-   
+
     if not searchterm:
         searchterm = iplayer_search.prompt_for_search()
         if searchterm != None and len(searchterm) >= 3:
@@ -580,53 +580,53 @@ def search(tvradio, searchterm):
 
     logging.info("searchterm=" + searchterm)
     feed = iplayer.feed(tvradio, searchterm=searchterm)
-    
+
     list_feed_listings(feed, 'list')
 
 def search_delete(tvradio, searchterm):
     iplayer_search.delete_search(SEARCH_FILE, tvradio, searchterm)
     xbmc.executebuiltin("Container.Refresh")
-    
+
 def search_list(tvradio):
     # provide a list of saved search terms
     xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_NONE)
     searchimg = get_plugin_thumbnail('search')
-    
+
     # First item allows a new search to be created
     listitem = xbmcgui.ListItem(label='New Search...')
     listitem.setThumbnailImage(searchimg)
     url = make_url(listing='search', tvradio=tvradio)
-    ok = xbmcplugin.addDirectoryItem(            
-          handle=__plugin_handle__, 
+    ok = xbmcplugin.addDirectoryItem(
+          handle=__plugin_handle__,
           url=url,
           listitem=listitem,
-          isFolder=True) 
-    
+          isFolder=True)
+
     # Now list all the saved searches
     for searchterm in iplayer_search.load_search(SEARCH_FILE, tvradio):
         listitem = xbmcgui.ListItem(label=searchterm)
         listitem.setThumbnailImage(searchimg)
         url = make_url(listing='search', tvradio=tvradio, label=searchterm)
-        
+
         # change the context menu to an entry for deleting the search
         cmd = "XBMC.RunPlugin(%s?deletesearch=%s&tvradio=%s)" % (sys.argv[0], urllib.quote_plus(searchterm), urllib.quote_plus(tvradio))
         listitem.addContextMenuItems( [ ('Delete saved search', cmd) ] )
-        
-        ok = xbmcplugin.addDirectoryItem(            
-            handle=__plugin_handle__, 
+
+        ok = xbmcplugin.addDirectoryItem(
+            handle=__plugin_handle__,
             url=url,
             listitem=listitem,
             isFolder=True,
-        )        
-         
+        )
+
     xbmcplugin.endOfDirectory(handle=__plugin_handle__, succeeded=True)
-        
+
 def list_feed_listings(feed, listing, category=None, series=None, channels=None):
-    if channels or listing == 'popular' or listing == 'highlights': 
+    if channels or listing == 'popular' or listing == 'highlights':
         xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_NONE)
     else:
         xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_LABEL)
-      
+
     d = {}
     d['list'] = feed.list
     d['popular'] = feed.popular
@@ -645,13 +645,13 @@ def list_feed_listings(feed, listing, category=None, series=None, channels=None)
             match = series_match(p.title)
             if match: matchagainst = match.group(1)
             #print "matching %s,%s" % (p.title, matchagainst)
-            if series == matchagainst: 
+            if series == matchagainst:
                 temp_prog.append(p)
         programmes = temp_prog
-    
+
     programmes = sort_by_attr(programmes, 'title')
-    
-        
+
+
     # add each programme
     total = len(programmes)
     if channels: total = total + len(channels)
@@ -665,7 +665,7 @@ def list_feed_listings(feed, listing, category=None, series=None, channels=None)
             traceback.print_exc()
             total = total - 1
         count = count + 1
-        
+
     # normally from an empty search
     if not programmes:
         label = "(no programmes available - try again later)"
@@ -679,7 +679,7 @@ def list_feed_listings(feed, listing, category=None, series=None, channels=None)
 
 
     # add list of channels names - for top level Highlights and Popular
-    if channels:  
+    if channels:
         for j, f in enumerate(channels):
             listitem = xbmcgui.ListItem(label=f.name)
             listitem.setIconImage('defaultFolder.png')
@@ -698,11 +698,11 @@ def list_feed_listings(feed, listing, category=None, series=None, channels=None)
     xbmcplugin.endOfDirectory(handle=__plugin_handle__, succeeded=True)
 
 
-def get_item(pid): 
+def get_item(pid):
     #print "Getting %s" % (pid)
     p = iplayer.programme(pid)
     #print "%s is %s" % (pid, p.title)
-      
+
     #for i in p.items:
     #    if i.kind in ['programme', 'radioProgrammme']:
     #        return i
@@ -719,21 +719,21 @@ def download_subtitles(url):
     #00:01:33,710 --> 00:01:37,714
     #Now that we've moved to paradise, there's nothing to eat.
     #
-    
+
     # TT:
     #<p begin="0:01:12.400" end="0:01:13.880">Thinking.</p>
-    
+
     logging.info('subtitles at =%s' % url)
     outfile = os.path.join(SUBTITLES_DIR, 'iplayer.srt')
     fw = open(outfile, 'w')
-    
+
     if not url:
         fw.write("1\n0:00:00,001 --> 0:01:00,001\nNo subtitles available\n\n")
-        fw.close() 
+        fw.close()
         return
-    
+
     txt = iplayer.httpget(url)
-        
+
     p= re.compile('^\s*<p.*?begin=\"(.*?)\.([0-9]+)\"\s+.*?end=\"(.*?)\.([0-9]+)\"\s*>(.*?)</p>')
     i=0
     prev = None
@@ -742,20 +742,20 @@ def download_subtitles(url):
     # with lots of needless repeats. The follow code will collapse sequences
     # of repeated subtitles into a single subtitles that covers the total time
     # period. The downside of this is that it would mess up in the rare case
-    # where a subtitle actually needs to be repeated 
+    # where a subtitle actually needs to be repeated
     for line in txt.split('\n'):
         entry = None
         m = p.match(line)
         if m:
             start_mil = "%s000" % m.group(2) # pad out to ensure 3 digits
             end_mil   = "%s000" % m.group(4)
-            
-            ma = {'start'     : m.group(1), 
-                  'start_mil' : start_mil[:3], 
-                  'end'       : m.group(3), 
-                  'end_mil'   : start_mil[:3], 
+
+            ma = {'start'     : m.group(1),
+                  'start_mil' : start_mil[:3],
+                  'end'       : m.group(3),
+                  'end_mil'   : start_mil[:3],
                   'text'      : m.group(5)}
-    
+
             ma['text'] = ma['text'].replace('&amp;', '&')
             ma['text'] = ma['text'].replace('&gt;', '>')
             ma['text'] = ma['text'].replace('&lt;', '<')
@@ -764,12 +764,12 @@ def download_subtitles(url):
             ma['text'] = re.sub('<.*?>', '', ma['text'])
             ma['text'] = re.sub('&#[0-9]+;', '', ma['text'])
             #ma['text'] = ma['text'].replace('<.*?>', '')
-    
+
             if not prev:
                 # first match - do nothing wait till next line
                 prev = ma
                 continue
-            
+
             if prev['text'] == ma['text']:
                 # current line = previous line then start a sequence to be collapsed
                 prev['end'] = ma['end']
@@ -781,10 +781,10 @@ def download_subtitles(url):
         elif prev:
             i += 1
             entry = "%d\n%s,%s --> %s,%s\n%s\n\n" % (i, prev['start'], prev['start_mil'], prev['end'], prev['end_mil'], prev['text'])
-            
+
         if entry: fw.write(entry)
-    
-    fw.close()    
+
+    fw.close()
     return outfile
 
 def get_matching_stream(item, pref, streams):
@@ -837,11 +837,11 @@ def watch(feed, pid, showDialog):
     thumbfile = None
     if feed and feed.name:
         channel = feed.name
-    times.append(['setup variables',time.clock()])        
+    times.append(['setup variables',time.clock()])
     logging.info('watching channel=%s pid=%s' % (channel, pid))
     times.append(['logging',time.clock()])
     logging.info('thumb =%s   summary=%s' % (thumbnail, summary))
-    times.append(['logging',time.clock()])   
+    times.append(['logging',time.clock()])
     subtitles = get_setting_subtitles()
     times.append(['get_setting_subtitles',time.clock()])
 
@@ -854,15 +854,15 @@ def watch(feed, pid, showDialog):
             thumbcache = xbmc.getCacheThumbName( sys.argv[ 0 ] + sys.argv[ 2 ] )
             thumbfile  = os.path.join( xbmc.translatePath( "special://profile" ), "Thumbnails", "Video", thumbcache[ 0 ], thumbcache )
             logging.info('Reusing existing thumbfile =%s for url %s%s' % (thumbfile, sys.argv[ 0 ], sys.argv[ 2 ]))
-        
+
     if thumbnail and not os.path.isfile(thumbfile):
-        # thumbnail wasn't available locally so download    
+        # thumbnail wasn't available locally so download
         try:
             # The thumbnail needs to accessed via the local filesystem
             # for "Media Info" to display it when playing a video
             if showDialog:
                 pDialog.update(20, 'Fetching thumbnail')
-                if pDialog.iscanceled(): raise 
+                if pDialog.iscanceled(): raise
                 times.append(['update dialog',time.clock()])
             iplayer.httpretrieve(thumbnail, thumbfile)
             times.append(['retrieve thumbnail',time.clock()])
@@ -877,7 +877,7 @@ def watch(feed, pid, showDialog):
             pDialog.update(50, 'Fetching video stream info')
             if pDialog.iscanceled(): raise
             times.append(['update dialog',time.clock()])
-        pref = get_setting_videostream()        
+        pref = get_setting_videostream()
         times.append(['get_setting_videostream',time.clock()])
         opref = pref
         if showDialog:
@@ -892,17 +892,17 @@ def watch(feed, pid, showDialog):
         if not media:
             # Nothing usable was found
             d = xbmcgui.Dialog()
-            d.ok('Stream Error', 'Can\'t locate any usable TV streams.')            
+            d.ok('Stream Error', 'Can\'t locate any usable TV streams.')
             return False
 
         if streams.index(opref) > streams.index(pref):
             d = xbmcgui.Dialog()
             if d.yesno('Default %s Stream Not Available' % opref, 'Play higher bitrate %s stream ?' % pref ) == False:
                 return False
-  
-        times.append(['media 2',time.clock()])    
+
+        times.append(['media 2',time.clock()])
         url = media.url
-        times.append(['media.url',time.clock()]) 
+        times.append(['media.url',time.clock()])
         logging.info('watching url=%s' % url)
         times.append(['logging',time.clock()])
 
@@ -928,9 +928,9 @@ def watch(feed, pid, showDialog):
         times.append(['listitem setinfo',time.clock()])
         play=xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
         times.append(['xbmc.PlayList',time.clock()])
-        
+
     else:
-        # Radio stream        
+        # Radio stream
         if showDialog:
             pDialog.update(30, 'Fetching radio stream info')
             if pDialog.iscanceled(): raise
@@ -940,19 +940,19 @@ def watch(feed, pid, showDialog):
             pDialog.update(50, 'Selecting radio stream')
             if pDialog.iscanceled(): raise
             times.append(['update dialog',time.clock()])
- 
+
         (media, pref) = get_matching_stream(item, pref, ['aac320', 'aac128', 'wma9', 'wma+asx', 'aac48', 'aac32'])
 
-        if not media:            
+        if not media:
             d = xbmcgui.Dialog()
-            d.ok('Stream Error', 'Error: can\'t locate radio stream')            
+            d.ok('Stream Error', 'Error: can\'t locate radio stream')
             return False
 
         if media.application in ['wma9', 'wma+asx']:
             url = parse_asx(media.url)
         else:
             url = media.url
-            
+
         logging.info('Listening to url=%s' % url)
 
         listitem = xbmcgui.ListItem(label=title)
@@ -967,14 +967,14 @@ def watch(feed, pid, showDialog):
     listitem.setInfo(type='Music', infoLabels = {'title': title})
     times.append(['listitem.setproperty x 3',time.clock()])
 
-    if thumbfile: 
+    if thumbfile:
         listitem.setIconImage(thumbfile)
         times.append(['listitem.setIconImage(thumbfile)',time.clock()])
         listitem.setThumbnailImage(thumbfile)
         times.append(['listitem.setThumbnailImage(thumbfile)',time.clock()])
-    
+
     del media
-    
+
     if showDialog:
         pDialog.update(80, 'Playing')
         if pDialog.iscanceled(): raise
@@ -1000,7 +1000,7 @@ def watch(feed, pid, showDialog):
             play = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
         play.clear()
         play.add(url, listitem)
-    
+
         self.play(play)
     else:
         player.resume_and_play(url, listitem, item.is_tv)
@@ -1008,13 +1008,13 @@ def watch(feed, pid, showDialog):
     # Auto play subtitles if they have downloaded
     logging.info("subtitles: %s   - subtitles_file %s " % (subtitles,subtitles_file))
     times.append(['logging.info',time.clock()])
-    if subtitles == 'autoplay' and subtitles_file: 
+    if subtitles == 'autoplay' and subtitles_file:
         player.setSubtitles(subtitles_file)
         times.append(['player.setSubtitles',time.clock()])
-    
+
     if showDialog: pDialog.close()
     times.append(['pDialog.close()',time.clock()])
-    
+
     if not item.is_tv:
         # Switch to a nice visualisation if playing a radio stream
         xbmc.executebuiltin('ActivateWindow(Visualisation)')
@@ -1052,14 +1052,14 @@ for d in [DIR_USERDATA, HTTP_CACHE_DIR, SUBTITLES_DIR]:
 
 if not os.path.isfile(SEARCH_FILE):
     try:
-        open(SEARCH_FILE, 'wb').close() 
+        open(SEARCH_FILE, 'wb').close()
     except IOError, e:
         logging.error("Couldn't create %s, %s" % (d, str(e)))
         raise
 
 if os.path.isfile(VERSION_FILE):
     old_version = file_read(VERSION_FILE)
-    
+
 if old_version != __version__:
     file_write(VERSION_FILE, __version__)
     d = xbmcgui.Dialog()
@@ -1068,9 +1068,9 @@ if old_version != __version__:
 if __name__ == "__main__":
     try:
 
-        # setup and check script environment 
+        # setup and check script environment
         if __addon__.getSetting('http_cache_disable') == 'false': iplayer.set_http_cache(HTTP_CACHE_DIR)
-    
+
         environment = os.environ.get( "OS", "xbox" )
         try:
             timeout = int(__addon__.getSetting('socket_timeout'))
@@ -1078,18 +1078,18 @@ if __name__ == "__main__":
             timeout = 5
         if environment in ['Linux', 'xbox'] and timeout > 0:
             setdefaulttimeout(timeout)
-    
+
         progcount = True
-        if __addon__.getSetting('progcount') == 'false':  progcount = False   
-                
+        if __addon__.getSetting('progcount') == 'false':  progcount = False
+
         # get current state parameters
         (feed, listing, pid, tvradio, category, series, url, label, deletesearch, radio, deleteresume, force_resume_unlock) = read_url()
         logging.info( (feed, listing, pid, tvradio, category, series, url, label, deletesearch, radio, deleteresume, force_resume_unlock) )
-        
+
         # update feed category
         if feed and category:
             feed.category = category
-    
+
         # state engine
         if pid:
             showDialog = __addon__.getSetting('displaydialog') == 'true'
@@ -1118,7 +1118,7 @@ if __name__ == "__main__":
         elif listing == 'searchlist':
             search_list(tvradio or 'tv')
         elif listing == 'search':
-            search(tvradio or 'tv', label)   
+            search(tvradio or 'tv', label)
         elif listing == 'livefeeds':
             tvradio = tvradio or 'tv'
             channels = iplayer.feed(tvradio or 'tv', radio=radio).channels_feed()
@@ -1132,7 +1132,7 @@ if __name__ == "__main__":
                 feed = feed or iplayer.feed(tvradio or 'tv', category=category, radio=radio)
                 channels=feed.channels_feed()
             list_feed_listings(feed, listing, category=category, series=series, channels=channels)
-                                             
+
     except:
         # Make sure the text from any script errors are logged
         traceback.print_exc(file=sys.stdout)
