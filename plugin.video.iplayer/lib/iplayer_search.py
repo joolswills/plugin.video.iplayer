@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # Python libs
-import os, string, sys, xbmc
+import xbmc
 from sets import Set
 
 def load_search(file, tvradio):

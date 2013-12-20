@@ -2,12 +2,11 @@
 
 # Python libs
 import re, time, os, string, sys
-import urllib, urllib2
+import urllib2
 import logging
 import xml.dom.minidom as dom
 import md5
 import traceback
-from pprint import pformat
 from socket import timeout as SocketTimeoutError
 
 # XBMC libs
@@ -168,15 +167,6 @@ def httpget(url):
         return data
     except:
         traceback.print_exc(file=sys.stdout)
-        # disabling this for now - want to know if it is still needed with current xbmc
-        #try:
-        #    # fallback to urllib to avoid a bug in httplib which often
-        #    # occurs during searches
-        #    f = urllib.urlopen(url)
-        #    data = f.read()
-        #    f.close()
-        #    return data
-        #except:
         dialog = xbmcgui.Dialog()
         dialog.ok('Network Error', 'Failed to fetch URL', url)
         logging.error( 'Network Error. Failed to fetch URL %s' % url )

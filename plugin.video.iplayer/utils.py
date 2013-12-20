@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import os, sys, re
+import os, sys
 import xbmc, xbmcaddon
 
 __plugin_handle__ = int(sys.argv[1])
