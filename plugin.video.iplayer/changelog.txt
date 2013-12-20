@@ -1,5 +1,9 @@
 Changes
 
+2.5.1
+  * re-enable limelight cdn for live streams (they were not working before)
+  * xbmc4xbox compatibility fix
+
 2.5.0
   * implemented live tv functionality into main iplayer2.py code
   * various code cleanups/fixes
