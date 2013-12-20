@@ -992,17 +992,7 @@ def watch(feed, pid, showDialog):
         return
 
     times.append(['xbmc.Player()',time.clock()])
-    if os.environ.get("OS") == "xbox":
-        if is_tv:
-            play = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
-        else:
-            play = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
-        play.clear()
-        play.add(url, listitem)
-
-        self.play(play)
-    else:
-        player.resume_and_play(url, listitem, item.is_tv)
+    player.resume_and_play(url, listitem, item.is_tv)
     times.append(['player.play',time.clock()])
     # Auto play subtitles if they have downloaded
     logging.info("subtitles: %s   - subtitles_file %s " % (subtitles,subtitles_file))
