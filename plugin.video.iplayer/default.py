@@ -1,8 +1,7 @@
 #/bin/python
 
-import sys, os, os.path, re, time
+import sys, os, re, time
 import urllib, cgi
-from string import ascii_lowercase
 from socket import setdefaulttimeout
 import traceback
 import logging
