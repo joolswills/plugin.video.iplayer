@@ -5,6 +5,7 @@
        provider-name="Alastair, BuZz, Dink">
     <requires>
         <import addon="xbmc.python" version="1.0"/>
+        <import addon="script.module.elementtree" />
     </requires>
     <extension point="xbmc.python.pluginsource"
                library="default.py">
