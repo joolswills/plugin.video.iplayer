@@ -2,7 +2,7 @@
 
 # Python libs
 import re, time, os, string, sys
-import urllib2
+import urllib, urllib2
 import logging
 import xml.dom.minidom as dom
 import md5
