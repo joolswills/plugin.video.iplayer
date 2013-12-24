@@ -1,5 +1,8 @@
 Changes
 
+2.5.2
+  * search was broken during code cleanups (removal of in-use import)
+
 2.5.1
   * re-enable limelight cdn for live streams (they were not working before)
   * xbmc4xbox compatibility fix
