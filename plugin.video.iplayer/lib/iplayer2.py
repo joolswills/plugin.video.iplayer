@@ -1234,9 +1234,9 @@ class IPlayer(xbmc.Player):
         XBMC is muted during seeking, as there is often a pause before seeking begins.
         """
 
-        if os.environ.get( "OS" ) != "xbox":
-            if playresume and not self.live and self.pid in self.resume.keys():
-                resume, dates_added = IPlayer.load_resume_file()
+        if os.environ.get( "OS" ) != "xbox" and playresume:
+            resume, dates_added = IPlayer.load_resume_file()
+            if self.live and self.pid in resume.keys():
                 logging.info("iPlayer %s: Resume point found for pid %s at %f, seeking..." % (self, self.pid, resume[self.pid]))
                 listitem.setProperty('StartOffset', '%d' % resume[self.pid])
 
