@@ -404,6 +404,8 @@ def add_programme(feed, programme, totalItems=None, tracknumber=None, thumbnail_
     thumbnail = programme.get_thumbnail(thumbnail_size, tvradio)
     summary   = programme.summary
 
+    logging.debug("Adding program: %s" % programme.__dict__)
+    
     listitem = xbmcgui.ListItem(label=title,
                                 label2=summary,
                                 iconImage='defaultVideo.png',
@@ -630,10 +632,7 @@ def search_list(tvradio):
     xbmcplugin.endOfDirectory(handle=__plugin_handle__, succeeded=True)
 
 def list_feed_listings(feed, listing, category=None, series=None, channels=None):
-    if channels or listing == 'popular' or listing == 'highlights':
-        xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_NONE)
-    else:
-        xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_LABEL)
+    xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_NONE)
 
     d = {}
     d['list'] = feed.list
@@ -657,7 +656,7 @@ def list_feed_listings(feed, listing, category=None, series=None, channels=None)
                 temp_prog.append(p)
         programmes = temp_prog
 
-    programmes = sort_by_attr(programmes, 'title')
+    programmes = sort_by_attr(programmes, 'episode')
 
 
     # add each programme

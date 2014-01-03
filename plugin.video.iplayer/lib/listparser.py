@@ -11,12 +11,14 @@ def xmlunescape(data):
     return data
 
 class listentry(object):
-     def __init__(self, title=None, id=None, updated=None, summary=None, categories=None):
+     def __init__(self, title=None, id=None, updated=None, summary=None, categories=None, series=None, episode=None):
          self.title      = title
          self.id         = id
          self.updated    = updated
          self.summary    = summary
          self.categories = categories
+         self.series     = series
+         self.episode    = episode
 
 class listentries(object):
      def __init__(self):
@@ -31,6 +33,8 @@ def parse(xmlSource):
     entriesSrc = re.findall( "<entry>(.*?)</entry>", xmlSource, re.DOTALL)
     datematch = re.compile(':\s+([0-9]+)/([0-9]+)/([0-9]{4})')
     
+    episode_exprs = ["<link rel=\"self\" .*title=\".*pisode *([0-9]+?)", "<link rel=\"self\" .*title=\"([0-9]+?)\."]
+    
     # enumerate thru the element list and gather info
     for entrySrc in entriesSrc:
         entry={}
@@ -40,6 +44,20 @@ def parse(xmlSource):
         summary = re.findall( "<content[^>]*>(.*?)</content>", entrySrc, re.DOTALL )[0].splitlines()[-3]
         categories = re.findall( "<category[^>]*term=\"(.*?)\"[^>]*>", entrySrc, re.DOTALL )
 
+        series = re.findall( "<link rel=\"related\" href=\".*microsite.*title=\"(.*?)\" />", entrySrc, re.DOTALL )
+        if len(series):
+            series = series[0]
+        else:
+            series = title
+        
+        episode = None
+        for ex in episode_exprs:
+            e = re.findall( ex, entrySrc, re.DOTALL )
+            if len(e):
+                episode = "%s:%02d" % (series, int(e[0]))
+                break;
+        episode = episode or title
+
         match = datematch.search(title)
         if match:
             # if the title contains a data at the end use that as the updated date YYYY-MM-DD
@@ -47,6 +65,6 @@ def parse(xmlSource):
                     
         e_categories=[]
         for c in categories: e_categories.append(xmlunescape(c))        
-        elist.entries.append(listentry(xmlunescape(title), xmlunescape(id), xmlunescape(updated), xmlunescape(summary), e_categories))
+        elist.entries.append(listentry(xmlunescape(title), xmlunescape(id), xmlunescape(updated), xmlunescape(summary), e_categories, series, episode))
 
     return elist   

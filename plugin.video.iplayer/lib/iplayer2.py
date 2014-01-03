@@ -658,6 +658,8 @@ class programme_simple(object):
             self.categories.append(c.rstrip())
         self._items = []
         self._related = []
+        self.series = entry.series
+        self.episode = entry.episode
 
     @call_once
     def read_playlist(self):
@@ -946,6 +948,7 @@ class feed(object):
         if url not in rss_cache:
             logging.info('Feed URL not in cache, requesting...')
             xml = httpget(url)
+            # logging.debug("Received xml: %s" % xml)
             progs = listparser.parse(xml)
             if not progs: return []
             d = []
