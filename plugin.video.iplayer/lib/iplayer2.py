@@ -1026,6 +1026,9 @@ class IPlayer(xbmc.Player):
     RESUME_FILE = None
     RESUME_LOCK_FILE = None
 
+    resume = None
+    dates_added = None
+
     def __init__( self, core_player, pid, live ):
         logging.info("iPlayer %s: IPlayer initialised (core_player: %d, pid: %s, live: %s)" % (self, core_player, pid, live))
         self.paused = False
@@ -1041,7 +1044,6 @@ class IPlayer(xbmc.Player):
             if os.environ.get( "OS" ) != "xbox":
                 # Acquire the resume lock, store the pid and load the resume file
                 self._acquire_lock()
-                self.resume, self.dates_added = IPlayer.load_resume_file()
 
     def __del__( self ):
         logging.info("iPlayer %s: De-initialising..." % self)
@@ -1151,10 +1153,11 @@ class IPlayer(xbmc.Player):
         """
         Updates the current resume point for the currently playing pid to resume_point, and commits the result to the resume db file
         """
-        self.resume[self.pid] = resume_point
-        self.dates_added[self.pid] = time.time()
-        logging.info("iPlayer %s: Saving resume point (pid %s, seekTime %fs, dateAdded %d) to resume file" % (self, self.pid, self.resume[self.pid], self.dates_added[self.pid]))
-        IPlayer.save_resume_file(self.resume, self.dates_added)
+        resume, dates_added = IPlayer.load_resume_file()
+        resume[self.pid] = resume_point
+        dates_added[self.pid] = time.time()
+        logging.info("iPlayer %s: Saving resume point (pid %s, seekTime %fs, dateAdded %d) to resume file" % (self, self.pid, resume[self.pid], dates_added[self.pid]))
+        IPlayer.save_resume_file(resume, dates_added)
 
     @staticmethod
     def load_resume_file():
@@ -1163,35 +1166,37 @@ class IPlayer(xbmc.Player):
         Resume file format is three columns, separated by a single space, with platform dependent newlines
         First column is pid (string), second column is resume point (float), third column is date added
         If date added is more than thirty days ago, the pid entry will be ignored for cleanup
+        Will only actually load the file once, caching the result for future calls.
         """
-        # Load resume file
-        resume = {}
-        dates_added = {}
-        if os.path.isfile(IPlayer.RESUME_FILE):
-            logging.info("iPlayer: Loading resume file: %s" % (IPlayer.RESUME_FILE))
-            resume_fh = open(IPlayer.RESUME_FILE, 'rU')
-            try:
-                resume_str = resume_fh.read()
-            finally:
-                resume_fh.close()
-            tokens = resume_str.split()
-            # Three columns, pid, seekTime (which is a float) and date added (which is an integer, datetime in seconds), per line
-            pids = tokens[0::3]
-            seekTimes = [float(seekTime) for seekTime in tokens[1::3]]
-            datesAdded = [int(dateAdded) for dateAdded in tokens[2::3]]
-            pid_to_resume_point_map = []
-            pid_to_date_added_map = []
-            for i in range(len(pids)):
+        
+        if not IPlayer.resume:
+            # Load resume file
+            IPlayer.resume = {}
+            IPlayer.dates_added = {}
+            if os.path.isfile(IPlayer.RESUME_FILE):
+                logging.info("iPlayer: Loading resume file: %s" % (IPlayer.RESUME_FILE))
+                with open(IPlayer.RESUME_FILE, 'rU') as resume_fh:
+                    resume_str = resume_fh.read()
+                tokens = resume_str.split()
+                # Three columns, pid, seekTime (which is a float) and date added (which is an integer, datetime in seconds), per line
+                pids = tokens[0::3]
+                seekTimes = [float(seekTime) for seekTime in tokens[1::3]]
+                datesAdded = [int(dateAdded) for dateAdded in tokens[2::3]]
+                pid_to_resume_point_map = []
+                pid_to_date_added_map = []
                 # if row was added less than days_to_keep days ago, add it to valid_mappings
                 try: days_to_keep = int(__addon__.getSetting('resume_days_to_keep'))
                 except: days_to_keep = 40
-                if datesAdded[i] > time.time() - 60*60*24*days_to_keep:
-                    pid_to_resume_point_map.append( (pids[i], seekTimes[i]) )
-                    pid_to_date_added_map.append( (pids[i], datesAdded[i]) )
-            resume = dict(pid_to_resume_point_map)
-            dates_added = dict(pid_to_date_added_map)
-            logging.info("iPlayer: Found %d resume entries" % (len(resume.keys())))
-        return resume, dates_added
+                limit_time = time.time() - 60*60*24*days_to_keep
+                for i in range(len(pids)):
+                    if datesAdded[i] > limit_time:
+                        pid_to_resume_point_map.append( (pids[i], seekTimes[i]) )
+                        pid_to_date_added_map.append( (pids[i], datesAdded[i]) )
+                IPlayer.resume = dict(pid_to_resume_point_map)
+                IPlayer.dates_added = dict(pid_to_date_added_map)
+                logging.info("iPlayer: Found %d resume entries" % (len(IPlayer.resume.keys())))
+                
+        return IPlayer.resume, IPlayer.dates_added
 
     @staticmethod
     def delete_resume_point(pid_to_delete):
@@ -1206,13 +1211,17 @@ class IPlayer(xbmc.Player):
         """
         Saves the current resume dictionary to disk. See load_resume_file for file format
         """
+        
+        IPlayer.resume = resume
+        IPlayer.dates_added = dates_added
+        
         str = ""
         logging.info("iPlayer: Saving %d entries to %s" % (len(resume.keys()), IPlayer.RESUME_FILE))
         resume_fh = open(IPlayer.RESUME_FILE, 'w')
         try:
             for pid, seekTime in resume.items():
                 str += "%s %f %d%s" % (pid, seekTime, dates_added[pid], os.linesep)
-                resume_fh.write(str)
+            resume_fh.write(str)
         finally:
              resume_fh.close()
 
@@ -1221,10 +1230,12 @@ class IPlayer(xbmc.Player):
         Intended to replace xbmc.Player.play(playlist), this method begins playback and seeks to any recorded resume point.
         XBMC is muted during seeking, as there is often a pause before seeking begins.
         """
+
         if os.environ.get( "OS" ) != "xbox":
-            if not self.live and self.pid in self.resume.keys():
-                logging.info("iPlayer %s: Resume point found for pid %s at %f, seeking..." % (self, self.pid, self.resume[self.pid]))
-                listitem.setProperty('StartOffset', '%d' % self.resume[self.pid])
+            if not self.live and self.pid in resume.keys():
+                resume, dates_added = IPlayer.load_resume_file()
+                logging.info("iPlayer %s: Resume point found for pid %s at %f, seeking..." % (self, self.pid, resume[self.pid]))
+                listitem.setProperty('StartOffset', '%d' % resume[self.pid])
 
         if is_tv:
             play = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
