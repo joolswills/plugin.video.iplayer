@@ -1,5 +1,10 @@
 Changes
 
+2.5.3
+  * subtitle timing fixes (thanks to christian)
+  * resume performance improvements and fixes (thanks to doug)
+  * improved episode sorting (thanks to doug)
+
 2.5.2
   * search was broken during code cleanups (removal of in-use import)
 
