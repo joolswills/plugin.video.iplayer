@@ -760,7 +760,7 @@ def download_subtitles(url):
             ma = {'start'     : m.group(1),
                   'start_mil' : start_mil[:3],
                   'end'       : m.group(3),
-                  'end_mil'   : start_mil[:3],
+                  'end_mil'   : end_mil[:3],
                   'text'      : m.group(5)}
 
             ma['text'] = ma['text'].replace('&amp;', '&')
