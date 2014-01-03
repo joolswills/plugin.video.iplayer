@@ -28,5 +28,6 @@
   <string id="30440">Enhanced Debug output</string>
   <string id="30450">Number of days to keep resume points</string>
   <string id="30460">Force release resume lock</string>
+  <string id="30470">Default play action</string>
 
 </strings>

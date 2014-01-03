@@ -138,6 +138,8 @@ def read_url():
     radio        = args.get('radio', [None])[0]
     deleteresume = args.get('deleteresume', [None])[0]
     force_resume_unlock = args.get('force_resume_unlock', [None])[0]
+    playfromstart = args.get('playfromstart', [None])[0]
+    playresume   = args.get('playresume', [None])[0]
     content_type = args.get('content_type', [None])[0]
 
     feed = None
@@ -157,7 +159,7 @@ def read_url():
         if   section == '1': tvradio = 'tv'
         elif section == '2': tvradio = 'radio'
 
-    return (feed, listing, pid, tvradio, category, series, url, label, deletesearch, radio, deleteresume, force_resume_unlock)
+    return (feed, listing, pid, tvradio, category, series, url, label, deletesearch, radio, deleteresume, force_resume_unlock, playfromstart, playresume)
 
 def list_feeds(feeds, tvradio='tv', radio=None):
     xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_TRACKNUM )
@@ -434,9 +436,11 @@ def add_programme(feed, programme, totalItems=None, tracknumber=None, thumbnail_
     url=make_url(feed=feed, pid=programme.pid)
     resume, dates_added = iplayer.IPlayer.load_resume_file()
     if programme.pid in resume.keys():
-        listitem.setInfo('video', {'Title': "%s [I](resumeable)[/I] " % programme.title, 'LastPlayed': dates_added[programme.pid]})
-        cmd = "XBMC.RunPlugin(%s?deleteresume=%s)" % (sys.argv[0], urllib.quote_plus(programme.pid))
-        listitem.addContextMenuItems([('Remove resume point', cmd)])
+        listitem.setInfo('video', {'Title': "%s [I](resumeable %s)[/I] " % (programme.title, tohms(resume[programme.pid])), 'LastPlayed': dates_added[programme.pid]})
+        cmd1 = "XBMC.RunPlugin(%s?deleteresume=%s)" % (sys.argv[0], urllib.quote_plus(programme.pid))
+        cmd2 = "XBMC.RunPlugin(%s?playfromstart=%s)" % (sys.argv[0], urllib.quote_plus(programme.pid))
+        cmd3 = "XBMC.RunPlugin(%s?playresume=%s)" % (sys.argv[0], urllib.quote_plus(programme.pid))
+        listitem.addContextMenuItems([('Resume from %s' % tohms(resume[programme.pid]), cmd3), ('Play from start', cmd2), ('Remove resume point', cmd1)])
 
     xbmcplugin.addDirectoryItem(
         handle=__plugin_handle__,
@@ -447,6 +451,11 @@ def add_programme(feed, programme, totalItems=None, tracknumber=None, thumbnail_
 
     return True
 
+def tohms(time):
+    hours = int(time / 3600)
+    mins = int(time / 60) % 60
+    secs = int(time) % 60
+    return str.format("{0:02}:{1:02}:{2:02}", hours, mins, secs)
 
 def list_categories(tvradio='tv', feed=None, channels=None, progcount=True):
 
@@ -815,7 +824,7 @@ def get_matching_stream(item, pref, streams):
 
     return (media, pref)
 
-def watch(feed, pid, showDialog):
+def watch(feed, pid, showDialog, resume=False):
 
     times = []
     times.append(['start',time.clock()])
@@ -992,7 +1001,8 @@ def watch(feed, pid, showDialog):
         return
 
     times.append(['xbmc.Player()',time.clock()])
-    player.resume_and_play(url, listitem, item.is_tv)
+    player.resume_and_play(url, listitem, item.is_tv, resume)
+
     times.append(['player.play',time.clock()])
     # Auto play subtitles if they have downloaded
     logging.info("subtitles: %s   - subtitles_file %s " % (subtitles,subtitles_file))
@@ -1072,8 +1082,8 @@ if __name__ == "__main__":
         if __addon__.getSetting('progcount') == 'false':  progcount = False
 
         # get current state parameters
-        (feed, listing, pid, tvradio, category, series, url, label, deletesearch, radio, deleteresume, force_resume_unlock) = read_url()
-        logging.info( (feed, listing, pid, tvradio, category, series, url, label, deletesearch, radio, deleteresume, force_resume_unlock) )
+        (feed, listing, pid, tvradio, category, series, url, label, deletesearch, radio, deleteresume, force_resume_unlock, playfromstart, playresume) = read_url()
+        logging.info( (feed, listing, pid, tvradio, category, series, url, label, deletesearch, radio, deleteresume, force_resume_unlock, playfromstart, playresume) )
 
         # update feed category
         if feed and category:
@@ -1082,12 +1092,18 @@ if __name__ == "__main__":
         # state engine
         if pid:
             showDialog = __addon__.getSetting('displaydialog') == 'true'
-            watch(feed, pid, showDialog)
+            watch(feed, pid, showDialog, __addon__.getSetting('playaction') == "0")
         elif deletesearch:
             search_delete(tvradio or 'tv', deletesearch)
         elif deleteresume:
             iplayer.IPlayer.delete_resume_point(deleteresume)
             xbmc.executebuiltin('Container.Refresh')
+        elif playfromstart:
+            showDialog = __addon__.getSetting('displaydialog') == 'true'
+            watch(feed, playfromstart, showDialog)
+        elif playresume:
+            showDialog = __addon__.getSetting('displaydialog') == 'true'
+            watch(feed, playresume, showDialog, True)
         elif force_resume_unlock:
             iplayer.IPlayer.force_release_lock()
         elif not (feed or listing):

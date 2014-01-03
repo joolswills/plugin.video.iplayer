@@ -1225,14 +1225,14 @@ class IPlayer(xbmc.Player):
         finally:
              resume_fh.close()
 
-    def resume_and_play( self, url, listitem, is_tv ):
+    def resume_and_play( self, url, listitem, is_tv, playresume=False ):
         """
         Intended to replace xbmc.Player.play(playlist), this method begins playback and seeks to any recorded resume point.
         XBMC is muted during seeking, as there is often a pause before seeking begins.
         """
 
         if os.environ.get( "OS" ) != "xbox":
-            if not self.live and self.pid in resume.keys():
+            if playresume and not self.live and self.pid in self.resume.keys():
                 resume, dates_added = IPlayer.load_resume_file()
                 logging.info("iPlayer %s: Resume point found for pid %s at %f, seeking..." % (self, self.pid, resume[self.pid]))
                 listitem.setProperty('StartOffset', '%d' % resume[self.pid])
