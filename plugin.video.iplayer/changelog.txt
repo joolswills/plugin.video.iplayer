@@ -1,5 +1,9 @@
 Changes
 
+2.5.4
+  * resume support got broken in the last release. oops. thanks to doug
+    for the fix
+
 2.5.3
   * subtitle timing fixes (thanks to christian)
   * resume performance improvements and fixes (thanks to doug)
