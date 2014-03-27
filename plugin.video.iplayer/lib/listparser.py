@@ -33,7 +33,7 @@ def parse(xmlSource):
     entriesSrc = re.findall( "<entry>(.*?)</entry>", xmlSource, re.DOTALL)
     datematch = re.compile(':\s+([0-9]+)/([0-9]+)/([0-9]{4})')
     
-    episode_exprs = ["<link rel=\"self\" .*title=\".*pisode *([0-9]+?)", "<link rel=\"self\" .*title=\"([0-9]+?)\."]
+    episode_exprs = ["<link rel=\"self\" .*title=\".*pisode *([0-9]+)", "<link rel=\"self\" .*title=\"([0-9]+)\."]
     
     # enumerate thru the element list and gather info
     for entrySrc in entriesSrc:
