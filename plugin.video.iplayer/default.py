@@ -4,14 +4,12 @@ import sys, os, re, time
 import urllib, cgi
 from socket import setdefaulttimeout
 import traceback
-import logging
 import operator
 
 import xbmc, xbmcgui, xbmcplugin
 import utils
 
-__scriptid__ = "plugin.video.iplayer"
-__addoninfo__ = utils.get_addoninfo(__scriptid__)
+__addoninfo__ = utils.get_addoninfo()
 __addon__ = __addoninfo__["addon"]
 __version__ = __addoninfo__["version"]
 
@@ -27,12 +25,6 @@ except ImportError, error:
     d.ok(str(error), 'Please check you installed this plugin correctly.')
     raise
 
-logging.basicConfig(
-    stream=sys.stdout,
-    level=logging.INFO,
-    format='iplayer2.py: %(levelname)4s %(message)s',
-    )
-
 DIR_USERDATA   = xbmc.translatePath(__addoninfo__["profile"])
 HTTP_CACHE_DIR = os.path.join(DIR_USERDATA, 'iplayer_http_cache')
 SUBTITLES_DIR  = os.path.join(DIR_USERDATA, 'Subtitles')
@@ -43,7 +35,7 @@ iplayer.IPlayer.RESUME_LOCK_FILE = os.path.join(DIR_USERDATA, 'iplayer_resume_lo
 
 if os.path.isfile(iplayer.IPlayer.RESUME_LOCK_FILE):
     if not xbmc.Player().isPlaying():
-        logging.warn("Detected stale resume lock file, deleting...")
+        utils.log("Detected stale resume lock file, deleting...",xbmc.LOGSEVERE)
         os.remove(iplayer.IPlayer.RESUME_LOCK_FILE)
 
 __plugin_handle__ = utils.__plugin_handle__
@@ -217,7 +209,7 @@ def list_live_feeds(feeds, tvradio='tv'):
 
     for j, f in enumerate(feeds):
 
-        try: logging.info('Processing feed %s' % str(f.name))
+        try: utils.log('Processing feed %s' % str(f.name),xbmc.LOGINFO)
         except: continue
 
         if f.channel == 'bbc_hd': continue
@@ -341,8 +333,8 @@ def add_programme(feed, programme, totalItems=None, tracknumber=None, thumbnail_
     thumbnail = programme.get_thumbnail(thumbnail_size, tvradio)
     summary   = programme.summary
 
-    logging.debug("Adding program: %s" % programme.__dict__)
-    
+    utils.log("Adding program: %s" % programme.__dict__,xbmc.LOGDEBUG)
+
     listitem = xbmcgui.ListItem(label=title,
                                 label2=summary,
                                 iconImage='defaultVideo.png',
@@ -525,7 +517,7 @@ def search(tvradio, searchterm):
         else:
             return
 
-    logging.info("searchterm=" + searchterm)
+    utils.log("searchterm=%s" % searchterm,xbmc.LOGINFO)
     feed = iplayer.feed(tvradio, searchterm=searchterm)
 
     list_feed_listings(feed, 'list')
@@ -667,7 +659,7 @@ def download_subtitles(url):
     # TT:
     #<p begin="0:01:12.400" end="0:01:13.880">Thinking.</p>
 
-    logging.info('subtitles at =%s' % url)
+    utils.log('subtitles at = %s' % url,xbmc.LOGINFO)
     outfile = os.path.join(SUBTITLES_DIR, 'iplayer.srt')
     fw = open(outfile, 'w')
 
@@ -746,7 +738,7 @@ def get_matching_stream(item, pref, streams):
 
     while not media and i < len(streams)-1:
         i += 1
-        logging.info('Stream %s not available, falling back to %s stream' % (pref, streams[i]) )
+        utils.log('Stream %s not available, falling back to %s stream' % (pref, streams[i]),xbmc.LOGINFO)
         pref = streams[i]
         media = item.get_media_for(pref)
 
@@ -783,9 +775,9 @@ def watch(feed, pid, showDialog, resume=False):
     if feed and feed.name:
         channel = feed.name
     times.append(['setup variables',time.clock()])
-    logging.info('watching channel=%s pid=%s' % (channel, pid))
+    utils.log('watching channel=%s pid=%s' % (channel, pid),xbmc.LOGINFO)
     times.append(['logging',time.clock()])
-    logging.info('thumb =%s   summary=%s' % (thumbnail, summary))
+    utils.log('thumb =%s   summary=%s' % (thumbnail, summary),xbmc.LOGINFO)
     times.append(['logging',time.clock()])
     subtitles = get_setting_subtitles()
     times.append(['get_setting_subtitles',time.clock()])
@@ -798,7 +790,7 @@ def watch(feed, pid, showDialog, resume=False):
             # attempt to use the existing thumbnail file
             thumbcache = xbmc.getCacheThumbName( sys.argv[ 0 ] + sys.argv[ 2 ] )
             thumbfile  = os.path.join( xbmc.translatePath( "special://profile" ), "Thumbnails", "Video", thumbcache[ 0 ], thumbcache )
-            logging.info('Reusing existing thumbfile =%s for url %s%s' % (thumbfile, sys.argv[ 0 ], sys.argv[ 2 ]))
+            utils.log('Reusing existing thumbfile=%s for url %s%s' % (thumbfile, sys.argv[ 0 ], sys.argv[ 2 ]),xbmc.LOGINFO)
 
     if thumbnail and not os.path.isfile(thumbfile):
         # thumbnail wasn't available locally so download
@@ -845,7 +837,7 @@ def watch(feed, pid, showDialog, resume=False):
             times.append(['media 2',time.clock()])
             url = media.url
             times.append(['media.url',time.clock()])
-            logging.info('watching url=%s' % url)
+            utils.log('watching url=%s' % url,xbmc.LOGINFO)
             times.append(['logging',time.clock()])
 
             if showDialog:
@@ -887,7 +879,7 @@ def watch(feed, pid, showDialog, resume=False):
             else:
                 url = media.url
 
-            logging.info('Listening to url=%s' % url)
+            utils.log('Listening to url=%s' % url,xbmc.LOGINFO)
 
             listitem = xbmcgui.ListItem(label=title)
             times.append(['listitem create',time.clock()])
@@ -896,7 +888,7 @@ def watch(feed, pid, showDialog, resume=False):
             play=xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
             times.append(['xbmc.PlayList',time.clock()])
 
-        logging.info('Playing preference %s %s' % (media.connection_kind, media.application))
+        utils.log('Playing preference %s %s' % (media.connection_kind, media.application),xbmc.LOGINFO)
         times.append(['logging.info',time.clock()])
         listitem.setInfo(type='Music', infoLabels = {'title': title})
         times.append(['listitem.setproperty x 3',time.clock()])
@@ -934,7 +926,7 @@ def watch(feed, pid, showDialog, resume=False):
         times.append(['player.play',time.clock()])
         
     # Auto play subtitles if they have downloaded
-    logging.info("subtitles: %s   - subtitles_file %s " % (subtitles,subtitles_file))
+    utils.log("subtitles: %s   - subtitles_file %s " % (subtitles,subtitles_file),xbmc.LOGINFO)
     times.append(['logging.info',time.clock()])
     if subtitles == 'autoplay' and subtitles_file:
         player.setSubtitles(subtitles_file)
@@ -952,18 +944,18 @@ def watch(feed, pid, showDialog, resume=False):
     if __addon__.getSetting('enhanceddebug') == 'true':
         pt = times[0][1]
         for t in times:
-            logging.info('Took %2.2f sec for %s' % (t[1] - pt, t[0]))
+            utils.log('Took %2.2f sec for %s' % (t[1] - pt, t[0]),xbmc.LOGINFO)
             pt = t[1]
 
     if os.environ.get( "OS" ) != "xbox":
         while player.isPlaying() and not xbmc.abortRequested:
             xbmc.sleep(500)
 
-        xbmc.log("Exiting playback loop... (isPlaying %s, abortRequested %s)" % (player.isPlaying(), xbmc.abortRequested), level=xbmc.LOGDEBUG)
+        utils.log("Exiting playback loop... (isPlaying %s, abortRequested %s)" % (player.isPlaying(), xbmc.abortRequested),xbmc.LOGDEBUG)
         player.cancelled.set()
 
-logging.info("IPlayer: version: %s" % __version__)
-logging.info("IPlayer: Subtitles dir: %s" % SUBTITLES_DIR)
+utils.log("Version: %s" % __version__,xbmc.LOGINFO)
+utils.log("Subtitles dir: %s" % SUBTITLES_DIR,xbmc.LOGINFO)
 
 old_version = ''
 
@@ -972,17 +964,17 @@ DIR_USERDATA
 for d in [DIR_USERDATA, HTTP_CACHE_DIR, SUBTITLES_DIR]:
     if not os.path.isdir(d):
         try:
-            logging.info("%s doesn't exist, creating" % d)
+            utils.log("%s doesn't exist, creating" % d,xbmc.LOGINFO)
             os.makedirs(d)
         except IOError, e:
-            logging.info("Couldn't create %s, %s" % (d, str(e)))
+            utils.log("Couldn't create %s, %s" % (d, str(e)),xbmc.LOGINFO)
             raise
 
 if not os.path.isfile(SEARCH_FILE):
     try:
         open(SEARCH_FILE, 'wb').close()
     except IOError, e:
-        logging.error("Couldn't create %s, %s" % (d, str(e)))
+        utils.log("Couldn't create %s, %s" % (d, str(e)),xbmc.LOGERROR)
         raise
 
 if os.path.isfile(VERSION_FILE):
@@ -1012,7 +1004,7 @@ if __name__ == "__main__":
 
         # get current state parameters
         (feed, listing, pid, tvradio, category, series, url, label, deletesearch, radio, deleteresume, force_resume_unlock, playfromstart, playresume) = read_url()
-        logging.info( (feed, listing, pid, tvradio, category, series, url, label, deletesearch, radio, deleteresume, force_resume_unlock, playfromstart, playresume) )
+        utils.log( str((feed, listing, pid, tvradio, category, series, url, label, deletesearch, radio, deleteresume, force_resume_unlock, playfromstart, playresume)),xbmc.LOGINFO )
 
         # update feed category
         if feed and category:

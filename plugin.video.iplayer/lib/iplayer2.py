@@ -3,7 +3,6 @@
 # Python libs
 import re, time, os, string, sys
 import urllib, urllib2
-import logging
 import xml.dom.minidom as dom
 import md5
 import traceback
@@ -25,18 +24,11 @@ except:
 import httplib2
 
 import utils
-__scriptid__ = "plugin.video.iplayer"
-__addoninfo__ = utils.get_addoninfo(__scriptid__)
+__addoninfo__ = utils.get_addoninfo()
 __addon__ = __addoninfo__["addon"]
 
 sys.path.append(os.path.join(__addoninfo__["path"], 'lib', 'httplib2'))
 import socks
-
-#print "iplayer2 logging to stdout"
-logging.basicConfig(
-    stream=sys.stdout,
-    level=logging.DEBUG,
-    format='iplayer2.py: %(levelname)4s %(message)s',)
 
 # me want 2.5!!!
 def any(iterable):
@@ -100,13 +92,13 @@ def get_httplib():
     try:
         if __addon__.getSetting('proxy_use') == 'true':
             (proxy_type, proxy_server, proxy_port, proxy_dns, proxy_user, proxy_pass) = get_proxy()
-            logging.info("Using proxy: type %i rdns: %i server: %s port: %s user: %s pass: %s", proxy_type, proxy_dns, proxy_server, proxy_port, "***", "***")
+            utils.log("Using proxy: type %i rdns: %i server: %s port: %s user: %s pass: %s" % (proxy_type, proxy_dns, proxy_server, proxy_port, "***", "***"),xbmc.LOGINFO)
             http = httplib2.Http(proxy_info = httplib2.ProxyInfo(proxy_type, proxy_server, proxy_port, proxy_dns, proxy_user, proxy_pass))
         else:
           http = httplib2.Http()
     except:
         raise
-        logging.error('Failed to initialize httplib2 module')
+        utils.log('Failed to initialize httplib2 module',xbmc.LOGFATAL)
 
     return http
 
@@ -162,14 +154,14 @@ def httpget(url):
             raise
 
         sec = time.clock() - start_time
-        logging.info('URL Fetch took %2.2f sec for %s', sec, url)
+        utils.log('URL Fetch took %2.2f sec for %s' % (sec, url),xbmc.LOGINFO)
 
         return data
     except:
         traceback.print_exc(file=sys.stdout)
         dialog = xbmcgui.Dialog()
         dialog.ok('Network Error', 'Failed to fetch URL', url)
-        logging.error( 'Network Error. Failed to fetch URL %s' % url )
+        utils.log('Network Error. Failed to fetch URL %s' % url,xbmc.LOGINFO)
 
     return data
 
@@ -254,7 +246,7 @@ def get_setting_videostream():
     elif stream_prefs == '4':
         stream = 'h264 2800'
 
-    logging.info("Video stream prefs %s - %s", stream_prefs, stream)
+    utils.log("Video stream prefs %s - %s" % (stream_prefs, stream),xbmc.LOGINFO)
     return stream
 
 def get_setting_audiostream():
@@ -282,7 +274,7 @@ def get_setting_audiostream():
         # As above, live feeds only have a 32Kb AAC stream, which should be defaulted to after trying 48 bit
         stream = 'aac48'
 
-    logging.info("Audio stream prefs %s - %s", stream_prefs, stream)
+    utils.log("Audio stream prefs %s - %s" % (stream_prefs, stream),xbmc.LOGINFO)
     return stream
 
 class media(object):
@@ -330,11 +322,11 @@ class media(object):
     def url(self):
         # no longer used. will remove later
         if self.connection_method == 'resolve':
-            logging.info("Resolving URL %s", self.connection_href)
+            utils.log("Resolving URL %s" % self.connection_href,xbmc.LOGINFO)
             page = urllib2.urlopen(self.connection_href)
             page.close()
             url = page.geturl()
-            logging.info("URL resolved to %s", url)
+            utils.log("URL resolved to %s" % url,xbmc.LOGINFO)
             return page.geturl()
         else:
             return self.connection_href
@@ -363,7 +355,7 @@ class media(object):
             self.bitrate = int(media.get('bitrate'))
         except:
             if media.get('bitrate') != None:
-                logging.info("bitrate = " + '"' + media.get('bitrate') + '"')
+                utils.log('bitrate = "%s"' % media.get('bitrate'),xbmc.LOGINFO)
             self.bitrate = None
 
         self.connection_kind = None
@@ -414,12 +406,12 @@ class media(object):
             self.connection_href += " timeout=%s" % timeout
 
         else:
-            logging.error("connectionkind %s unknown", self.connection_kind)
+            utils.log("connectionkind %s unknown" % self.connection_kind,xbmc.LOGERROR)
 
         if self.connection_protocol and __addon__.getSetting('enhanceddebug') == 'true':
-            logging.info("protocol: %s - kind: %s - type: %s - encoding: %s, - bitrate: %s" %
-                         (self.connection_protocol, self.connection_kind, self.mimetype, self.encoding, self.bitrate))
-            logging.info("conn href: %s", self.connection_href)
+            utils.log("protocol: %s - kind: %s - type: %s - encoding: %s, - bitrate: %s" %
+                         (self.connection_protocol, self.connection_kind, self.mimetype, self.encoding, self.bitrate),xbmc.LOGINFO)
+            utils.log("conn href: %s" % self.connection_href,xbmc.LOGINFO)
 
     @property
     def programme(self):
@@ -455,7 +447,7 @@ class item(object):
         """
         self.kind = node.get('kind')
         self.identifier = node.get('identifier')
-        logging.info('Found item: %s, %s', self.kind, self.identifier)
+        utils.log('Found item: %s, %s' % (self.kind, self.identifier),xbmc.LOGINFO)
         if self.kind in ['programme', 'radioProgramme']:
             self.live = node.get('live') == 'true'
             #self.title = node.get('title')
@@ -533,7 +525,7 @@ class item(object):
                 i -= 1
                 media = self.get_media_list_for(streams[i], provider)
         
-        logging.info("Available streams by preference: %s", ["%s %s" % (m.connection_kind, m.application) for m in media])
+        utils.log("Available streams by preference: %s" % (["%s %s" % (m.connection_kind, m.application) for m in media]),xbmc.LOGINFO)
         
         return (media, above_limit)
     
@@ -549,9 +541,8 @@ class item(object):
         """
         if not self.medias:
             url = self.mediaselector_url(None)
-            logging.info("Stream XML URL: %s", url)
+            utils.log("Stream XML URL: %s" % url,xbmc.LOGINFO)
             xml = httpget(url)
-            #logging.debug("Stream XML: %s", xml)
             tree = ET.XML(xml)
             xml_strip_namespace(tree)
             self.medias = []
@@ -583,7 +574,7 @@ class programme(object):
 
     @call_once
     def read_playlist(self):
-        logging.info('Read playlist for %s...', self.pid)
+        utils.log('Read playlist for %s...' % self.pid,xbmc.LOGINFO)
         self.parse_playlist(self.playlist)
 
     def get_playlist_xml(self):
@@ -593,11 +584,11 @@ class programme(object):
             xml = httpget(url)
             return xml
         except SocketTimeoutError:
-            logging.error("Timed out trying to download programme XML")
+            utils.log("Timed out trying to download programme XML",xbmc.LOGERROR)
             raise
 
     def parse_playlist(self, xmlstr):
-        #logging.info('Parsing playlist XML... %s', xml)
+        #utils.log('Parsing playlist XML... %s' % xml,xbmc.LOGINFO)
         #xml.replace('<summary/>', '<summary></summary>')
         #xml = fix_selfclosing(xml)
 
@@ -609,7 +600,7 @@ class programme(object):
         self._items = []
         self._related = []
 
-        logging.info('Found programme: %s', tree.find('title').text)
+        utils.log('Found programme: %s' % tree.find('title').text,xbmc.LOGINFO)
         self.meta['title'] = tree.find('title').text
         self.meta['summary'] = tree.find('summary').text
         # Live radio feeds have no text node in the summary node
@@ -618,7 +609,7 @@ class programme(object):
         self.meta['updated'] = tree.find('updated').text
 
         if tree.find('noitems'):
-            logging.info('No playlist items: %s', tree.find('noitems').get('reason'))
+            utils.log('No playlist items: %s' % tree.find('noitems').get('reason'),xbmc.LOGINFO)
             self.meta['reason'] = tree.find('noitems').get('reason')
 
         self._items = [item(self, i) for i in tree.findall('item')]
@@ -927,7 +918,7 @@ class feed(object):
         Return a list of available channels as a list of feeds.
         """
         if self.channel:
-            logging.warning("%s doesn\'t have any channels!", self.channel)
+            utils.log("%s doesn\'t have any channels!" % self.channel,xbmc.LOGSEVERE)
             return None
         if self.tvradio == 'tv':
             return [feed('tv', channel=ch) for (ch, title) in stations.channels_tv_list]
@@ -1005,11 +996,11 @@ class feed(object):
 
     @classmethod
     def read_rss(self, url):
-        logging.info('Read RSS: %s', url)
+        utils.log('Read RSS: %s' % url,xbmc.LOGINFO)
         if url not in rss_cache:
-            logging.info('Feed URL not in cache, requesting...')
+            utils.log('Feed URL not in cache, requesting...',xbmc.LOGINFO)
             xml = httpget(url)
-            # logging.debug("Received xml: %s" % xml)
+            # utils.log("Received xml: %s" % xml,xbmc.LOGDEBUG)
             progs = listparser.parse(xml)
             if not progs: return []
             d = []
@@ -1017,10 +1008,10 @@ class feed(object):
                 pid = parse_entry_id(entry.id)
                 p = programme_simple(pid, entry)
                 d.append(p)
-            logging.info('Found %d entries', len(d))
+            utils.log('Found %d entries' % len(d),xbmc.LOGINFO)
             rss_cache[url] = d
         else:
-            logging.info('RSS found in cache')
+            utils.log('RSS found in cache',xbmc.LOGINFO)
         return rss_cache[url]
 
     def popular(self):
@@ -1094,7 +1085,7 @@ class IPlayer(xbmc.Player):
     dates_added = None
 
     def __init__( self, core_player, pid, live ):
-        logging.info("iPlayer %s: IPlayer initialised (core_player: %d, pid: %s, live: %s)" % (self, core_player, pid, live))
+        utils.log("IPlayer initialised (core_player: %d, pid: %s, live: %s)" % (core_player, pid, live),xbmc.LOGINFO)
         self.paused = False
         self.live = live
         self.pid = pid
@@ -1110,12 +1101,12 @@ class IPlayer(xbmc.Player):
                 self._acquire_lock()
 
     def __del__( self ):
-        logging.info("iPlayer %s: De-initialising..." % self)
+        utils.log("De-initialising...",xbmc.LOGINFO)
         # If resume is enabled, try to release the resume lock
         if os.environ.get( "OS" ) != "xbox":
             if not self.live:
                 try: self.heartbeat.cancel()
-                except: logging.warning('iPlayer %s: No heartbeat on destruction' % self)
+                except: utils.log('No heartbeat on destruction',xbmc.LOGSEVERE)
                 self._release_lock()
             # Refresh container to ensure '(resumeable)' is added if necessary
             xbmc.executebuiltin('Container.Refresh')
@@ -1139,13 +1130,13 @@ class IPlayer(xbmc.Player):
         finally:
             lock_fh.close()
 
-        xbmc.log("Lock owner test: %s" % self_has_lock, level=xbmc.LOGDEBUG)
+        utils.log("Lock owner test: %s" % self_has_lock,xbmc.LOGDEBUG)
         if self_has_lock:
-            logging.info("iPlayer %s: Removing lock file." % self)
+            utils.log("Removing lock file.",xbmc.LOGINFO)
             try:
                 os.remove(IPlayer.RESUME_LOCK_FILE)
             except Exception, e:
-                logging.warning("Error removing iPlayer resume lock file! (%s)" % e)
+                utils.log("Error removing iPlayer resume lock file! (%s)" % e,xbmc.LOGSEVERE)
 
     @staticmethod
     def force_release_lock():
@@ -1166,19 +1157,19 @@ class IPlayer(xbmc.Player):
         Method is run every second to perform housekeeping tasks, e.g. updating the current seek time of the player.
         Heartbeat will continue until player stops playing.
         """
-        xbmc.log("iPlayer %s: Heartbeat %d" % (self, time.time()), level=xbmc.LOGDEBUG)
+        utils.log("Heartbeat %d" % time.time(),xbmc.LOGDEBUG)
         self.heartbeat = threading.Timer(1.0, self.run_heartbeat)
         self.heartbeat.setDaemon(True)
         self.heartbeat.start()
         if not self.live and not self.cancelled.is_set():
             self.current_seek_time = self.getTime()
-            xbmc.log("%s iPlayer: current_seek_time %s" % (self, self.current_seek_time), level=xbmc.LOGDEBUG)
+            utils.log("current_seek_time %s" % self.current_seek_time,xbmc.LOGDEBUG)
         elif self.cancelled.is_set():
             self.onPlayBackEnded()
 
     def onPlayBackStarted( self ):
         # Will be called when xbmc starts playing the stream
-        logging.info( "iPlayer %s: Begin playback of pid %s" % (self, self.pid) )
+        utils.log("Begin playback of pid %s" % self.pid,xbmc.LOGINFO)
         self.paused = False
         if os.environ.get( "OS" ) != "xbox":
             self.run_heartbeat()
@@ -1186,10 +1177,10 @@ class IPlayer(xbmc.Player):
     def onPlayBackEnded( self ):
         # Will be called when xbmc stops playing the stream
         if self.heartbeat: self.heartbeat.cancel()
-        logging.info( "iPlayer %s: Playback ended." % self)
+        utils.log("Playback ended.",xbmc.LOGINFO)
         if os.environ.get( "OS" ) != "xbox":
             if not self.live:
-                logging.info( "iPlayer %s: Saving resume point for pid %s at %fs." % (self, self.pid, self.current_seek_time) )
+                utils.log("Saving resume point for pid %s at %fs." % (self.pid, self.current_seek_time),xbmc.LOGINFO)
                 self.save_resume_point( self.current_seek_time )
         self.__del__()
 
@@ -1197,19 +1188,19 @@ class IPlayer(xbmc.Player):
         if self.heartbeat: self.heartbeat.cancel()
         # Will be called when user stops xbmc playing the stream
         # The player needs to be unloaded to release the resume lock
-        logging.info( "iPlayer %s: Playback stopped." % self)
+        utils.log("Playback stopped.",xbmc.LOGINFO)
         if os.environ.get( "OS" ) != "xbox":
             if not self.live:
-                logging.info("iPlayer %s: Saving resume point for pid %s at %fs." % (self, self.pid, self.current_seek_time) )
+                utils.log("Saving resume point for pid %s at %fs." % (self.pid, self.current_seek_time),xbmc.LOGINFO)
                 self.save_resume_point( self.current_seek_time )
         self.__del__()
 
     def onPlayBackPaused( self ):
         # Will be called when user pauses playback on a stream
-        logging.info( "iPlayer %s: Playback paused." % self)
+        utils.log("Playback paused.",xbmc.LOGINFO)
         if os.environ.get( "OS" ) != "xbox":
             if not self.live:
-                logging.info("iPlayer %s: Saving resume point for pid %s at %fs." % (self, self.pid, self.getTime()) )
+                utils.log("Saving resume point for pid %s at %fs." % (self.pid, self.getTime()),xbmc.LOGINFO)
                 self.save_resume_point( self.current_seek_time )
         self.paused = True
 
@@ -1220,7 +1211,7 @@ class IPlayer(xbmc.Player):
         resume, dates_added = IPlayer.load_resume_file()
         resume[self.pid] = resume_point
         dates_added[self.pid] = time.time()
-        logging.info("iPlayer %s: Saving resume point (pid %s, seekTime %fs, dateAdded %d) to resume file" % (self, self.pid, resume[self.pid], dates_added[self.pid]))
+        utils.log("Saving resume point (pid %s, seekTime %fs, dateAdded %d) to resume file" % (self.pid, resume[self.pid], dates_added[self.pid]),xbmc.LOGNOTICE)
         IPlayer.save_resume_file(resume, dates_added)
 
     @staticmethod
@@ -1232,13 +1223,13 @@ class IPlayer(xbmc.Player):
         If date added is more than thirty days ago, the pid entry will be ignored for cleanup
         Will only actually load the file once, caching the result for future calls.
         """
-        
+
         if not IPlayer.resume:
             # Load resume file
             IPlayer.resume = {}
             IPlayer.dates_added = {}
             if os.path.isfile(IPlayer.RESUME_FILE):
-                logging.info("iPlayer: Loading resume file: %s" % (IPlayer.RESUME_FILE))
+                utils.log("Loading resume file: %s" % (IPlayer.RESUME_FILE),xbmc.LOGINFO)
                 with open(IPlayer.RESUME_FILE, 'rU') as resume_fh:
                     resume_str = resume_fh.read()
                 tokens = resume_str.split()
@@ -1258,13 +1249,13 @@ class IPlayer(xbmc.Player):
                         pid_to_date_added_map.append( (pids[i], datesAdded[i]) )
                 IPlayer.resume = dict(pid_to_resume_point_map)
                 IPlayer.dates_added = dict(pid_to_date_added_map)
-                logging.info("iPlayer: Found %d resume entries" % (len(IPlayer.resume.keys())))
-                
+                utils.log("Found %d resume entries" % (len(IPlayer.resume.keys())),xbmc.LOGINFO)
+
         return IPlayer.resume, IPlayer.dates_added
 
     @staticmethod
     def delete_resume_point(pid_to_delete):
-        logging.info("iPlayer: Deleting resume point for pid %s" % pid_to_delete)
+        utils.log("Deleting resume point for pid %s" % pid_to_delete,xbmc.LOGNOTICE)
         resume, dates_added = IPlayer.load_resume_file()
         del resume[pid_to_delete]
         del dates_added[pid_to_delete]
@@ -1275,12 +1266,12 @@ class IPlayer(xbmc.Player):
         """
         Saves the current resume dictionary to disk. See load_resume_file for file format
         """
-        
+
         IPlayer.resume = resume
         IPlayer.dates_added = dates_added
-        
+
         str = ""
-        logging.info("iPlayer: Saving %d entries to %s" % (len(resume.keys()), IPlayer.RESUME_FILE))
+        utils.log("Saving %d entries to %s" % (len(resume.keys()), IPlayer.RESUME_FILE),xbmc.LOGINFO)
         resume_fh = open(IPlayer.RESUME_FILE, 'w')
         try:
             for pid, seekTime in resume.items():
@@ -1298,7 +1289,7 @@ class IPlayer(xbmc.Player):
         if os.environ.get( "OS" ) != "xbox" and not self.live and playresume:
             resume, dates_added = IPlayer.load_resume_file()
             if self.pid in resume.keys():
-                logging.info("iPlayer %s: Resume point found for pid %s at %f, seeking..." % (self, self.pid, resume[self.pid]))
+                utils.log("Resume point found for pid %s at %f, seeking..." % (self.pid, resume[self.pid]),xbmc.LOGNOTICE)
                 listitem.setProperty('StartOffset', '%d' % resume[self.pid])
 
         if is_tv:
