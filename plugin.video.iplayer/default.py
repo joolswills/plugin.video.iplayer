@@ -305,69 +305,6 @@ def list_radio_types():
 
     xbmcplugin.endOfDirectory(handle=__plugin_handle__, succeeded=True)
 
-def get_setting_videostream():
-
-    stream = 'h264 1520'
-
-    stream_prefs = '0'
-    try:
-        stream_prefs = __addon__.getSetting('video_stream')
-    except:
-        pass
-
-    # Auto|H.264 (480kb)|H.264 (800kb)|H.264 (1500kb)|H.264 (2800kb)
-    if stream_prefs == '0':
-        environment = os.environ.get( "OS" )
-        # check for xbox as we set a lower default for xbox (although it can do 1500kbit streams)
-        if environment == 'xbox':
-            stream = 'h264 820'
-        else:
-            # play full HD if the screen is large enough (not all programmes have this resolution)
-            Y = int(xbmc.getInfoLabel('System.ScreenHeight'))
-            X = int(xbmc.getInfoLabel('System.ScreenWidth'))
-            # if the screen is large enough for HD
-            if Y > 832 and X > 468:
-                stream = 'h264 2800'
-    elif stream_prefs == '1':
-        stream = 'h264 480'
-    elif stream_prefs == '2':
-        stream = 'h264 820'
-    elif stream_prefs == '3':
-        stream = 'h264 1520'
-    elif stream_prefs == '4':
-        stream = 'h264 2800'
-
-    logging.info("Video stream prefs %s - %s", stream_prefs, stream)
-    return stream
-
-def get_setting_audiostream():
-    stream = 'Auto'
-
-    stream_prefs = '0'
-    try:
-        stream_prefs = __addon__.getSetting('audio_stream')
-    except:
-        pass
-
-    # Auto|AAC (320Kb)|AAC (128Kb)|WMA (128Kb)|AAC (48Kb or 32Kb)
-    if stream_prefs == '0':
-        # Auto - default to highest bitrate AAC
-        stream = 'aac320'
-    elif stream_prefs == '1':
-        stream = 'aac320'
-    elif stream_prefs == '2':
-        stream = 'aac128'
-    elif stream_prefs == '3':
-        # Live feeds have a wma+asx application type
-        # In this case the wma9 type is not available, and the plugin should default over to wma+asx
-        stream = 'wma9'
-    elif stream_prefs == '4':
-        # As above, live feeds only have a 32Kb AAC stream, which should be defaulted to after trying 48 bit
-        stream = 'aac48'
-
-    logging.info("Audio stream prefs %s - %s", stream_prefs, stream)
-    return stream
-
 
 def get_setting_thumbnail_size():
     size = __addon__.getSetting('thumbnail_size')
@@ -794,6 +731,7 @@ def download_subtitles(url):
     fw.close()
     return outfile
 
+# To be removed
 def get_matching_stream(item, pref, streams):
     """
     tries to return a media object for requested stream,
@@ -876,133 +814,125 @@ def watch(feed, pid, showDialog, resume=False):
         except:
             pass
 
-    if item.is_tv:
-        # TV Stream
-        iconimage = 'DefaultVideo.png'
-
-        if showDialog:
-            pDialog.update(50, 'Fetching video stream info')
-            if pDialog.iscanceled(): raise
-            times.append(['update dialog',time.clock()])
-        pref = get_setting_videostream()
-        times.append(['get_setting_videostream',time.clock()])
-        opref = pref
-        if showDialog:
-            pDialog.update(70, 'Selecting video stream')
-            if pDialog.iscanceled(): raise
-            times.append(['update dialog',time.clock()])
-
-        streams = ['h264 2800', 'h264 1520', 'h264 1500', 'h264 820', 'h264 800', 'h264 480', 'h264 400']
-        (media, pref) = get_matching_stream(item, pref, streams)
-
-        # A potentially usable stream was found (higher bitrate than the default) offer it to the user
-        if not media:
-            # Nothing usable was found
-            d = xbmcgui.Dialog()
-            d.ok('Stream Error', 'Can\'t locate any usable TV streams.')
-            return False
-
-        if streams.index(opref) > streams.index(pref):
-            d = xbmcgui.Dialog()
-            if d.yesno('Default %s Stream Not Available' % opref, 'Play higher bitrate %s stream ?' % pref ) == False:
-                return False
-
-        times.append(['media 2',time.clock()])
-        url = media.url
-        times.append(['media.url',time.clock()])
-        logging.info('watching url=%s' % url)
-        times.append(['logging',time.clock()])
-
-        if showDialog:
-            pDialog.update(90, 'Selecting subtitles')
-            if pDialog.iscanceled(): raise
-            times.append(['update dialog',time.clock()])
-        if subtitles:
-            subtitles_media = item.get_media_for('captions')
-            times.append(['subtitles_media',time.clock()])
-            if subtitles_media:
-                subtitles_file = download_subtitles(subtitles_media.url)
-                times.append(['subtitles download',time.clock()])
-
-        listitem = xbmcgui.ListItem(title)
-        times.append(['create listitem',time.clock()])
-        #listitem.setIconImage(iconimage)
-        if not item.live:
-            listitem.setInfo('video', {
-                                       "TVShowTitle": title,
-                                       'Plot': summary + ' ' + updated,
-                                       'PlotOutline': summary,})
-        times.append(['listitem setinfo',time.clock()])
-        play=xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
-        times.append(['xbmc.PlayList',time.clock()])
-
-    else:
-        # Radio stream
-        if showDialog:
-            pDialog.update(30, 'Fetching radio stream info')
-            if pDialog.iscanceled(): raise
-            times.append(['update dialog',time.clock()])
-        pref = get_setting_audiostream()
-        if showDialog:
-            pDialog.update(50, 'Selecting radio stream')
-            if pDialog.iscanceled(): raise
-            times.append(['update dialog',time.clock()])
-
-        (media, pref) = get_matching_stream(item, pref, ['aac320', 'aac128', 'wma9', 'wma+asx', 'aac48', 'aac32'])
-
-        if not media:
-            d = xbmcgui.Dialog()
-            d.ok('Stream Error', 'Error: can\'t locate radio stream')
-            return False
-
-        if media.application in ['wma9', 'wma+asx']:
-            url = parse_asx(media.url)
-        else:
-            url = media.url
-
-        logging.info('Listening to url=%s' % url)
-
-        listitem = xbmcgui.ListItem(label=title)
-        times.append(['listitem create',time.clock()])
-        listitem.setIconImage('defaultAudio.png')
-        times.append(['listitem.setIconImage',time.clock()])
-        play=xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
-        times.append(['xbmc.PlayList',time.clock()])
-
-    logging.info('Playing preference %s' % pref)
-    times.append(['logging.info',time.clock()])
-    listitem.setInfo(type='Music', infoLabels = {'title': title})
-    times.append(['listitem.setproperty x 3',time.clock()])
-
-    if thumbfile:
-        listitem.setIconImage(thumbfile)
-        times.append(['listitem.setIconImage(thumbfile)',time.clock()])
-        listitem.setThumbnailImage(thumbfile)
-        times.append(['listitem.setThumbnailImage(thumbfile)',time.clock()])
-
-    del media
-
     if showDialog:
-        pDialog.update(80, 'Playing')
+        pDialog.update(50, 'Fetching video stream info')
         if pDialog.iscanceled(): raise
         times.append(['update dialog',time.clock()])
+    (media_list, above_limit) = item.get_available_streams()
+    
+    if len(media_list) == 0:
+        # Nothing usable was found
+        d = xbmcgui.Dialog()
+        d.ok('Stream Error', 'Can\'t locate any usable TV streams.')
+        return False
 
-    if url.startswith( 'rtmp://' ):
-        core_player = xbmc.PLAYER_CORE_DVDPLAYER
-    else:
-        core_player = xbmc.PLAYER_CORE_AUTO
+    for media in media_list:
+        player = None
+        if item.is_tv:
+            # TV Stream
+            iconimage = 'DefaultVideo.png'
 
-    try:
-        player = iplayer.IPlayer(core_player, pid=pid, live=item.is_live)
-    except iplayer.IPlayerLockException:
-        exception_dialog = xbmcgui.Dialog()
-        exception_dialog.ok("Stream Already Playing", "Unable to open stream", " - To continue, stop all other streams (try pressing 'x')[CR] - If you are sure there are no other streams [CR]playing, remove the resume lock (check addon settings -> advanced)")
-        return
+            if showDialog:
+                pDialog.update(70, 'Selecting video stream')
+                if pDialog.iscanceled(): raise
+                times.append(['update dialog',time.clock()])
 
-    times.append(['xbmc.Player()',time.clock()])
-    player.resume_and_play(url, listitem, item.is_tv, resume)
+            if above_limit:
+                d = xbmcgui.Dialog()
+                if d.yesno('Default Stream Not Available', 'Play higher bitrate stream?') == False:
+                    return False
 
-    times.append(['player.play',time.clock()])
+            times.append(['media 2',time.clock()])
+            url = media.url
+            times.append(['media.url',time.clock()])
+            logging.info('watching url=%s' % url)
+            times.append(['logging',time.clock()])
+
+            if showDialog:
+                pDialog.update(90, 'Selecting subtitles')
+                if pDialog.iscanceled(): raise
+                times.append(['update dialog',time.clock()])
+            if subtitles:
+                subtitles_media = item.get_media_for('captions')
+                times.append(['subtitles_media',time.clock()])
+                if subtitles_media:
+                    subtitles_file = download_subtitles(subtitles_media.url)
+                    times.append(['subtitles download',time.clock()])
+
+            listitem = xbmcgui.ListItem(title)
+            times.append(['create listitem',time.clock()])
+            if not item.live:
+                listitem.setInfo('video', {
+                                           "TVShowTitle": title,
+                                           'Plot': summary + ' ' + updated,
+                                           'PlotOutline': summary,})
+            times.append(['listitem setinfo',time.clock()])
+            play=xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
+            times.append(['xbmc.PlayList',time.clock()])
+
+        else:
+            # Radio stream
+            if showDialog:
+                pDialog.update(70, 'Selecting radio stream')
+                if pDialog.iscanceled(): raise
+                times.append(['update dialog',time.clock()])
+
+            if not media:
+                d = xbmcgui.Dialog()
+                d.ok('Stream Error', 'Error: can\'t locate radio stream')
+                return False
+
+            if media.application in ['wma9', 'wma+asx']:
+                url = parse_asx(media.url)
+            else:
+                url = media.url
+
+            logging.info('Listening to url=%s' % url)
+
+            listitem = xbmcgui.ListItem(label=title)
+            times.append(['listitem create',time.clock()])
+            listitem.setIconImage('defaultAudio.png')
+            times.append(['listitem.setIconImage',time.clock()])
+            play=xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
+            times.append(['xbmc.PlayList',time.clock()])
+
+        logging.info('Playing preference %s %s' % (media.connection_kind, media.application))
+        times.append(['logging.info',time.clock()])
+        listitem.setInfo(type='Music', infoLabels = {'title': title})
+        times.append(['listitem.setproperty x 3',time.clock()])
+
+        if thumbfile:
+            listitem.setIconImage(thumbfile)
+            times.append(['listitem.setIconImage(thumbfile)',time.clock()])
+            listitem.setThumbnailImage(thumbfile)
+            times.append(['listitem.setThumbnailImage(thumbfile)',time.clock()])
+
+        if showDialog:
+            pDialog.update(80, 'Playing (%s %s)' % (media.connection_kind, media.application))
+            if pDialog.iscanceled(): raise
+            times.append(['update dialog',time.clock()])
+
+        if url.startswith( 'rtmp://' ):
+            core_player = xbmc.PLAYER_CORE_DVDPLAYER
+        else:
+            core_player = xbmc.PLAYER_CORE_AUTO
+
+        try:
+            player = iplayer.IPlayer(core_player, pid=pid, live=item.is_live)
+        except iplayer.IPlayerLockException:
+            exception_dialog = xbmcgui.Dialog()
+            exception_dialog.ok("Stream Already Playing", "Unable to open stream", " - To continue, stop all other streams (try pressing 'x')[CR] - If you are sure there are no other streams [CR]playing, remove the resume lock (check addon settings -> advanced)")
+            return
+
+        times.append(['xbmc.Player()',time.clock()])
+        player.resume_and_play(url, listitem, item.is_tv, resume)
+        
+        # Successfully started playing something?
+        if player.isPlaying():
+            break;
+
+        times.append(['player.play',time.clock()])
+        
     # Auto play subtitles if they have downloaded
     logging.info("subtitles: %s   - subtitles_file %s " % (subtitles,subtitles_file))
     times.append(['logging.info',time.clock()])

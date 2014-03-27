@@ -187,7 +187,7 @@ def parse_entry_id(entry_id):
     return matches[0]
 
 def get_provider():
-    provider = ""
+    provider = None
     try:
         provider_id = __addon__.getSetting('provider')
     except:
@@ -222,16 +222,110 @@ def get_thumb_dir():
         thumb_dir = os.path.join(thumb_dir, 'xbox')
     return thumb_dir
 
+def get_setting_videostream():
+
+    stream = 'h264 1520'
+
+    stream_prefs = '0'
+    try:
+        stream_prefs = __addon__.getSetting('video_stream')
+    except:
+        pass
+
+    # Auto|H.264 (480kb)|H.264 (800kb)|H.264 (1500kb)|H.264 (2800kb)
+    if stream_prefs == '0':
+        environment = os.environ.get( "OS" )
+        # check for xbox as we set a lower default for xbox (although it can do 1500kbit streams)
+        if environment == 'xbox':
+            stream = 'h264 820'
+        else:
+            # play full HD if the screen is large enough (not all programmes have this resolution)
+            Y = int(xbmc.getInfoLabel('System.ScreenHeight'))
+            X = int(xbmc.getInfoLabel('System.ScreenWidth'))
+            # if the screen is large enough for HD
+            if Y > 832 and X > 468:
+                stream = 'h264 2800'
+    elif stream_prefs == '1':
+        stream = 'h264 480'
+    elif stream_prefs == '2':
+        stream = 'h264 820'
+    elif stream_prefs == '3':
+        stream = 'h264 1520'
+    elif stream_prefs == '4':
+        stream = 'h264 2800'
+
+    logging.info("Video stream prefs %s - %s", stream_prefs, stream)
+    return stream
+
+def get_setting_audiostream():
+    stream = 'Auto'
+
+    stream_prefs = '0'
+    try:
+        stream_prefs = __addon__.getSetting('audio_stream')
+    except:
+        pass
+
+    # Auto|AAC (320Kb)|AAC (128Kb)|WMA (128Kb)|AAC (48Kb or 32Kb)
+    if stream_prefs == '0':
+        # Auto - default to highest bitrate AAC
+        stream = 'aac320'
+    elif stream_prefs == '1':
+        stream = 'aac320'
+    elif stream_prefs == '2':
+        stream = 'aac128'
+    elif stream_prefs == '3':
+        # Live feeds have a wma+asx application type
+        # In this case the wma9 type is not available, and the plugin should default over to wma+asx
+        stream = 'wma9'
+    elif stream_prefs == '4':
+        # As above, live feeds only have a 32Kb AAC stream, which should be defaulted to after trying 48 bit
+        stream = 'aac48'
+
+    logging.info("Audio stream prefs %s - %s", stream_prefs, stream)
+    return stream
+
 class media(object):
-    def __init__(self, item, media_node):
+    tep = {
+        ('captions', 'application/ttaf+xml', None, 'http', None) : 'captions',
+        ('video', 'video/mp4', 'h264', 'rtmp', 2800)   : 'h264 2800',
+        ('video', 'video/mp4', 'h264', 'rtmp', 1520)   : 'h264 1520',
+        ('video', 'video/mp4', 'h264', 'rtmp', 1500)   : 'h264 1500',
+        ('video', 'video/mp4', 'h264', 'rtmp', 816)    : 'h264 820',
+        ('video', 'video/mp4', 'h264', 'rtmp', 796)    : 'h264 800',
+        ('video', 'video/mp4', 'h264', 'rtmp', 480)    : 'h264 480',
+        ('video', 'video/mp4', 'h264', 'rtmp', 396)    : 'h264 400',
+        ('video', 'video/x-flv', 'vp6', 'rtmp', 512)   : 'flashmed',
+        ('video', 'video/x-flv', 'spark', 'rtmp', 800) : 'flashwii',
+        ('video', 'video/mpeg', 'h264', 'http', 184)   : 'mobile',
+        ('audio', 'audio/mpeg', 'mp3', 'rtmp', None)   : 'mp3',
+        ('audio', 'audio/mp4',  'aac', 'rtmp', None)   : 'aac',
+        ('audio', 'audio/wma',  'wma', 'http', None)   : 'wma',
+        ('audio', 'audio/mp4', 'aac', 'rtmp', 320)     : 'aac320',
+        ('audio', 'audio/mp4', 'aac', 'rtmp', 128)     : 'aac128',
+        ('audio', 'audio/wma', 'wma9', 'http', 128)    : 'wma9',
+        ('audio', 'audio/x-ms-asf', 'wma', 'http', 128) : 'wma+asx',
+        ('audio', 'audio/mp4', 'aac', 'rtmp', 48)      : 'aac48',
+        ('audio', 'audio/mp4', 'aac', 'rtmp', 32)      : 'aac32',
+        ('video', 'video/mp4', 'h264', 'http', 516)    : 'iphonemp3'}
+
+    def __init__(self, item, media_node, connection):
         self.item      = item
         self.href      = None
         self.kind      = None
         self.method    = None
         self.width, self.height = None, None
         self.bitrate   = None
-        self.read_media_node(media_node)
+        self.read_media_node(media_node, connection)
 
+    @staticmethod
+    def create_from_media_xml(item, xml):
+        result = []
+        for c in xml.findall('connection'):
+            result.append(media(item, xml, c))
+        
+        return result
+    
     @property
     def url(self):
         # no longer used. will remove later
@@ -251,32 +345,10 @@ class media(object):
         The type of stream represented as a string.
         i.e. 'captions', 'flashhd', 'flashhigh', 'flashmed', 'flashwii', 'mobile', 'mp3', 'real', 'aac'
         """
-        tep = {}
-        tep['captions', 'application/ttaf+xml', None, 'http', None] = 'captions'
-        tep['video', 'video/mp4', 'h264', 'rtmp', 2800]   = 'h264 2800'
-        tep['video', 'video/mp4', 'h264', 'rtmp', 1520]   = 'h264 1520'
-        tep['video', 'video/mp4', 'h264', 'rtmp', 1500]   = 'h264 1500'
-        tep['video', 'video/mp4', 'h264', 'rtmp', 816]    = 'h264 820'
-        tep['video', 'video/mp4', 'h264', 'rtmp', 796]    = 'h264 800'
-        tep['video', 'video/mp4', 'h264', 'rtmp', 480]    = 'h264 480'
-        tep['video', 'video/mp4', 'h264', 'rtmp', 396]    = 'h264 400'
-        tep['video', 'video/x-flv', 'vp6', 'rtmp', 512]   = 'flashmed'
-        tep['video', 'video/x-flv', 'spark', 'rtmp', 800] = 'flashwii'
-        tep['video', 'video/mpeg', 'h264', 'http', 184]   = 'mobile'
-        tep['audio', 'audio/mpeg', 'mp3', 'rtmp', None]   = 'mp3'
-        tep['audio', 'audio/mp4',  'aac', 'rtmp', None]   = 'aac'
-        tep['audio', 'audio/wma',  'wma', 'http', None]   = 'wma'
-        tep['audio', 'audio/mp4', 'aac', 'rtmp', 320]     = 'aac320'
-        tep['audio', 'audio/mp4', 'aac', 'rtmp', 128]     = 'aac128'
-        tep['audio', 'audio/wma', 'wma9', 'http', 128]    = 'wma9'
-        tep['audio', 'audio/x-ms-asf', 'wma', 'http', 128] = 'wma+asx'
-        tep['audio', 'audio/mp4', 'aac', 'rtmp', 48]      = 'aac48'
-        tep['audio', 'audio/mp4', 'aac', 'rtmp', 32]      = 'aac32'
-        tep['video', 'video/mp4', 'h264', 'http', 516]    = 'iphonemp3'
         me = (self.kind, self.mimetype, self.encoding, self.connection_protocol, self.bitrate)
-        return tep.get(me, None)
+        return self.__class__.tep.get(me, None)
 
-    def read_media_node(self, media):
+    def read_media_node(self, media, conn):
         """
         Reads media info from a media XML node
         media: media node from BeautifulStoneSoup
@@ -299,24 +371,6 @@ class media(object):
         self.connection_protocol = None
         self.connection_href = None
         self.connection_method = None
-
-        # try to find a stream from users preference
-        conn = None
-        provider = get_provider()
-
-        # force akamai for live video streams (limelight seems to be non working at least via the credentials from the current mediaselector)
-        #if self.kind == 'video' and self.live:
-        #    provider = 'akamai'
-
-        if provider != "":
-            for c in media.findall('connection'):
-                if c.get('kind') == provider:
-                    conn = c
-                    break
-        if conn == None:
-            conn = media.find('connection')
-        if conn == None:
-            return
 
         self.connection_kind = conn.get('kind')
         self.connection_protocol = conn.get('protocol')
@@ -448,65 +502,72 @@ class item(object):
         """ True if this stream is 'signed' for the hard-of-hearing. """
         return self.alternate == 'signed'
 
+    def get_available_streams(self):
+        """ 
+        Returns a list of available streams in order of desirability,
+        according to provider and bitrate preferences
+        """
+        if self.is_tv:
+            streams = ['h264 2800', 'h264 1520', 'h264 1500', 'h264 820', 'h264 800', 'h264 480', 'h264 400']
+            rate = get_setting_videostream()
+        else:
+            streams = ['aac320', 'aac128', 'wma9', 'wma+asx', 'aac48', 'aac32']
+            rate = get_setting_audiostream()
+        
+        provider = get_provider()
+
+        # Build a list of streams of lower or equal bitrate to the config setting
+        if rate not in streams:
+            return ([], false)
+            
+        media = []
+        above_limit = False
+        for strm in streams[streams.index(rate):]:
+            media.extend(self.get_media_list_for(strm, provider))
+            
+        # If nothing found, get next highest bitrate
+        if len(media) == 0:
+            above_limit = true
+            i = streams.index(rate)
+            while len(media) == 0 and i > 0:
+                i -= 1
+                media = self.get_media_list_for(streams[i], provider)
+        
+        logging.info("Available streams by preference: %s", ["%s %s" % (m.connection_kind, m.application) for m in media])
+        
+        return (media, above_limit)
+    
     def mediaselector_url(self, suffix):
         if suffix == None:
             return "http://open.live.bbc.co.uk/mediaselector/4/mtis/stream/%s" % self.identifier
         return "http://open.live.bbc.co.uk/mediaselector/4/mtis/stream/%s/%s" % (self.identifier, suffix)
 
-    def medialist(self, suffix = None):
+    def get_media_list_for(self, stream, provider_pref):
         """
-        Returns a list of all the media available for this item.
+        Returns a list of media objects for the given rate, putting the
+        preferred provider first if it exists
         """
-        if self.medias: return self.medias
-        url = self.mediaselector_url(suffix)
-        logging.info("Stream XML URL: %s", url)
-        xml = httpget(url)
-        tree = ET.XML(xml)
-        xml_strip_namespace(tree)
-        medias = []
-        for m in tree.findall('media'):
-            medias.append(media(self, m))
-        return medias
+        if not self.medias:
+            url = self.mediaselector_url(None)
+            logging.info("Stream XML URL: %s", url)
+            xml = httpget(url)
+            #logging.debug("Stream XML: %s", xml)
+            tree = ET.XML(xml)
+            xml_strip_namespace(tree)
+            self.medias = []
+            for m in tree.findall('media'):
+                self.medias.extend(media.create_from_media_xml(self, m))
 
-    @property
-    def media(self):
-        """
-        Returns a list of all the media available for this item.
-        """
-
-        if self.medias: return self.medias
-        medias = []
-        # this was needed before due to authentication changes (the auth from the main xml didnt work so you had to request specific xmls for each quality)
-        #for m in ['iplayer_streaming_h264_flv_hd', 'iplayer_streaming_h264_flv_high', 'iplayer_streaming_h264_flv', 'iplayer_streaming_h264_flv_lo']:
-        #    medias.extend(self.medialist(m))
-        medias.extend(self.medialist())
-
-        self.medias = medias
-        if medias == None or len(medias) == 0:
-            d = xbmcgui.Dialog()
-            d.ok('Error fetching media info', 'Please check network access to IPlayer by playing iplayer content via a web browser')
-            return
-        return medias
-
-    def get_media_for(self, application):
-        """
-        Returns a media object for the given application type.
-        """
-        medias = [m for m in self.media if m.application == application]
-        if not medias:
-            return None
-        return medias[0]
-
-    def get_medias_for(self, applications):
-        """
-        Returns a dictionary of media objects for the given application types.
-        """
-        medias = [m for m in self.media if m.application in applications]
-        d = {}.fromkeys(applications)
-        for m in medias:
-            d[m.application] = m
-        return d
-
+        result = []
+        for m in self.medias:
+            if m.application == stream:
+                if m.connection_kind == provider_pref:
+                    result.insert(0, m)
+                else:
+                    result.append(m)
+                    
+        return result
+        
 class programme(object):
     """
     Represents an individual iPlayer programme, as identified by an 8-letter PID,
