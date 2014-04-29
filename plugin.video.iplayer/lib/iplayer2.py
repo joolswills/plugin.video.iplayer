@@ -62,6 +62,8 @@ rss_cache = {}
 self_closing_tags = ['alternate', 'mediator']
 
 re_selfclose = re.compile('<([a-zA-Z0-9]+)( ?.*)/>', re.M | re.S)
+re_pips = re.compile('PIPS:([0-9a-z]{8})')
+re_concept_id = re.compile('concept_pid:([a-z0-9]{8})')
 
 def get_proxy():
     proxy_server = None
@@ -173,8 +175,7 @@ def xml_strip_namespace(tree):
 
 def parse_entry_id(entry_id):
     # tag:bbc.co.uk,2008:PIPS:b00808sc
-    r = re.compile('PIPS:([0-9a-z]{8})')
-    matches = r.findall(entry_id)
+    matches = re_pips.findall(entry_id)
     if not matches: return None
     return matches[0]
 
@@ -614,12 +615,11 @@ class programme(object):
 
         self._items = [item(self, i) for i in tree.findall('item')]
 
-        rId = re.compile('concept_pid:([a-z0-9]{8})')
         for link in tree.findall('relatedlink'):
             i = {}
             i['title'] = link.find('title').text
             #i['summary'] = item.summary # FIXME looks like a bug in BSS
-            i['pid'] = (rId.findall(link.find('id').text) or [None])[0]
+            i['pid'] = (re_concept_id.findall(link.find('id').text) or [None])[0]
             i['programme'] = programme(i['pid'])
             self._related.append(i)
 

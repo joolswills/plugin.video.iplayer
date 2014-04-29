@@ -231,10 +231,11 @@ def list_live_feeds(feeds, tvradio='tv'):
 
     xbmcplugin.endOfDirectory(handle=__plugin_handle__, succeeded=True)
 
+re_stream_mms = re.compile('href\s*\=\s*"(mms.*?)"', re.IGNORECASE)
+
 def parse_asx(radio_url):
-    stream_mms  = re.compile('href\s*\=\s*"(mms.*?)"', re.IGNORECASE)
     txt = iplayer.httpget(radio_url)
-    match_mms  = stream_mms.search(txt)
+    match_mms  = re_stream_mms.search(txt)
     if  match_mms:
         stream_url = match_mms.group(1)
     else:
@@ -408,16 +409,16 @@ def list_categories(tvradio='tv', feed=None, channels=None, progcount=True):
 
     xbmcplugin.endOfDirectory(handle=__plugin_handle__, succeeded=True)
 
+
+re_series_match = [re.compile('^(Late\s+Kick\s+Off\s+)'), \
+                   re.compile('^(Inside\s+Out\s+)'), \
+                   re.compile('^(.*?):')]
+
 def series_match(name):
     # match the series name part of a programme name
-    seriesmatch = []
-
-    seriesmatch.append(re.compile('^(Late\s+Kick\s+Off\s+)'))
-    seriesmatch.append(re.compile('^(Inside\s+Out\s+)'))
-    seriesmatch.append(re.compile('^(.*?):'))
     match = None
 
-    for s in seriesmatch:
+    for s in re_series_match:
         match = s.match(name)
         if match:
             break
@@ -644,6 +645,8 @@ def get_item(pid):
     #        return i
     return p.programme
 
+re_subtitles = re.compile('^\s*<p.*?begin=\"(.*?)\.([0-9]+)\"\s+.*?end=\"(.*?)\.([0-9]+)\"\s*>(.*?)</p>')
+
 def download_subtitles(url):
     # Download and Convert the TTAF format to srt
     # SRT:
@@ -670,7 +673,6 @@ def download_subtitles(url):
 
     txt = iplayer.httpget(url)
 
-    p= re.compile('^\s*<p.*?begin=\"(.*?)\.([0-9]+)\"\s+.*?end=\"(.*?)\.([0-9]+)\"\s*>(.*?)</p>')
     i=0
     prev = None
 
@@ -681,7 +683,7 @@ def download_subtitles(url):
     # where a subtitle actually needs to be repeated
     for line in txt.split('\n'):
         entry = None
-        m = p.match(line)
+        m = re_subtitles.match(line)
         if m:
             start_mil = "%s000" % m.group(2) # pad out to ensure 3 digits
             end_mil   = "%s000" % m.group(4)
