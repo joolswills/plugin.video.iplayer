@@ -604,6 +604,7 @@ class programme(object):
         utils.log('Found programme: %s' % tree.find('title').text,xbmc.LOGINFO)
         self.meta['title'] = tree.find('title').text
         self.meta['summary'] = tree.find('summary').text
+        self.meta['thumbnail'] = tree.find("link[@rel='holding']").attrib['href']
         # Live radio feeds have no text node in the summary node
         if self.meta['summary']:
             self.meta['summary'] = string.lstrip(self.meta['summary'], ' ')
@@ -628,14 +629,15 @@ class programme(object):
         Returns the URL of a thumbnail.
         size: '640x360'/'biggest'/'largest' or '512x288'/'big'/'large' or None
         """
+        newbaseurl = re.findall("^(.*?)_.*?_.*?.jpg", self.meta['thumbnail'], re.DOTALL)[0]
         if size in ['640x360', '640x', 'x360', 'biggest', 'largest']:
-            return "http://www.bbc.co.uk/iplayer/images/episode/%s_640_360.jpg" % (self.pid)
+            return "%s_640_360.jpg" % newbaseurl
         elif size in ['512x288', '512x', 'x288', 'big', 'large']:
-            return "http://www.bbc.co.uk/iplayer/images/episode/%s_512_288.jpg" % (self.pid)
+            return "%s_512_288.jpg" % newbaseurl
         elif size in ['178x100', '178x', 'x100', 'small']:
-            return "http://www.bbc.co.uk/iplayer/images/episode/%s_178_100.jpg" % (self.pid)
+            return "%s_178_100.jpg" % newbaseurl
         elif size in ['150x84', '150x', 'x84', 'smallest']:
-            return "http://www.bbc.co.uk/iplayer/images/episode/%s_150_84.jpg" % (self.pid)
+            return "%s_150_84.jpg" % newbaseurl
         else:
             return os.path.join(get_thumb_dir(), '%s.png' % tvradio)
 
@@ -704,6 +706,7 @@ class programme_simple(object):
         self.meta['title'] = entry.title
         self.meta['summary'] = string.lstrip(entry.summary, ' ')
         self.meta['updated'] = entry.updated
+        self.meta['thumbnail'] = entry.thumbnail
         self.categories = []
         for c in entry.categories:
             #if c != 'TV':
@@ -728,15 +731,16 @@ class programme_simple(object):
         Returns the URL of a thumbnail.
         size: '640x360'/'biggest'/'largest' or '512x288'/'big'/'large' or None
         """
-
+        newbaseurl = re.findall("^(.*?)_.*?_.*?.jpg", self.meta['thumbnail'], re.DOTALL)[0]
         if size in ['640x360', '640x', 'x360', 'biggest', 'largest']:
-            return "http://www.bbc.co.uk/iplayer/images/episode/%s_640_360.jpg" % (self.pid)
+            return "%s_640_360.jpg" % newbaseurl
         elif size in ['512x288', '512x', 'x288', 'big', 'large']:
-            return "http://www.bbc.co.uk/iplayer/images/episode/%s_512_288.jpg" % (self.pid)
+            return "%s_512_288.jpg" % newbaseurl
         elif size in ['178x100', '178x', 'x100', 'small']:
-            return "http://www.bbc.co.uk/iplayer/images/episode/%s_178_100.jpg" % (self.pid)
+            return "%s_178_100.jpg" % newbaseurl
         elif size in ['150x84', '150x', 'x84', 'smallest']:
-            return "http://www.bbc.co.uk/iplayer/images/episode/%s_150_84.jpg" % (self.pid)
+            return "%s_150_84.jpg" % newbaseurl
+
         else:
             return os.path.join(get_thumb_dir(), '%s.png' % tvradio)
 

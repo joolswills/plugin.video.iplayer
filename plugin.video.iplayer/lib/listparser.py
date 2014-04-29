@@ -11,7 +11,7 @@ def xmlunescape(data):
     return data
 
 class listentry(object):
-     def __init__(self, title=None, id=None, updated=None, summary=None, categories=None, series=None, episode=None):
+     def __init__(self, title=None, id=None, updated=None, summary=None, categories=None, series=None, episode=None, thumbnail=None):
          self.title      = title
          self.id         = id
          self.updated    = updated
@@ -19,6 +19,7 @@ class listentry(object):
          self.categories = categories
          self.series     = series
          self.episode    = episode
+         self.thumbnail  = thumbnail
 
 class listentries(object):
      def __init__(self):
@@ -43,6 +44,7 @@ def parse(xmlSource):
         updated = re.findall( "<updated[^>]*>(.*?)</updated>", entrySrc, re.DOTALL )[0]
         summary = re.findall( "<content[^>]*>(.*?)</content>", entrySrc, re.DOTALL )[0].splitlines()[-3]
         categories = re.findall( "<category[^>]*term=\"(.*?)\"[^>]*>", entrySrc, re.DOTALL )
+        thumbnail = re.findall( "<media:thumbnail[^>]url=\"(.*?)\".*?/>", entrySrc, re.DOTALL )[0]
 
         series = re.findall( "<link rel=\"related\" href=\".*microsite.*title=\"(.*?)\" />", entrySrc, re.DOTALL )
         if len(series):
@@ -65,6 +67,6 @@ def parse(xmlSource):
                     
         e_categories=[]
         for c in categories: e_categories.append(xmlunescape(c))        
-        elist.entries.append(listentry(xmlunescape(title), xmlunescape(id), xmlunescape(updated), xmlunescape(summary), e_categories, series, episode))
+        elist.entries.append(listentry(xmlunescape(title), xmlunescape(id), xmlunescape(updated), xmlunescape(summary), e_categories, series, episode, xmlunescape(thumbnail)))
 
     return elist   
