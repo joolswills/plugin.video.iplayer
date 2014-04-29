@@ -791,7 +791,10 @@ def watch(feed, pid, showDialog, resume=False):
         else:
             # attempt to use the existing thumbnail file
             thumbcache = xbmc.getCacheThumbName( sys.argv[ 0 ] + sys.argv[ 2 ] )
-            thumbfile  = os.path.join( xbmc.translatePath( "special://profile" ), "Thumbnails", "Video", thumbcache[ 0 ], thumbcache )
+            if utils.get_os() == "xbox":
+                thumbfile = os.path.join( xbmc.translatePath( "special://profile" ), "Thumbnails", "Video", thumbcache[ 0 ], thumbcache )
+            else:
+                thumbfile = os.path.join( xbmc.translatePath( "special://profile" ), "Thumbnails", thumbcache[ 0 ], thumbcache )
             utils.log('Reusing existing thumbfile=%s for url %s%s' % (thumbfile, sys.argv[ 0 ], sys.argv[ 2 ]),xbmc.LOGINFO)
 
     if thumbnail and not os.path.isfile(thumbfile):
