@@ -1,5 +1,14 @@
 Changes
 
+2.5.5
+  * fix for broken thumbnails - thanks to dlake
+  * fixed thumbnail cache
+  * regular expression optimisations - thanks to neil
+  * removed play dialog that caused issues for some users (and wasn't particularly useful).
+  * harmonise logging - thanks to neil
+  * fixed episode sorting - thanks to doug
+  * improved stream selection based on user preferences - thanks to doug
+
 2.5.4
   * resume support got broken in the last release. oops. thanks to doug
     for the fix
