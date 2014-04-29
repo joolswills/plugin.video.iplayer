@@ -24,7 +24,6 @@
   <string id="30405">Disable HTTP Cache</string>
   <string id="30410">Socket timeout (seconds) [0=disabled]</string>
   <string id="30420">Stream timeout (seconds)</string>
-  <string id="30430">Display dialog when Play pressed</string>
   <string id="30440">Enhanced Debug output</string>
   <string id="30450">Number of days to keep resume points</string>
   <string id="30460">Force release resume lock</string>

@@ -755,15 +755,10 @@ def get_matching_stream(item, pref, streams):
 
     return (media, pref)
 
-def watch(feed, pid, showDialog, resume=False):
+def watch(feed, pid, resume=False):
 
     times = []
     times.append(['start',time.clock()])
-    if showDialog:
-        pDialog = xbmcgui.DialogProgress()
-        times.append(['xbmcgui.DialogProgress()',time.clock()])
-        pDialog.create('IPlayer', 'Loading catchup stream info')
-        times.append(['pDialog.create',time.clock()])
 
     subtitles_file = None
     item      = get_item(pid)
@@ -802,19 +797,11 @@ def watch(feed, pid, showDialog, resume=False):
         try:
             # The thumbnail needs to accessed via the local filesystem
             # for "Media Info" to display it when playing a video
-            if showDialog:
-                pDialog.update(20, 'Fetching thumbnail')
-                if pDialog.iscanceled(): raise
-                times.append(['update dialog',time.clock()])
             iplayer.httpretrieve(thumbnail, thumbfile)
             times.append(['retrieve thumbnail',time.clock()])
         except:
             pass
 
-    if showDialog:
-        pDialog.update(50, 'Fetching video stream info')
-        if pDialog.iscanceled(): raise
-        times.append(['update dialog',time.clock()])
     (media_list, above_limit) = item.get_available_streams()
     
     if len(media_list) == 0:
@@ -829,11 +816,6 @@ def watch(feed, pid, showDialog, resume=False):
             # TV Stream
             iconimage = 'DefaultVideo.png'
 
-            if showDialog:
-                pDialog.update(70, 'Selecting video stream')
-                if pDialog.iscanceled(): raise
-                times.append(['update dialog',time.clock()])
-
             if above_limit:
                 d = xbmcgui.Dialog()
                 if d.yesno('Default Stream Not Available', 'Play higher bitrate stream?') == False:
@@ -845,10 +827,6 @@ def watch(feed, pid, showDialog, resume=False):
             utils.log('watching url=%s' % url,xbmc.LOGINFO)
             times.append(['logging',time.clock()])
 
-            if showDialog:
-                pDialog.update(90, 'Selecting subtitles')
-                if pDialog.iscanceled(): raise
-                times.append(['update dialog',time.clock()])
             if subtitles:
                 subtitles_media = item.get_media_for('captions')
                 times.append(['subtitles_media',time.clock()])
@@ -868,11 +846,6 @@ def watch(feed, pid, showDialog, resume=False):
             times.append(['xbmc.PlayList',time.clock()])
 
         else:
-            # Radio stream
-            if showDialog:
-                pDialog.update(70, 'Selecting radio stream')
-                if pDialog.iscanceled(): raise
-                times.append(['update dialog',time.clock()])
 
             if not media:
                 d = xbmcgui.Dialog()
@@ -904,11 +877,6 @@ def watch(feed, pid, showDialog, resume=False):
             listitem.setThumbnailImage(thumbfile)
             times.append(['listitem.setThumbnailImage(thumbfile)',time.clock()])
 
-        if showDialog:
-            pDialog.update(80, 'Playing (%s %s)' % (media.connection_kind, media.application))
-            if pDialog.iscanceled(): raise
-            times.append(['update dialog',time.clock()])
-
         if url.startswith( 'rtmp://' ):
             core_player = xbmc.PLAYER_CORE_DVDPLAYER
         else:
@@ -936,9 +904,6 @@ def watch(feed, pid, showDialog, resume=False):
     if subtitles == 'autoplay' and subtitles_file:
         player.setSubtitles(subtitles_file)
         times.append(['player.setSubtitles',time.clock()])
-
-    if showDialog: pDialog.close()
-    times.append(['pDialog.close()',time.clock()])
 
     if not item.is_tv:
         # Switch to a nice visualisation if playing a radio stream
@@ -1017,19 +982,16 @@ if __name__ == "__main__":
 
         # state engine
         if pid:
-            showDialog = __addon__.getSetting('displaydialog') == 'true'
-            watch(feed, pid, showDialog, __addon__.getSetting('playaction') == "0")
+            watch(feed, pid, __addon__.getSetting('playaction') == "0")
         elif deletesearch:
             search_delete(tvradio or 'tv', deletesearch)
         elif deleteresume:
             iplayer.IPlayer.delete_resume_point(deleteresume)
             xbmc.executebuiltin('Container.Refresh')
         elif playfromstart:
-            showDialog = __addon__.getSetting('displaydialog') == 'true'
-            watch(feed, playfromstart, showDialog)
+            watch(feed, playfromstart)
         elif playresume:
-            showDialog = __addon__.getSetting('displaydialog') == 'true'
-            watch(feed, playresume, showDialog, True)
+            watch(feed, playresume, True)
         elif force_resume_unlock:
             iplayer.IPlayer.force_release_lock()
         elif not (feed or listing):

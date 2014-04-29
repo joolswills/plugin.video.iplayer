@@ -27,7 +27,6 @@
     <setting id="http_cache_disable" label="30405" type="bool" default="false" />
     <setting id="socket_timeout" label="30410" type="number" default="5" />
     <setting id="stream_timeout" label="30420" type="number" default="180" />
-    <setting id="displaydialog" label="30430" type="bool" default="true" />
     <setting id="enhanceddebug" label="30440" type="bool" default="false" />
     <setting id="resume_days_to_keep" label="30450" type="number" default="40" />
     <setting id="playaction" label="30470" type="enum" values="Resume|Play from start" default="0" />
