@@ -2,7 +2,11 @@
 
 # Python libs
 import xbmc
-from sets import Set
+import sys
+
+# sets deprecated in 2.6+
+if sys.version_info <= (2,5):
+    from sets import Set as set
 
 def load_search(file, tvradio):
     # load the list of search terms for the current search type
@@ -15,7 +19,7 @@ def load_search(file, tvradio):
             term = term.strip()
             searchlist.append(term)
 
-        # remove any duplicates
+    # remove any duplicates
     searchlist = list(set(searchlist))
     
     # sort the list 
@@ -25,7 +29,6 @@ def load_search(file, tvradio):
 
 def delete_search(file, tvradio, search):
     # load the list of search terms and delete the selected term
-    print "delete " +file + ' ' + tvradio + ' ' + search
     lines = open(file, 'rb').readlines()
 
     searchtext = []
@@ -35,7 +38,6 @@ def delete_search(file, tvradio, search):
         if type != tvradio or term != search:
             searchtext.append(line)
     
-    print file, searchtext
     open(file, 'wb').writelines(searchtext)
 
 

@@ -16,6 +16,13 @@ import listparser
 import stations
 
 try:
+    from hashlib import _md5
+except:
+    # use md5 for python 2.5 compat
+    import md5
+    _md5 = md5.new
+
+try:
     # python >= 2.5
     from xml.etree import ElementTree as ET
 except:
@@ -111,7 +118,7 @@ def fix_selfclosing(xml):
 
 def set_http_cache(dir):
     try:
-        cache = httplib2.FileCache(dir, safe=lambda x: md5.new(x).hexdigest())
+        cache = httplib2.FileCache(dir, safe=lambda x: _md5(x).hexdigest())
         http.cache = cache
     except:
         pass
