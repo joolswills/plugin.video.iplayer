@@ -463,13 +463,13 @@ class item(object):
             self.duration = node.get('duration')
             #self.broadcast = node.broadcast
             nf = node.find('service')
-            if nf: self.service = nf.text and nf.get('id')
+            if nf is not None: self.service = nf.text and nf.get('id')
             nf = node.find('masterbrand')
-            if nf: self.masterbrand = nf.text and nf.get('id')
+            if nf is not None: self.masterbrand = nf.text and nf.get('id')
             nf = node.find('alternate')
-            if nf: self.alternate = nf.text and nf.get('id')
+            if nf is not None: self.alternate = nf.text and nf.get('id')
             nf = node.find('guidance')
-            if nf: self.guidance = nf.text
+            if nf is not None: self.guidance = nf.text
 
 
     @property
@@ -1092,6 +1092,9 @@ class IPlayer(xbmc.Player):
     RESUME_FILE = None
     RESUME_LOCK_FILE = None
 
+    WATCHED_MIN = 5.0
+    WATCHED_MAX = 95.0
+
     resume = None
     dates_added = None
 
@@ -1100,6 +1103,14 @@ class IPlayer(xbmc.Player):
         self.paused = False
         self.live = live
         self.pid = pid
+
+        # Stash self.GetTotalTime() when it becomes available on start of playback or later during heartbeat
+        # as sometimes it won't always be available on start of playback but should be on a heartbeat
+        self.duration = 0
+
+        # Remember if we've got a resume point to avoid loading the resume file to see if it needs to be deleted
+        self.has_resume_point = False
+
         if os.environ.get( "OS" ) != "xbox":
             self.cancelled = threading.Event()
         if live:
@@ -1173,6 +1184,7 @@ class IPlayer(xbmc.Player):
         self.heartbeat.setDaemon(True)
         self.heartbeat.start()
         if not self.live and not self.cancelled.is_set():
+            if not self.duration: self.duration = self.getTotalTime()
             self.current_seek_time = self.getTime()
             utils.log("current_seek_time %s" % self.current_seek_time,xbmc.LOGDEBUG)
         elif self.cancelled.is_set():
@@ -1182,6 +1194,8 @@ class IPlayer(xbmc.Player):
         # Will be called when xbmc starts playing the stream
         utils.log("Begin playback of pid %s" % self.pid,xbmc.LOGINFO)
         self.paused = False
+        if not self.live:
+          self.duration = self.getTotalTime()
         if os.environ.get( "OS" ) != "xbox":
             self.run_heartbeat()
 
@@ -1189,10 +1203,7 @@ class IPlayer(xbmc.Player):
         # Will be called when xbmc stops playing the stream
         if self.heartbeat: self.heartbeat.cancel()
         utils.log("Playback ended.",xbmc.LOGINFO)
-        if os.environ.get( "OS" ) != "xbox":
-            if not self.live:
-                utils.log("Saving resume point for pid %s at %fs." % (self.pid, self.current_seek_time),xbmc.LOGINFO)
-                self.save_resume_point( self.current_seek_time )
+        self.save_or_delete_resume_point()
         self.__del__()
 
     def onPlayBackStopped( self ):
@@ -1200,20 +1211,45 @@ class IPlayer(xbmc.Player):
         # Will be called when user stops xbmc playing the stream
         # The player needs to be unloaded to release the resume lock
         utils.log("Playback stopped.",xbmc.LOGINFO)
-        if os.environ.get( "OS" ) != "xbox":
-            if not self.live:
-                utils.log("Saving resume point for pid %s at %fs." % (self.pid, self.current_seek_time),xbmc.LOGINFO)
-                self.save_resume_point( self.current_seek_time )
+        self.save_or_delete_resume_point()
         self.__del__()
 
     def onPlayBackPaused( self ):
         # Will be called when user pauses playback on a stream
         utils.log("Playback paused.",xbmc.LOGINFO)
-        if os.environ.get( "OS" ) != "xbox":
-            if not self.live:
-                utils.log("Saving resume point for pid %s at %fs." % (self.pid, self.getTime()),xbmc.LOGINFO)
-                self.save_resume_point( self.current_seek_time )
+        self.save_or_delete_resume_point()
         self.paused = True
+
+    def save_or_delete_resume_point( self, resume_point=None ):
+      """
+      Saves the resume point if more than MIN_WATCHED% and less than MAX_WATCHED% of the stream has been watched, otherwise it
+      deletes (or just doesn't save) the resume point.
+      This avoids saving a resume point just a few seconds from the end of a stream, or if you start a stream by mistake.
+      """
+
+      if os.environ.get( "OS" ) != "xbox":
+          if not self.live:
+              if resume_point == None:
+                resume_point = self.current_seek_time
+
+              if resume_point > 0 and self.duration >= resume_point:
+                  watched_percent = (resume_point / self.duration) * 100
+                  if watched_percent >= IPlayer.WATCHED_MIN and watched_percent <= IPlayer.WATCHED_MAX:
+                      utils.log("Current watched_percent is %.2f%% and within limits (%.1f%% - %.1f%%) - resume point will be saved" % \
+                          (watched_percent, IPlayer.WATCHED_MIN, IPlayer.WATCHED_MAX),xbmc.LOGINFO)
+                      self.save_resume_point( resume_point )
+                      return
+                  else:
+                      utils.log("Current watched_percent is %.2f%% and outside limits (%.1f%% - %.1f%%) - resume point will not be saved" % \
+                          (watched_percent, IPlayer.WATCHED_MIN, IPlayer.WATCHED_MAX),xbmc.LOGINFO)
+              else:
+                  utils.log("Unable to determine watched_percent (duration: %d, resume_point: %f) - saving resume point anyway" % (self.duration, resume_point),xbmc.LOGNOTICE)
+                  self.save_resume_point( resume_point )
+                  return
+
+      if self.has_resume_point:
+        IPlayer.delete_resume_point( self.pid )
+        self.has_resume_point = False
 
     def save_resume_point( self, resume_point ):
         """
@@ -1224,6 +1260,7 @@ class IPlayer(xbmc.Player):
         dates_added[self.pid] = time.time()
         utils.log("Saving resume point (pid %s, seekTime %fs, dateAdded %d) to resume file" % (self.pid, resume[self.pid], dates_added[self.pid]),xbmc.LOGNOTICE)
         IPlayer.save_resume_file(resume, dates_added)
+        self.has_resume_point = True
 
     @staticmethod
     def load_resume_file():
@@ -1301,6 +1338,7 @@ class IPlayer(xbmc.Player):
             resume, dates_added = IPlayer.load_resume_file()
             if self.pid in resume.keys():
                 utils.log("Resume point found for pid %s at %f, seeking..." % (self.pid, resume[self.pid]),xbmc.LOGNOTICE)
+                self.has_resume_point = True
                 listitem.setProperty('StartOffset', '%d' % resume[self.pid])
 
         if is_tv:
