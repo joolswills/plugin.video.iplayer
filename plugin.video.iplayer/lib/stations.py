@@ -4,25 +4,25 @@
 ##
 
 channels_tv_list = [
-    ('bbc_one', 'BBC One'), 
-    ('bbc_two', 'BBC Two'), 
-    ('bbc_three', 'BBC Three'), 
+    ('bbc_one', 'BBC One'),
+    ('bbc_two', 'BBC Two'),
+    ('bbc_three', 'BBC Three'),
     ('bbc_four', 'BBC Four'),
     ('cbbc', 'CBBC'),
     ('cbeebies', 'CBeebies'),
-    ('bbc_hd', 'BBC HD'), 
+    ('bbc_hd', 'BBC HD'),
     ('bbc_news24', 'BBC News Channel'),
     ('bbc_parliament', 'BBC Parliament'),
     ('bbc_alba', 'BBC Alba'),
 ]
 
-radio_station_info = [   
+radio_station_info = [
     {'id': 'bbc_radio_one',
      'name': 'Radio 1',
      'logo': None,
      'type': 'national',
      'webcam' : 'http://www.bbc.co.uk/radio1/webcam/images/live/webcam.jpg'},
- 
+
     {'id': 'bbc_1xtra',
      'name': 'Radio 1 Xtra',
      'logo': None,
@@ -310,7 +310,7 @@ radio_station_info = [
 ]
 
 # build a list of radio channel IDs
-channels_radio_list = []  
+channels_radio_list = []
 channels_radio_type_list = {}
 for i in radio_station_info:
     channels_radio_list.append((i['id'], i['name']))

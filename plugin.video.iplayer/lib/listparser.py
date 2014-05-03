@@ -24,18 +24,18 @@ class listentry(object):
 class listentries(object):
      def __init__(self):
          self.entries = []
-                  
-def parse(xmlSource):  
+
+def parse(xmlSource):
     try:
         encoding = re.findall( "<\?xml version=\"[^\"]*\" encoding=\"([^\"]*)\"\?>", xmlSource )[ 0 ]
     except: return None
     elist=listentries()
-    # gather all list entries 
+    # gather all list entries
     entriesSrc = re.findall( "<entry>(.*?)</entry>", xmlSource, re.DOTALL)
     datematch = re.compile(':\s+([0-9]+)/([0-9]+)/([0-9]{4})')
-    
+
     episode_exprs = ["<link rel=\"self\" .*title=\".*pisode *([0-9]+)", "<link rel=\"self\" .*title=\"([0-9]+)\."]
-    
+
     # enumerate thru the element list and gather info
     for entrySrc in entriesSrc:
         entry={}
@@ -51,7 +51,7 @@ def parse(xmlSource):
             series = series[0]
         else:
             series = title
-        
+
         episode = None
         for ex in episode_exprs:
             e = re.findall( ex, entrySrc, re.DOTALL )
@@ -64,9 +64,9 @@ def parse(xmlSource):
         if match:
             # if the title contains a data at the end use that as the updated date YYYY-MM-DD
             updated = "%s-%s-%s" % ( match.group(3), match.group(2), match.group(1)  )
-                    
+
         e_categories=[]
-        for c in categories: e_categories.append(xmlunescape(c))        
+        for c in categories: e_categories.append(xmlunescape(c))
         elist.entries.append(listentry(xmlunescape(title), xmlunescape(id), xmlunescape(updated), xmlunescape(summary), e_categories, series, episode, xmlunescape(thumbnail)))
 
-    return elist   
+    return elist

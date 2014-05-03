@@ -803,7 +803,7 @@ def watch(feed, pid, resume=False):
             pass
 
     (media_list, above_limit) = item.get_available_streams()
-    
+
     if len(media_list) == 0:
         # Nothing usable was found
         d = xbmcgui.Dialog()
@@ -891,13 +891,13 @@ def watch(feed, pid, resume=False):
 
         times.append(['xbmc.Player()',time.clock()])
         player.resume_and_play(url, listitem, item.is_tv, resume)
-        
+
         # Successfully started playing something?
         if player.isPlaying():
             break;
 
         times.append(['player.play',time.clock()])
-        
+
     # Auto play subtitles if they have downloaded
     utils.log("subtitles: %s   - subtitles_file %s " % (subtitles,subtitles_file),xbmc.LOGINFO)
     times.append(['logging.info',time.clock()])

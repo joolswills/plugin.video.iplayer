@@ -323,9 +323,9 @@ class media(object):
         result = []
         for c in xml.findall('connection'):
             result.append(media(item, xml, c))
-        
+
         return result
-    
+
     @property
     def url(self):
         # no longer used. will remove later
@@ -503,7 +503,7 @@ class item(object):
         return self.alternate == 'signed'
 
     def get_available_streams(self):
-        """ 
+        """
         Returns a list of available streams in order of desirability,
         according to provider and bitrate preferences
         """
@@ -513,18 +513,18 @@ class item(object):
         else:
             streams = ['aac320', 'aac128', 'wma9', 'wma+asx', 'aac48', 'aac32']
             rate = get_setting_audiostream()
-        
+
         provider = get_provider()
 
         # Build a list of streams of lower or equal bitrate to the config setting
         if rate not in streams:
             return ([], false)
-            
+
         media = []
         above_limit = False
         for strm in streams[streams.index(rate):]:
             media.extend(self.get_media_list_for(strm, provider))
-            
+
         # If nothing found, get next highest bitrate
         if len(media) == 0:
             above_limit = true
@@ -532,11 +532,11 @@ class item(object):
             while len(media) == 0 and i > 0:
                 i -= 1
                 media = self.get_media_list_for(streams[i], provider)
-        
+
         utils.log("Available streams by preference: %s" % (["%s %s" % (m.connection_kind, m.application) for m in media]),xbmc.LOGINFO)
-        
+
         return (media, above_limit)
-    
+
     def mediaselector_url(self, suffix):
         if suffix == None:
             return "http://open.live.bbc.co.uk/mediaselector/4/mtis/stream/%s" % self.identifier
@@ -564,9 +564,9 @@ class item(object):
                     result.insert(0, m)
                 else:
                     result.append(m)
-                    
+
         return result
-        
+
 class programme(object):
     """
     Represents an individual iPlayer programme, as identified by an 8-letter PID,
