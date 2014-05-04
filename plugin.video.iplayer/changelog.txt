@@ -1,5 +1,8 @@
 Changes
 
+2.5.7
+  * fixed xbmc import in iplayer2.py
+
 2.5.6
   * avoid md5/sets deprecated warnings on Python 2.6+ - thanks to neil
   * don't keep resume points during first 5% or last 95% of stream - thanks to neil

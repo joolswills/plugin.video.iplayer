@@ -9,7 +9,7 @@ import traceback
 from socket import timeout as SocketTimeoutError
 
 # XBMC libs
-import xbmcgui
+import xbmc, xbmcgui
 
 # external libs
 import listparser
@@ -1073,7 +1073,6 @@ class feed(object):
 
     name = property(get_name)
 
-import xbmc
 if os.environ.get( "OS" ) != "xbox":
     import threading
 
