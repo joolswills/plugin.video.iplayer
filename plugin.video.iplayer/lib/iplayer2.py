@@ -16,7 +16,7 @@ import listparser
 import stations
 
 try:
-    from hashlib import _md5
+    from hashlib import md5 as _md5
 except:
     # use md5 for python 2.5 compat
     import md5
