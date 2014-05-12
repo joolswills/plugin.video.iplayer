@@ -1099,8 +1099,12 @@ class IPlayer(xbmc.Player):
     RESUME_FILE = None
     RESUME_LOCK_FILE = None
 
-    WATCHED_MIN = 5.0
-    WATCHED_MAX = 95.0
+    # WATCHED_MIN from beginning, WATCHED_MAX before end
+    # Currently, resume point min/max is calculated as follows:
+    #   WATCHED_MIN: 5% from the start of playback (no more than 180 secs after start)
+    #   WATCHED_MAX: 5% before the end of playback (no more than 180 secs before end).
+    WATCHED_MIN = {"pcnt": 5.0, "cap_secs": 180}
+    WATCHED_MAX = {"pcnt": 5.0, "cap_secs": 180}
 
     resume = None
     dates_added = None
@@ -1227,28 +1231,46 @@ class IPlayer(xbmc.Player):
         self.save_or_delete_resume_point()
         self.paused = True
 
+    @staticmethod
+    def resume_point_required( resume_point, duration ):
+      """
+      Determine if a resume point is required. Calculate the minimum and maximum points
+      at which a resume point should be saved, initially using minimum and maximum percentages
+      then clamped by a specific number of seconds.
+      """
+      min_limit = (duration / 100.0) * IPlayer.WATCHED_MIN["pcnt"]
+      if min_limit > IPlayer.WATCHED_MIN["cap_secs"]:
+          min_limit = IPlayer.WATCHED_MIN["cap_secs"]
+
+      max_limit = (duration / 100.0) * IPlayer.WATCHED_MAX["pcnt"]
+      if max_limit > IPlayer.WATCHED_MAX["cap_secs"]:
+          max_limit = IPlayer.WATCHED_MAX["cap_secs"]
+      max_limit = duration - max_limit
+
+      if resume_point >= min_limit and resume_point <= max_limit:
+        utils.log("Current resume point %.2f secs within limits (%.2f - %.2f) and will be saved" % \
+            (resume_point, min_limit, max_limit),xbmc.LOGINFO)
+        return True
+      else:
+        utils.log("Current resume point %.2f secs outside limits (%.2f - %.2f) and will not be saved" % \
+            (resume_point, min_limit, max_limit),xbmc.LOGINFO)
+        return False
+
     def save_or_delete_resume_point( self, resume_point=None ):
       """
       Saves the resume point if more than MIN_WATCHED% and less than MAX_WATCHED% of the stream has been watched, otherwise it
       deletes (or just doesn't save) the resume point.
       This avoids saving a resume point just a few seconds from the end of a stream, or if you start a stream by mistake.
       """
-
       if os.environ.get( "OS" ) != "xbox":
           if not self.live:
               if resume_point == None:
                 resume_point = self.current_seek_time
 
               if resume_point > 0 and self.duration >= resume_point:
-                  watched_percent = (resume_point / self.duration) * 100
-                  if watched_percent >= IPlayer.WATCHED_MIN and watched_percent <= IPlayer.WATCHED_MAX:
-                      utils.log("Current watched_percent is %.2f%% and within limits (%.1f%% - %.1f%%) - resume point will be saved" % \
-                          (watched_percent, IPlayer.WATCHED_MIN, IPlayer.WATCHED_MAX),xbmc.LOGINFO)
+                  if IPlayer.resume_point_required(resume_point, self.duration):
                       self.save_resume_point( resume_point )
                       return
-                  else:
-                      utils.log("Current watched_percent is %.2f%% and outside limits (%.1f%% - %.1f%%) - resume point will not be saved" % \
-                          (watched_percent, IPlayer.WATCHED_MIN, IPlayer.WATCHED_MAX),xbmc.LOGINFO)
               else:
                   utils.log("Unable to determine watched_percent (duration: %d, resume_point: %f) - saving resume point anyway" % (self.duration, resume_point),xbmc.LOGNOTICE)
                   self.save_resume_point( resume_point )
