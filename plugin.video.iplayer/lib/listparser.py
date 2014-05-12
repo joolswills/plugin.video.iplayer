@@ -28,25 +28,36 @@ class listentries(object):
 def parse(xmlSource):
     try:
         encoding = re.findall( "<\?xml version=\"[^\"]*\" encoding=\"([^\"]*)\"\?>", xmlSource )[ 0 ]
-    except: return None
+    except:
+        return None
+
     elist=listentries()
     # gather all list entries
-    entriesSrc = re.findall( "<entry>(.*?)</entry>", xmlSource, re.DOTALL)
+    entriesSrc = re.findall("<entry>(.*?)</entry>", xmlSource, re.DOTALL)
     datematch = re.compile(':\s+([0-9]+)/([0-9]+)/([0-9]{4})')
 
-    episode_exprs = ["<link rel=\"self\" .*title=\".*pisode *([0-9]+)", "<link rel=\"self\" .*title=\"([0-9]+)\."]
+    re_title   = re.compile("<title[^>]*>(.*?)</title>", re.DOTALL)
+    re_id      = re.compile("<id[^>]*>(.*?)</id>", re.DOTALL)
+    re_updated = re.compile("<updated[^>]*>(.*?)</updated>", re.DOTALL)
+    re_summary = re.compile("<content[^>]*>(.*?)</content>", re.DOTALL)
+    re_categories = re.compile("<category[^>]*term=\"(.*?)\"[^>]*>", re.DOTALL)
+    re_thumbnail = re.compile("<media:thumbnail[^>]url=\"(.*?)\".*?/>", re.DOTALL)
+    re_series = re.compile("<link rel=\"related\" href=\".*microsite.*title=\"(.*?)\" />", re.DOTALL)
+
+    episode_exprs = [ re.compile("<link rel=\"self\" .*title=\".*pisode *([0-9]+)", re.DOTALL),
+                      re.compile("<link rel=\"self\" .*title=\"([0-9]+)\.", re.DOTALL) ]
 
     # enumerate thru the element list and gather info
     for entrySrc in entriesSrc:
         entry={}
-        title   = re.findall( "<title[^>]*>(.*?)</title>", entrySrc, re.DOTALL )[0]
-        id      = re.findall( "<id[^>]*>(.*?)</id>", entrySrc, re.DOTALL )[0]
-        updated = re.findall( "<updated[^>]*>(.*?)</updated>", entrySrc, re.DOTALL )[0]
-        summary = re.findall( "<content[^>]*>(.*?)</content>", entrySrc, re.DOTALL )[0].splitlines()[-3]
-        categories = re.findall( "<category[^>]*term=\"(.*?)\"[^>]*>", entrySrc, re.DOTALL )
-        thumbnail = re.findall( "<media:thumbnail[^>]url=\"(.*?)\".*?/>", entrySrc, re.DOTALL )[0]
+        title   = re_title.findall(entrySrc)[0]
+        id      = re_id.findall(entrySrc)[0]
+        updated = re_updated.findall(entrySrc)[0]
+        summary = re_summary.findall(entrySrc)[0].splitlines()[-3]
+        categories = re_categories.findall(entrySrc)
+        thumbnail = re_thumbnail.findall(entrySrc)[0]
 
-        series = re.findall( "<link rel=\"related\" href=\".*microsite.*title=\"(.*?)\" />", entrySrc, re.DOTALL )
+        series = re_series.findall(entrySrc)
         if len(series):
             series = series[0]
         else:
@@ -54,7 +65,7 @@ def parse(xmlSource):
 
         episode = None
         for ex in episode_exprs:
-            e = re.findall( ex, entrySrc, re.DOTALL )
+            e = ex.findall(entrySrc)
             if len(e):
                 episode = "%s:%02d" % (series, int(e[0]))
                 break;

@@ -580,6 +580,8 @@ class programme(object):
         self._items = []
         self._related = []
 
+        self.re_newbaseurl = re.compile("^(.*?)_.*?_.*?.jpg", re.DOTALL)
+
     @call_once
     def read_playlist(self):
         utils.log('Read playlist for %s...' % self.pid,xbmc.LOGINFO)
@@ -636,7 +638,7 @@ class programme(object):
         Returns the URL of a thumbnail.
         size: '640x360'/'biggest'/'largest' or '512x288'/'big'/'large' or None
         """
-        newbaseurl = re.findall("^(.*?)_.*?_.*?.jpg", self.meta['thumbnail'], re.DOTALL)[0]
+        newbaseurl = self.re_newbaseurl.findall(self.meta['thumbnail'])[0]
         if size in ['640x360', '640x', 'x360', 'biggest', 'largest']:
             return "%s_640_360.jpg" % newbaseurl
         elif size in ['512x288', '512x', 'x288', 'big', 'large']:
@@ -723,6 +725,8 @@ class programme_simple(object):
         self.series = entry.series
         self.episode = entry.episode
 
+        self.re_newbaseurl = re.compile("^(.*?)_.*?_.*?.jpg", re.DOTALL)
+
     @call_once
     def read_playlist(self):
         pass
@@ -738,7 +742,7 @@ class programme_simple(object):
         Returns the URL of a thumbnail.
         size: '640x360'/'biggest'/'largest' or '512x288'/'big'/'large' or None
         """
-        newbaseurl = re.findall("^(.*?)_.*?_.*?.jpg", self.meta['thumbnail'], re.DOTALL)[0]
+        newbaseurl = self.re_newbaseurl.findall(self.meta['thumbnail'])[0]
         if size in ['640x360', '640x', 'x360', 'biggest', 'largest']:
             return "%s_640_360.jpg" % newbaseurl
         elif size in ['512x288', '512x', 'x288', 'big', 'large']:
@@ -1042,9 +1046,13 @@ class feed(object):
         categories = []
         doc = dom.parseString(xml)
         root = doc.documentElement
+
+        re_title = re.compile("programmes currently available from BBC iPlayer")
+        re_category = re.compile("iplayer/categories/(.*?)/list", re.DOTALL)
+
         for entry in root.getElementsByTagName( "entry" ):
             summary = entry.getElementsByTagName( "summary" )[0].firstChild.nodeValue
-            title = re.sub('programmes currently available from BBC iPlayer', '', summary, 1)
+            title = re_title.sub('', summary, count=1)
             url = None
 
             # search for the url for this entry
@@ -1056,7 +1064,7 @@ class feed(object):
                         #break
 
             if url:
-                category = re.findall( "iplayer/categories/(.*?)/list", url, re.DOTALL )[0]
+                category = re_category.findall(url)[0]
                 categories.append([title, category])
 
         return categories
