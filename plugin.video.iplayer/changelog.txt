@@ -1,5 +1,10 @@
 Changes
 
+2.5.8
+  * subtitle fixes
+  * resume point improvements - thanks to neil
+  * regular expression optimisations - thanks to neil
+
 2.5.7
   * fixed xbmc import in iplayer2.py
 
