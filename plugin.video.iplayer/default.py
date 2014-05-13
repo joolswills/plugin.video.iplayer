@@ -830,7 +830,7 @@ def watch(feed, pid, resume=False):
             if subtitles:
                 subtitles_media = item.get_media_list_for('captions', None)
                 times.append(['subtitles_media',time.clock()])
-                if subtitles_media[0]:
+                if subtitles_media and len(subtitles_media) > 0:
                     subtitles_file = download_subtitles(subtitles_media[0].url)
                     times.append(['subtitles download',time.clock()])
 
