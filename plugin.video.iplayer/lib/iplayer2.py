@@ -4,7 +4,6 @@
 import re, time, os, string, sys
 import urllib, urllib2
 import xml.dom.minidom as dom
-import md5
 import traceback
 from socket import timeout as SocketTimeoutError
 
