@@ -527,7 +527,7 @@ class item(object):
 
         # If nothing found, get next highest bitrate
         if len(media) == 0:
-            above_limit = true
+            above_limit = True
             i = streams.index(rate)
             while len(media) == 0 and i > 0:
                 i -= 1
