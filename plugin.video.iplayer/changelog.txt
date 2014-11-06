@@ -1,5 +1,10 @@
 Changes
 
+2.6.0
+  * bump version number so people with the "broken" 2.5.91 get updated
+  * changed category parsing to hopefully work with python older than 2.7
+  * fixed up search parameters - was using the wrong API function
+
 2.5.10
 
   * Switch from RSS feeds to ion api. Thanks to dlake02 for the initial work/hints.
