@@ -162,8 +162,8 @@ def list_feeds(feeds, tvradio='tv', radio=None):
         folders.append(('Highlights', 'highlights', make_url(listing='highlights', tvradio=tvradio)))
     if tvradio == 'radio':
         folders.append(('Listen Live', 'listenlive', make_url(listing='livefeeds', tvradio=tvradio, radio=radio)))
-    else:
-        folders.append(('Watch Live', 'tv', make_url(listing='livefeeds', tvradio=tvradio)))
+#    else:
+#        folders.append(('Watch Live', 'tv', make_url(listing='livefeeds', tvradio=tvradio)))
     if tvradio == 'tv' or radio == 'national':
         folders.append(('Popular', 'popular', make_url(listing='popular', tvradio=tvradio)))
         folders.append(('Search', 'search', make_url(listing='searchlist', tvradio=tvradio)))
