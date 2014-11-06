@@ -859,8 +859,7 @@ class feed(object):
             if self.tvradio:
               params += [ 'service_type', self.tvradio ]
         elif self.category:
-            params = [ 'atoz' ]
-            params += [ 'letters' ,'a-z' ]
+            params = [ 'listview' ]
             params += [ 'category', self.category ]
             if self.channel:
                 params += [ 'masterbrand', self.channel ]
@@ -872,9 +871,8 @@ class feed(object):
                 params += [ 'service_type', self.tvradio]
             params += [ 'q', urllib.quote_plus(self.searchterm) ]
         elif self.channel:
-            params = [ 'atoz' ]
+            params = [ 'listview' ]
             params += [ 'masterbrand', self.channel]
-            params += [ 'letters' ,'a-z' ]
 
         params = params + [ 'format', 'xml' ]
         url = "http://www.bbc.co.uk/iplayer/ion/" + '/'.join(params)
