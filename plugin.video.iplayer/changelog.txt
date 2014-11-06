@@ -1,5 +1,10 @@
 Changes
 
+2.5.10
+
+  * Switch from RSS feeds to ion api. Thanks to dlake02 for the initial work/hints.
+  * Disable Live for now.
+
 2.5.9
   * remove duplicate import md5 line
   * true -> True code fix
