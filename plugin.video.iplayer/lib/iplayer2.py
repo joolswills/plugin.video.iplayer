@@ -68,7 +68,8 @@ rss_cache = {}
 self_closing_tags = ['alternate', 'mediator']
 
 re_selfclose = re.compile('<([a-zA-Z0-9]+)( ?.*)/>', re.M | re.S)
-re_pips = re.compile('PIPS:([0-9a-z]{8})')
+#re_pips = re.compile('PIPS:([0-9a-z]{8})')
+re_pips = re.compile('([0-9a-z]{8})')
 re_concept_id = re.compile('concept_pid:([a-z0-9]{8})')
 
 def get_proxy():
@@ -741,6 +742,7 @@ class programme_simple(object):
         Returns the URL of a thumbnail.
         size: '640x360'/'biggest'/'largest' or '512x288'/'big'/'large' or None
         """
+
         newbaseurl = self.re_newbaseurl.findall(self.meta['thumbnail'])[0]
         if size in ['640x360', '640x', 'x360', 'biggest', 'largest']:
             return "%s_640_360.jpg" % newbaseurl
@@ -801,6 +803,7 @@ class programme_simple(object):
     summary = property(get_summary)
     updated = property(get_updated)
     thumbnail = property(get_thumbnail)
+    #thumbnail = "http://http://ichef.bbci.co.uk/images/ic/640x360/p029dgg5.jpg"
     related = property(get_related)
     items = property(get_items)
 
@@ -842,38 +845,40 @@ class feed(object):
         'categories'/<category>(/<subcategory>)(/['tv'/'radio'])/['list'|'popular'|'highlights']
         """
         assert listing in ['list', 'popular', 'highlights'], "Unknown listing type"
-        if self.searchcategory:
-            path = ['categories']
-            if self.category:
-                path += [self.category]
-            if self.tvradio:
-                path += [self.tvradio]
-            path += ['list']
-        elif self.category:
-            if self.channel:
-                path = [self.channel, 'categories', self.category]
-            else:
-                path = ['categories', self.category, self.tvradio]
-            path += ['list']
-        elif self.searchterm:
-            path = ['search']
-            if self.tvradio:
-                path += [self.tvradio]
-            path += ['?q=%s' % urllib.quote_plus(self.searchterm)]
-        elif self.channel:
-            path = [self.channel]
-            if self.atoz:
-                path += ['atoz', self.atoz]
-            path += [listing]
-        elif self.atoz:
-            path = ['atoz', self.atoz, listing]
-            if self.tvradio:
-                path += [self.tvradio]
-        else:
-            assert listing != 'list', "Can't list at tv/radio level'"
-            path = [listing, self.tvradio]
 
-        return "http://feeds.bbc.co.uk/iplayer/" + '/'.join(path)
+        if listing == 'popular':
+            params = [ 'mostpopular' ]
+            if self.tvradio:
+                params += [ 'service_type', self.tvradio ]
+        if listing == 'highlights':
+            params = [ 'featured' ]
+            if self.tvradio:
+                params += [ 'service_type', self.tvradio ]
+        if self.searchcategory:
+            params = [ 'categorynav' ]
+            if self.tvradio:
+              params += [ 'service_type', self.tvradio ]
+        elif self.category:
+            params = [ 'atoz' ]
+            params += [ 'letters' ,'a-z' ]
+            params += [ 'category', self.category ]
+            if self.channel:
+                params += [ 'masterbrand', self.channel ]
+            if self.tvradio:
+              params += [ 'service_type', self.tvradio ]
+        elif self.searchterm:
+            params = [ 'partner', 'searchextended' ]
+            if self.tvradio:
+                params += [ 'service_type', self.tvradio]
+            params += [ 'q', urllib.quote_plus(self.searchterm) ]
+        elif self.channel:
+            params = [ 'atoz' ]
+            params += [ 'masterbrand', self.channel]
+            params += [ 'letters' ,'a-z' ]
+
+        params = params + [ 'format', 'xml' ]
+        url = "http://www.bbc.co.uk/iplayer/ion/" + '/'.join(params)
+        return url
 
 
     def get_name(self, separator=' '):
@@ -1042,29 +1047,14 @@ class feed(object):
         url = self.create_url('list')
 
         xml = httpget(url)
+
+        root = ET.fromstring(xml)
+        ns = {'ion': 'http://bbc.co.uk/2008/iplayer/ion'}
         categories = []
-        doc = dom.parseString(xml)
-        root = doc.documentElement
-
-        re_title = re.compile("programmes currently available from BBC iPlayer")
-        re_category = re.compile("iplayer/categories/(.*?)/list", re.DOTALL)
-
-        for entry in root.getElementsByTagName( "entry" ):
-            summary = entry.getElementsByTagName( "summary" )[0].firstChild.nodeValue
-            title = re_title.sub('', summary, count=1)
-            url = None
-
-            # search for the url for this entry
-            for link in entry.getElementsByTagName( "link" ):
-                if link.hasAttribute( "rel" ):
-                    rel = link.getAttribute( "rel" )
-                    if rel == 'self':
-                        url = link.getAttribute( "href" )
-                        #break
-
-            if url:
-                category = re_category.findall(url)[0]
-                categories.append([title, category])
+        for category in root.findall('.//ion:child_categories/ion:category', ns): #category/child_categories/category
+            id = category.find('ion:id', ns).text
+            text = category.find('ion:text', ns).text
+            categories.append([ text, id ])
 
         return categories
 

@@ -33,15 +33,15 @@ def parse(xmlSource):
 
     elist=listentries()
     # gather all list entries
-    entriesSrc = re.findall("<entry>(.*?)</entry>", xmlSource, re.DOTALL)
+    entriesSrc = re.findall("<episode>(.*?)</episode>", xmlSource, re.DOTALL)
     datematch = re.compile(':\s+([0-9]+)/([0-9]+)/([0-9]{4})')
 
-    re_title   = re.compile("<title[^>]*>(.*?)</title>", re.DOTALL)
-    re_id      = re.compile("<id[^>]*>(.*?)</id>", re.DOTALL)
-    re_updated = re.compile("<updated[^>]*>(.*?)</updated>", re.DOTALL)
-    re_summary = re.compile("<content[^>]*>(.*?)</content>", re.DOTALL)
-    re_categories = re.compile("<category[^>]*term=\"(.*?)\"[^>]*>", re.DOTALL)
-    re_thumbnail = re.compile("<media:thumbnail[^>]url=\"(.*?)\".*?/>", re.DOTALL)
+    re_title = re.compile("<complete_title>(.*?)</complete_title>", re.DOTALL)
+    re_id = re.compile("<id>(.*?)</id>", re.DOTALL)
+    re_updated = re.compile("<updated>(.*?)</updated>", re.DOTALL)
+    re_summary = re.compile("<synopsis>(.*?)</synopsis>", re.DOTALL)
+    re_categories = re.compile("<category.*?</short_name><text>(.*?)</text>", re.DOTALL)
+    re_thumbnail = re.compile("<my_image_base_url>(.*?)</my_image_base_url>", re.DOTALL)
     re_series = re.compile("<link rel=\"related\" href=\".*microsite.*title=\"(.*?)\" />", re.DOTALL)
 
     episode_exprs = [ re.compile("<link rel=\"self\" .*title=\".*pisode *([0-9]+)", re.DOTALL),
@@ -51,11 +51,14 @@ def parse(xmlSource):
     for entrySrc in entriesSrc:
         entry={}
         title   = re_title.findall(entrySrc)[0]
-        id      = re_id.findall(entrySrc)[0]
+        id      = re_id.findall(entrySrc)[-1]
         updated = re_updated.findall(entrySrc)[0]
-        summary = re_summary.findall(entrySrc)[0].splitlines()[-3]
+        summary = re_summary.findall(entrySrc)[0]
         categories = re_categories.findall(entrySrc)
         thumbnail = re_thumbnail.findall(entrySrc)[0]
+        thumbnail += id + "_640_360.jpg"
+
+
 
         series = re_series.findall(entrySrc)
         if len(series):
