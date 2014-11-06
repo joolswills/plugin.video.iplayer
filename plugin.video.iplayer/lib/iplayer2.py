@@ -1048,12 +1048,14 @@ class feed(object):
 
         xml = httpget(url)
 
+        # remove namespace
+        xml = re.sub(' xmlns="[^"]+"', '', xml, count=1)
+
         root = ET.fromstring(xml)
-        ns = {'ion': 'http://bbc.co.uk/2008/iplayer/ion'}
         categories = []
-        for category in root.findall('.//ion:child_categories/ion:category', ns): #category/child_categories/category
-            id = category.find('ion:id', ns).text
-            text = category.find('ion:text', ns).text
+        for category in root.iter('category'):
+            id = category.find('id').text
+            text = category.find('text').text
             categories.append([ text, id ])
 
         return categories
