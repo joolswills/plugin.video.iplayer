@@ -867,7 +867,7 @@ class feed(object):
             if self.tvradio:
               params += [ 'service_type', self.tvradio ]
         elif self.searchterm:
-            params = [ 'partner', 'searchextended' ]
+            params = [ 'search' ]
             if self.tvradio:
                 params += [ 'service_type', self.tvradio]
             params += [ 'q', urllib.quote_plus(self.searchterm) ]
