@@ -1,5 +1,8 @@
 Changes
 
+2.6.1
+  * shows beginning with a number were not displayed
+
 2.6.0
   * bump version number so people with the "broken" 2.5.91 get updated
   * changed category parsing to hopefully work with python older than 2.7
