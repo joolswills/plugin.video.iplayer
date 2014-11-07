@@ -70,8 +70,8 @@ def get_plugin_thumbnail(image):
     userpng = os.path.join(iplayer.get_thumb_dir(), image + '.png')
     if os.path.isfile(userpng):
         return userpng
-
-    return None
+    else:
+        return os.path.join(iplayer.get_thumb_dir(), 'bbc.png')
 
 def get_feed_thumbnail(feed):
     thumbfn = ''
