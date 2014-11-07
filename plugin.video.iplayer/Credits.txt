@@ -20,5 +20,9 @@ http://www.iconspedia.com/icon/settings-1036-.html
 ElementTree XML Parser by Fredrik Lundh
 http://effbot.org/zone/element-index.htm
 
+Latest Clock Icon
+http://www.iconsdb.com/white-icons/clock-icon.html
+CC License: https://creativecommons.org/licenses/by-nd/3.0/
+
 Additional thanks to:
 * Eddebaby - for contributing to the live tv code
