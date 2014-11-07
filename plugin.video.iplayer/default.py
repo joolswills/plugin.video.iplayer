@@ -170,7 +170,9 @@ def list_feeds(feeds, tvradio='tv', radio=None):
     for j, (label, tn, url) in enumerate(folders):
         listitem = xbmcgui.ListItem(label=label)
         listitem.setIconImage('defaultFolder.png')
-        listitem.setThumbnailImage(get_plugin_thumbnail(tn))
+        thumb = get_plugin_thumbnail(tn)
+        if thumb:
+            listitem.setThumbnailImage(thumb)
         listitem.setProperty('tracknumber', str(i + j))
         ok = xbmcplugin.addDirectoryItem(
             handle=__plugin_handle__,
