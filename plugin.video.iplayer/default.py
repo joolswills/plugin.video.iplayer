@@ -166,6 +166,7 @@ def list_feeds(feeds, tvradio='tv', radio=None):
 #        folders.append(('Watch Live', 'tv', make_url(listing='livefeeds', tvradio=tvradio)))
     if tvradio == 'tv' or radio == 'national':
         folders.append(('Popular', 'popular', make_url(listing='popular', tvradio=tvradio)))
+        folders.append(('Latest', 'latest', make_url(listing='latest', tvradio=tvradio)))
         folders.append(('Search', 'search', make_url(listing='searchlist', tvradio=tvradio)))
 
     total = len(folders) + len(feeds) + 1
@@ -568,6 +569,7 @@ def list_feed_listings(feed, listing, category=None, series=None, channels=None)
     d['list'] = feed.list
     d['popular'] = feed.popular
     d['highlights'] = feed.highlights
+    d['latest'] = feed.latest
     programmes = d[listing]()
 
     ## filter by series

@@ -844,36 +844,31 @@ class feed(object):
         <channel>/['list'|'popular'|'highlights']
         'categories'/<category>(/<subcategory>)(/['tv'/'radio'])/['list'|'popular'|'highlights']
         """
-        assert listing in ['list', 'popular', 'highlights'], "Unknown listing type"
+        assert listing in ['list', 'popular', 'highlights', 'latest'], "Unknown listing type"
 
         if listing == 'popular':
             params = [ 'mostpopular' ]
-            if self.tvradio:
-                params += [ 'service_type', self.tvradio ]
         if listing == 'highlights':
             params = [ 'featured' ]
-            if self.tvradio:
-                params += [ 'service_type', self.tvradio ]
+        if listing == 'latest':
+            params = [ 'latest' ]
+            params += [ 'limit', '20' ]
         if self.searchcategory:
             params = [ 'categorynav' ]
-            if self.tvradio:
-              params += [ 'service_type', self.tvradio ]
         elif self.category:
             params = [ 'listview' ]
             params += [ 'category', self.category ]
             if self.channel:
                 params += [ 'masterbrand', self.channel ]
-            if self.tvradio:
-              params += [ 'service_type', self.tvradio ]
         elif self.searchterm:
             params = [ 'search' ]
-            if self.tvradio:
-                params += [ 'service_type', self.tvradio]
             params += [ 'q', urllib.quote_plus(self.searchterm) ]
         elif self.channel:
             params = [ 'listview' ]
             params += [ 'masterbrand', self.channel]
 
+        if self.tvradio:
+            params += [ 'service_type', self.tvradio]
         params = params + [ 'format', 'xml' ]
         url = "http://www.bbc.co.uk/iplayer/ion/" + '/'.join(params)
         return url
@@ -1039,6 +1034,9 @@ class feed(object):
 
     def list(self):
         return self.read_rss(self.create_url('list'))
+
+    def latest(self):
+        return self.read_rss(self.create_url('latest'))
 
     def categories(self):
         # quick and dirty category extraction and count
