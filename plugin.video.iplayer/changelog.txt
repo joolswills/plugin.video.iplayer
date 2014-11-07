@@ -1,5 +1,12 @@
 Changes
 
+2.6.2
+  * added "latest" feeds for tv and radio
+  * moved radio "categories","popular","highlights" etc out of national
+    as they return data for all stations, not just national
+  * fixed up some non playingr local radio streams due to codec / bitrate changes
+  * added S4C channel
+
 2.6.1
   * shows beginning with a number were not displayed
 
