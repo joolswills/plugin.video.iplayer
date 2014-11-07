@@ -157,17 +157,12 @@ def list_feeds(feeds, tvradio='tv', radio=None):
     xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_TRACKNUM )
 
     folders = []
-    if tvradio == 'tv' or radio == 'national':
-        folders.append(('Categories', 'categories', make_url(listing='categories', tvradio=tvradio)))
-        folders.append(('Highlights', 'highlights', make_url(listing='highlights', tvradio=tvradio)))
+#    if tvradio == 'tv':
+#    folders.append(('Watch Live', 'tv', make_url(listing='livefeeds', tvradio=tvradio)))
+    if tvradio == 'tv':
+        add_featured_feeds(folders, tvradio)
     if tvradio == 'radio':
         folders.append(('Listen Live', 'listenlive', make_url(listing='livefeeds', tvradio=tvradio, radio=radio)))
-#    else:
-#        folders.append(('Watch Live', 'tv', make_url(listing='livefeeds', tvradio=tvradio)))
-    if tvradio == 'tv' or radio == 'national':
-        folders.append(('Popular', 'popular', make_url(listing='popular', tvradio=tvradio)))
-        folders.append(('Latest', 'latest', make_url(listing='latest', tvradio=tvradio)))
-        folders.append(('Search', 'search', make_url(listing='searchlist', tvradio=tvradio)))
 
     total = len(folders) + len(feeds) + 1
 
@@ -199,6 +194,12 @@ def list_feeds(feeds, tvradio='tv', radio=None):
         )
     xbmcplugin.endOfDirectory(handle=__plugin_handle__, succeeded=True)
 
+def add_featured_feeds(folders, tvradio):
+    folders.append(('Categories', 'categories', make_url(listing='categories', tvradio=tvradio)))
+    folders.append(('Highlights', 'highlights', make_url(listing='highlights', tvradio=tvradio)))
+    folders.append(('Popular', 'popular', make_url(listing='popular', tvradio=tvradio)))
+    folders.append(('Latest', 'latest', make_url(listing='latest', tvradio=tvradio)))
+    folders.append(('Search', 'search', make_url(listing='searchlist', tvradio=tvradio)))
 
 def list_live_feeds(feeds, tvradio='tv'):
     #print 'list_live_feeds %s' % feeds
@@ -281,6 +282,7 @@ def list_radio_types():
     xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_TRACKNUM)
 
     folders = []
+    add_featured_feeds(folders, 'radio')
     folders.append(('National Radio Stations', 'national', make_url(tvradio='radio',radio='national')))
     folders.append(('Regional Radio Stations', 'regional', make_url(tvradio='radio',radio='regional')))
     folders.append(('Local Radio Stations',    'local',    make_url(tvradio='radio',radio='local')))
