@@ -277,7 +277,7 @@ def get_setting_audiostream():
     elif stream_prefs == '3':
         # Live feeds have a wma+asx application type
         # In this case the wma9 type is not available, and the plugin should default over to wma+asx
-        stream = 'wma9'
+        stream = 'wma9 96'
     elif stream_prefs == '4':
         # As above, live feeds only have a 32Kb AAC stream, which should be defaulted to after trying 48 bit
         stream = 'aac48'
@@ -298,12 +298,13 @@ class media(object):
         ('video', 'video/x-flv', 'vp6', 'rtmp', 512)   : 'flashmed',
         ('video', 'video/x-flv', 'spark', 'rtmp', 800) : 'flashwii',
         ('video', 'video/mpeg', 'h264', 'http', 184)   : 'mobile',
-        ('audio', 'audio/mpeg', 'mp3', 'rtmp', None)   : 'mp3',
+        ('audio', 'audio/mpeg', 'mp3', 'rtmp', 80)     : 'mp3 80',
         ('audio', 'audio/mp4',  'aac', 'rtmp', None)   : 'aac',
         ('audio', 'audio/wma',  'wma', 'http', None)   : 'wma',
         ('audio', 'audio/mp4', 'aac', 'rtmp', 320)     : 'aac320',
         ('audio', 'audio/mp4', 'aac', 'rtmp', 128)     : 'aac128',
-        ('audio', 'audio/wma', 'wma9', 'http', 128)    : 'wma9',
+        ('audio', 'audio/wma', 'wma9', 'http', 96)     : 'wma9 96',
+        ('audio', 'audio/wma', 'wma9', 'http', 48)     : 'wma9 48',
         ('audio', 'audio/x-ms-asf', 'wma', 'http', 128) : 'wma+asx',
         ('audio', 'audio/mp4', 'aac', 'rtmp', 48)      : 'aac48',
         ('audio', 'audio/mp4', 'aac', 'rtmp', 32)      : 'aac32',
@@ -511,7 +512,7 @@ class item(object):
             streams = ['h264 2800', 'h264 1520', 'h264 1500', 'h264 820', 'h264 800', 'h264 480', 'h264 400']
             rate = get_setting_videostream()
         else:
-            streams = ['aac320', 'aac128', 'wma9', 'wma+asx', 'aac48', 'aac32']
+            streams = ['aac320', 'aac128', 'wma9 96', 'mp3 80', 'wma+asx', 'aac48', 'wma9 48', 'aac32' ]
             rate = get_setting_audiostream()
 
         provider = get_provider()
