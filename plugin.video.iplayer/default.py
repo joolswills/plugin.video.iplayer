@@ -811,7 +811,7 @@ def watch(feed, pid, resume=False):
     if len(media_list) == 0:
         # Nothing usable was found
         d = xbmcgui.Dialog()
-        d.ok('Stream Error', 'Can\'t locate any usable TV streams.')
+        d.ok('Stream Error', 'Can\'t locate any usable streams.')
         return False
 
     for media in media_list:
