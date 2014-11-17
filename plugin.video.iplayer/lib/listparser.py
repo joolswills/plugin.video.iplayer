@@ -40,7 +40,7 @@ def parse(xmlSource):
     re_id = re.compile("<id>(.*?)</id>", re.DOTALL)
     re_updated = re.compile("<updated>(.*?)</updated>", re.DOTALL)
     re_summary = re.compile("<synopsis>(.*?)</synopsis>", re.DOTALL)
-    re_categories = re.compile("<category.*?</short_name><text>(.*?)</text>", re.DOTALL)
+    re_categories = re.compile("<category.*?<short_name>(.*?)</short_name>.*?</category>", re.DOTALL)
     re_thumbnail = re.compile("<my_image_base_url>(.*?)</my_image_base_url>", re.DOTALL)
     re_series = re.compile("<link rel=\"related\" href=\".*microsite.*title=\"(.*?)\" />", re.DOTALL)
 
