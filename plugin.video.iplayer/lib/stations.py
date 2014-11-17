@@ -17,6 +17,18 @@ channels_tv_list = [
     ('s4cpbs', 'S4C'),
 ]
 
+channels_tv_live_mapping = {
+    'bbc_one': 'bbc_one_hd',
+    'bbc_two': 'bbc_two_hd',
+    'bbc_three': 'bbc_three_hd',
+    'bbc_four': 'bbc4',
+    'cbbc': 'cbbc',
+    'cbeebies': 'cbeebies',
+    'bbc_news24': 'news_ch',
+    'bbc_parliament': 'parliament',
+    'bbc_alba': 'alba',
+}
+
 radio_station_info = [
     {'id': 'bbc_radio_one',
      'name': 'Radio 1',

@@ -256,6 +256,41 @@ def get_setting_videostream():
 
     utils.log("Video stream prefs %s - %s" % (stream_prefs, stream),xbmc.LOGINFO)
     return stream
+    
+def get_setting_videostream_live():
+
+    stream = '3628'
+
+    stream_prefs = '0'
+    try:
+        stream_prefs = __addon__.getSetting('video_stream_live')
+    except:
+        pass
+
+    if stream_prefs == '0':
+        environment = os.environ.get( "OS" )
+        if environment == 'xbox':
+            stream = '923'
+        else:
+            # play full HD if the screen is large enough (not all programmes have this resolution)
+            Y = int(xbmc.getInfoLabel('System.ScreenHeight'))
+            X = int(xbmc.getInfoLabel('System.ScreenWidth'))
+            # if the screen is large enough for HD
+            if Y > 832 and X > 468:
+                stream = '3628'
+    elif stream_prefs == '1':
+        stream = '345'
+    elif stream_prefs == '2':
+        stream = '501'
+    elif stream_prefs == '3':
+        stream = '923'
+    elif stream_prefs == '4':
+        stream = '1470'
+    elif stream_prefs == '5':
+        stream = '2128'
+
+    utils.log("Video stream prefs %s - %s" % (stream_prefs, stream), xbmc.LOGINFO)
+    return stream
 
 def get_setting_audiostream():
     stream = 'Auto'
@@ -317,7 +352,11 @@ class media(object):
         self.method    = None
         self.width, self.height = None, None
         self.bitrate   = None
-        self.read_media_node(media_node, connection)
+        self.mimetype  = None
+        self.encoding  = None
+        self.connection_protocol = None
+        if not item.is_live:
+            self.read_media_node(media_node, connection)
 
     @staticmethod
     def create_from_media_xml(item, xml):
@@ -329,16 +368,7 @@ class media(object):
 
     @property
     def url(self):
-        # no longer used. will remove later
-        if self.connection_method == 'resolve':
-            utils.log("Resolving URL %s" % self.connection_href,xbmc.LOGINFO)
-            page = urllib2.urlopen(self.connection_href)
-            page.close()
-            url = page.geturl()
-            utils.log("URL resolved to %s" % url,xbmc.LOGINFO)
-            return page.geturl()
-        else:
-            return self.connection_href
+        return self.connection_href
 
     @property
     def application(self):
@@ -537,6 +567,29 @@ class item(object):
         utils.log("Available streams by preference: %s" % (["%s %s" % (m.connection_kind, m.application) for m in media]),xbmc.LOGINFO)
 
         return (media, above_limit)
+
+    def get_available_streams_live(self):
+        url = "http://www.bbc.co.uk/mediaselector/playlists/hds/pc/ak/%s.f4m" % stations.channels_tv_live_mapping[self.programme.pid]
+        
+        rate = get_setting_videostream_live()
+
+        xml = httpget(url)
+
+        # remove namespace
+        xml = re.sub(' xmlns="[^"]+"', '', xml, count=1)
+
+        root = ET.fromstring(xml)
+        medias = []
+        for media_node in root.getiterator('media'):
+            if int(media_node.attrib['bitrate']) <= int(rate):
+                live_media = media(self, None, media_node.attrib['bitrate'])
+                live_media.connection_href = media_node.attrib['href'].replace('.f4m', '.m3u8')
+                live_media.connection_type = "hls"
+                live_media.connection_kind = "http"
+                medias.append(live_media)
+
+        medias.reverse()
+        return [ medias, False ]
 
     def mediaselector_url(self, suffix):
         if suffix == None:
@@ -810,7 +863,7 @@ class programme_simple(object):
 
 
 class feed(object):
-    def __init__(self, tvradio=None, channel=None, category=None, searchcategory=None, atoz=None, searchterm=None, radio=None):
+    def __init__(self, tvradio=None, channel=None, category=None, searchcategory=None, atoz=None, searchterm=None, radio=None, live=False):
         """
         Creates a feed for the specified channel/category/whatever.
         tvradio: type of channel - 'tv' or 'radio'. If a known channel is specified, use 'auto'.
@@ -839,6 +892,7 @@ class feed(object):
         self.atoz = atoz
         self.searchterm = searchterm
         self.radio = radio
+        self.live = live
 
     def create_url(self, listing):
         """
@@ -934,7 +988,14 @@ class feed(object):
             utils.log("%s doesn\'t have any channels!" % self.channel,xbmc.LOGSEVERE)
             return None
         if self.tvradio == 'tv':
-            return [feed('tv', channel=ch) for (ch, title) in stations.channels_tv_list]
+            if self.live:
+                channels = []
+                for (ch, title) in stations.channels_tv_list:
+                    if ch in stations.channels_tv_live_mapping:
+                        channels.append(feed('tv', channel=ch))
+                return channels
+            else:
+                return [feed('tv', channel=ch) for (ch, title) in stations.channels_tv_list]
         if self.tvradio == 'radio':
             if self.radio:
                 return [feed('radio', channel=ch) for (ch, title) in stations.channels_radio_type_list[self.radio]]
