@@ -1050,7 +1050,7 @@ class feed(object):
 
         root = ET.fromstring(xml)
         categories = []
-        for category in root.iter('category'):
+        for category in root.getiterator('category'):
             id = category.find('id').text
             text = category.find('text').text
             categories.append([ text, id ])
