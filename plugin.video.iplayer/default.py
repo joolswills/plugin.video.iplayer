@@ -157,8 +157,8 @@ def list_feeds(feeds, tvradio='tv', radio=None):
     xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_TRACKNUM )
 
     folders = []
-#    if tvradio == 'tv':
-#    folders.append(('Watch Live', 'tv', make_url(listing='livefeeds', tvradio=tvradio)))
+    if tvradio == 'tv':
+        folders.append(('Watch Live', 'tv', make_url(listing='livefeeds', tvradio=tvradio)))
     if tvradio == 'tv':
         add_featured_feeds(folders, tvradio)
     if tvradio == 'radio':
@@ -215,8 +215,6 @@ def list_live_feeds(feeds, tvradio='tv'):
 
         try: utils.log('Processing feed %s' % str(f.name),xbmc.LOGINFO)
         except: continue
-
-        if f.channel == 'bbc_hd': continue
 
         # === Set up the XBMC ListItem
         listitem = xbmcgui.ListItem(label=f.name)
@@ -811,8 +809,11 @@ def watch(feed, pid, resume=False):
         except:
             pass
 
-    (media_list, above_limit) = item.get_available_streams()
-
+    if item.is_live:
+        (media_list, above_limit) = item.get_available_streams_live()
+    else:
+        (media_list, above_limit) = item.get_available_streams()
+        
     if len(media_list) == 0:
         # Nothing usable was found
         d = xbmcgui.Dialog()
@@ -886,7 +887,7 @@ def watch(feed, pid, resume=False):
             listitem.setThumbnailImage(thumbfile)
             times.append(['listitem.setThumbnailImage(thumbfile)',time.clock()])
 
-        if url.startswith( 'rtmp://' ):
+        if url.startswith( 'rtmp://' ) or media.connection_type == "hls":
             core_player = xbmc.PLAYER_CORE_DVDPLAYER
         else:
             core_player = xbmc.PLAYER_CORE_AUTO
@@ -1023,7 +1024,7 @@ if __name__ == "__main__":
             search(tvradio or 'tv', label)
         elif listing == 'livefeeds':
             tvradio = tvradio or 'tv'
-            channels = iplayer.feed(tvradio or 'tv', radio=radio).channels_feed()
+            channels = iplayer.feed(tvradio or 'tv', radio=radio, live=True).channels_feed()
             list_live_feeds(channels, tvradio)
         elif listing == 'list' and not series and not category:
             feed = feed or iplayer.feed(tvradio or 'tv', category=category, radio=radio)
