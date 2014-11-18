@@ -1,5 +1,10 @@
 Changes
 
+2.6.5
+  * genre missing from programme information - thanks to blaise
+  * live streaming are working again. Thanks to dlake for the hints
+  * use getiterator for backward compatibility with old python/elementtree - thanks to streetsy
+
 2.6.3
   * added fallback icon for channels that miss one
   * added icon for latest
