@@ -584,8 +584,7 @@ class item(object):
             if int(media_node.attrib['bitrate']) <= int(rate):
                 live_media = media(self, None, media_node.attrib['bitrate'])
                 live_media.connection_href = media_node.attrib['href'].replace('.f4m', '.m3u8')
-                live_media.connection_type = "hls"
-                live_media.connection_kind = "http"
+                live_media.connection_kind = "hls"
                 medias.append(live_media)
 
         medias.reverse()

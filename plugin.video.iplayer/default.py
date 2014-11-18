@@ -887,7 +887,7 @@ def watch(feed, pid, resume=False):
             listitem.setThumbnailImage(thumbfile)
             times.append(['listitem.setThumbnailImage(thumbfile)',time.clock()])
 
-        if url.startswith( 'rtmp://' ) or media.connection_type == "hls":
+        if url.startswith( 'rtmp://' ) or media.connection_kind == "hls":
             core_player = xbmc.PLAYER_CORE_DVDPLAYER
         else:
             core_player = xbmc.PLAYER_CORE_AUTO
