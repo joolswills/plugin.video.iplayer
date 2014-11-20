@@ -1406,9 +1406,9 @@ class IPlayer(xbmc.Player):
         finally:
              resume_fh.close()
 
-    def resume_and_play( self, listitem, is_tv, playresume=False ):
+    def resume_and_play( self, listitem, playresume=False ):
         """
-        Intended to replace xbmc.Player.play(playlist), this method begins playback and seeks to any recorded resume point.
+        This method begins playback and seeks to any recorded resume point.
         XBMC is muted during seeking, as there is often a pause before seeking begins.
         """
 

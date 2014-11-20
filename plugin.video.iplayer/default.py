@@ -898,7 +898,7 @@ def watch(feed, pid, resume=False):
         times.append(['xbmc.Player()',time.clock()])
 
         listitem.setPath(path = url)
-        player.resume_and_play(listitem, item.is_tv, resume)
+        player.resume_and_play(listitem, resume)
 
         # Successfully started playing something?
         if player.isPlaying():
