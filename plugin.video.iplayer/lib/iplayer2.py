@@ -8,7 +8,7 @@ import traceback
 from socket import timeout as SocketTimeoutError
 
 # XBMC libs
-import xbmc, xbmcgui
+import xbmc, xbmcgui, xbmcplugin
 
 # external libs
 import listparser
@@ -32,6 +32,7 @@ import httplib2
 import utils
 __addoninfo__ = utils.get_addoninfo()
 __addon__ = __addoninfo__["addon"]
+__plugin_handle__ = utils.__plugin_handle__
 
 sys.path.append(os.path.join(__addoninfo__["path"], 'lib', 'httplib2'))
 import socks
@@ -1157,8 +1158,8 @@ class IPlayer(xbmc.Player):
     resume = None
     dates_added = None
 
-    def __init__( self, core_player, pid, live ):
-        utils.log("IPlayer initialised (core_player: %d, pid: %s, live: %s)" % (core_player, pid, live),xbmc.LOGINFO)
+    def __init__( self, pid, live ):
+        utils.log("IPlayer initialised (pid: %s, live: %s)" % (pid, live),xbmc.LOGINFO)
         self.paused = False
         self.live = live
         self.pid = pid
@@ -1405,7 +1406,7 @@ class IPlayer(xbmc.Player):
         finally:
              resume_fh.close()
 
-    def resume_and_play( self, url, listitem, is_tv, playresume=False ):
+    def resume_and_play( self, listitem, is_tv, playresume=False ):
         """
         Intended to replace xbmc.Player.play(playlist), this method begins playback and seeks to any recorded resume point.
         XBMC is muted during seeking, as there is often a pause before seeking begins.
@@ -1418,14 +1419,7 @@ class IPlayer(xbmc.Player):
                 self.has_resume_point = True
                 listitem.setProperty('StartOffset', '%d' % resume[self.pid])
 
-        if is_tv:
-            play = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
-        else:
-            play = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
-        play.clear()
-        play.add(url, listitem)
-
-        self.play(play)
+        xbmcplugin.setResolvedUrl(__plugin_handle__, succeeded = True, listitem = listitem)
 
 tv = feed('tv')
 radio = feed('radio')

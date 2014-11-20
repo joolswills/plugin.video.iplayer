@@ -221,6 +221,8 @@ def list_live_feeds(feeds, tvradio='tv'):
 
         listitem.setIconImage(get_feed_thumbnail(f))
         listitem.setThumbnailImage(get_feed_thumbnail(f))
+        listitem.setProperty('IsPlayable','true')
+        listitem.setInfo('video', {'title': f.name} )
         if tvradio == 'radio':
             listitem.setProperty('tracknumber', str(i + j))
 
@@ -366,6 +368,7 @@ def add_programme(feed, programme, totalItems=None, tracknumber=None, thumbnail_
         "Date": date,
     })
     listitem.setProperty('Title', str(title))
+    listitem.setProperty('IsPlayable','true')
     if tracknumber: listitem.setProperty('tracknumber', str(tracknumber))
 
     #print "Getting URL for %s ..." % (programme.title)
@@ -813,7 +816,7 @@ def watch(feed, pid, resume=False):
         (media_list, above_limit) = item.get_available_streams_live()
     else:
         (media_list, above_limit) = item.get_available_streams()
-        
+
     if len(media_list) == 0:
         # Nothing usable was found
         d = xbmcgui.Dialog()
@@ -822,6 +825,8 @@ def watch(feed, pid, resume=False):
 
     for media in media_list:
         player = None
+        listitem = xbmcgui.ListItem(label=title)
+        times.append(['create listitem',time.clock()])
         if item.is_tv:
             # TV Stream
             iconimage = 'DefaultVideo.png'
@@ -844,8 +849,6 @@ def watch(feed, pid, resume=False):
                     subtitles_file = download_subtitles(subtitles_media[0].url)
                     times.append(['subtitles download',time.clock()])
 
-            listitem = xbmcgui.ListItem(title)
-            times.append(['create listitem',time.clock()])
             if not item.live:
                 listitem.setInfo('video', {
                                            "TVShowTitle": title,
@@ -869,8 +872,6 @@ def watch(feed, pid, resume=False):
 
             utils.log('Listening to url=%s' % url,xbmc.LOGINFO)
 
-            listitem = xbmcgui.ListItem(label=title)
-            times.append(['listitem create',time.clock()])
             listitem.setIconImage('defaultAudio.png')
             times.append(['listitem.setIconImage',time.clock()])
             play=xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
@@ -887,20 +888,17 @@ def watch(feed, pid, resume=False):
             listitem.setThumbnailImage(thumbfile)
             times.append(['listitem.setThumbnailImage(thumbfile)',time.clock()])
 
-        if url.startswith( 'rtmp://' ) or media.connection_kind == "hls":
-            core_player = xbmc.PLAYER_CORE_DVDPLAYER
-        else:
-            core_player = xbmc.PLAYER_CORE_AUTO
-
         try:
-            player = iplayer.IPlayer(core_player, pid=pid, live=item.is_live)
+            player = iplayer.IPlayer(pid=pid, live=item.is_live)
         except iplayer.IPlayerLockException:
             exception_dialog = xbmcgui.Dialog()
             exception_dialog.ok("Stream Already Playing", "Unable to open stream", " - To continue, stop all other streams (try pressing 'x')[CR] - If you are sure there are no other streams [CR]playing, remove the resume lock (check addon settings -> advanced)")
             return
 
         times.append(['xbmc.Player()',time.clock()])
-        player.resume_and_play(url, listitem, item.is_tv, resume)
+
+        listitem.setPath(path = url)
+        player.resume_and_play(listitem, item.is_tv, resume)
 
         # Successfully started playing something?
         if player.isPlaying():
