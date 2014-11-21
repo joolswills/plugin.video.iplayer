@@ -1,5 +1,10 @@
 Changes
 
+2.6.6
+  * use SetResolvedUrl for playback - fixes playback from information window
+    and will allow easier calling from other plugins / web service etc
+  * various code cleanups / fixes
+
 2.6.5
   * genre missing from programme information - thanks to blaise
   * live streaming are working again. Thanks to dlake for the hints
