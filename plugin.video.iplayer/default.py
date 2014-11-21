@@ -803,7 +803,7 @@ def watch(feed, pid, resume=False):
         except:
             pass
 
-    if item.is_live:
+    if item.is_tv and item.is_live:
         (media_list, above_limit) = item.get_available_streams_live()
     else:
         (media_list, above_limit) = item.get_available_streams()
