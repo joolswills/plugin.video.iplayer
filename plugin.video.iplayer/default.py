@@ -898,7 +898,10 @@ def watch(feed, pid, resume=False):
         times.append(['xbmc.Player()',time.clock()])
 
         listitem.setPath(path = url)
-        player.resume_and_play(listitem, resume)
+        if playresume:
+            IPlayer.set_start_offset(listitem, resume)
+
+        xbmcplugin.setResolvedUrl(__plugin_handle__, succeeded = True, listitem = listitem)
 
         # Successfully started playing something?
         if player.isPlaying():

@@ -8,7 +8,7 @@ import traceback
 from socket import timeout as SocketTimeoutError
 
 # XBMC libs
-import xbmc, xbmcgui, xbmcplugin
+import xbmc, xbmcgui
 
 # external libs
 import listparser
@@ -1157,6 +1157,7 @@ class IPlayer(xbmc.Player):
 
     resume = None
     dates_added = None
+    heartbeat = None
 
     def __init__( self, pid, live ):
         utils.log("IPlayer initialised (pid: %s, live: %s)" % (pid, live),xbmc.LOGINFO)
@@ -1406,20 +1407,17 @@ class IPlayer(xbmc.Player):
         finally:
              resume_fh.close()
 
-    def resume_and_play( self, listitem, playresume=False ):
+    def set_start_offset( self, listitem ):
         """
-        This method begins playback and seeks to any recorded resume point.
-        XBMC is muted during seeking, as there is often a pause before seeking begins.
+        This method sets the start offset for the listitem to be played if one was saved previously
         """
 
-        if os.environ.get( "OS" ) != "xbox" and not self.live and playresume:
+        if not self.live:
             resume, dates_added = IPlayer.load_resume_file()
             if self.pid in resume.keys():
                 utils.log("Resume point found for pid %s at %f, seeking..." % (self.pid, resume[self.pid]),xbmc.LOGNOTICE)
                 self.has_resume_point = True
                 listitem.setProperty('StartOffset', '%d' % resume[self.pid])
-
-        xbmcplugin.setResolvedUrl(__plugin_handle__, succeeded = True, listitem = listitem)
 
 tv = feed('tv')
 radio = feed('radio')
