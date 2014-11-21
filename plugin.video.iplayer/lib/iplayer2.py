@@ -1207,19 +1207,20 @@ class IPlayer(xbmc.Player):
 
     def _release_lock( self ):
         self_has_lock = False
-        lock_fh = open(IPlayer.RESUME_LOCK_FILE)
-        try:
-            self_has_lock = (lock_fh.read() == "%s" % self)
-        finally:
-            lock_fh.close()
-
-        utils.log("Lock owner test: %s" % self_has_lock,xbmc.LOGDEBUG)
-        if self_has_lock:
-            utils.log("Removing lock file.",xbmc.LOGINFO)
+        if os.path.isfile(IPlayer.RESUME_LOCK_FILE):
+            lock_fh = open(IPlayer.RESUME_LOCK_FILE)
             try:
-                os.remove(IPlayer.RESUME_LOCK_FILE)
-            except Exception, e:
-                utils.log("Error removing iPlayer resume lock file! (%s)" % e,xbmc.LOGSEVERE)
+                self_has_lock = (lock_fh.read() == "%s" % self)
+            finally:
+                lock_fh.close()
+
+            utils.log("Lock owner test: %s" % self_has_lock,xbmc.LOGDEBUG)
+            if self_has_lock:
+                utils.log("Removing lock file.",xbmc.LOGINFO)
+                try:
+                    os.remove(IPlayer.RESUME_LOCK_FILE)
+                except Exception, e:
+                    utils.log("Error removing iPlayer resume lock file! (%s)" % e,xbmc.LOGSEVERE)
 
     @staticmethod
     def force_release_lock():
