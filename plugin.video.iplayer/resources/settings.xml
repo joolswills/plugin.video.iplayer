@@ -26,7 +26,7 @@
   <!-- Advanced -->
   <category label="30400">
     <setting id="http_cache_disable" label="30405" type="bool" default="false" />
-    <setting id="socket_timeout" label="30410" type="number" default="20" />
+    <setting id="socket_timeout" label="30410" type="number" default="60" />
     <setting id="stream_timeout" label="30420" type="number" default="60" />
     <setting id="enhanceddebug" label="30440" type="bool" default="false" />
     <setting id="resume_days_to_keep" label="30450" type="number" default="40" />
