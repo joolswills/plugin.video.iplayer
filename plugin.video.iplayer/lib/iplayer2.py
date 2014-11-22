@@ -1249,7 +1249,7 @@ class IPlayer(xbmc.Player):
         """
         if self.isPlaying()
             utils.log("Heartbeat %d" % time.time(),xbmc.LOGDEBUG)
-            self.heartbeat = threading.Timer(1.0, self.run_heartbeat)
+            self.heartbeat = threading.Timer(5.0, self.run_heartbeat)
             self.heartbeat.setDaemon(True)
             self.heartbeat.start()
             if not self.live and not self.cancelled.is_set():
