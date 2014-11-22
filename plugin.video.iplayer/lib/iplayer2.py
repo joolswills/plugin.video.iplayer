@@ -1247,16 +1247,17 @@ class IPlayer(xbmc.Player):
         Method is run every second to perform housekeeping tasks, e.g. updating the current seek time of the player.
         Heartbeat will continue until player stops playing.
         """
-        utils.log("Heartbeat %d" % time.time(),xbmc.LOGDEBUG)
-        self.heartbeat = threading.Timer(1.0, self.run_heartbeat)
-        self.heartbeat.setDaemon(True)
-        self.heartbeat.start()
-        if not self.live and not self.cancelled.is_set():
-            if not self.duration: self.duration = self.getTotalTime()
-            self.current_seek_time = self.getTime()
-            utils.log("current_seek_time %s" % self.current_seek_time,xbmc.LOGDEBUG)
-        elif self.cancelled.is_set():
-            self.onPlayBackEnded()
+        if self.isPlaying()
+            utils.log("Heartbeat %d" % time.time(),xbmc.LOGDEBUG)
+            self.heartbeat = threading.Timer(1.0, self.run_heartbeat)
+            self.heartbeat.setDaemon(True)
+            self.heartbeat.start()
+            if not self.live and not self.cancelled.is_set():
+                if not self.duration: self.duration = self.getTotalTime()
+                self.current_seek_time = self.getTime()
+                utils.log("current_seek_time %s" % self.current_seek_time,xbmc.LOGDEBUG)
+            elif self.cancelled.is_set():
+                self.onPlayBackEnded()
 
     def onPlayBackStarted( self ):
         # Will be called when xbmc starts playing the stream
