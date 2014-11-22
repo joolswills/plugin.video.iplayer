@@ -735,36 +735,6 @@ def download_subtitles(url):
     fw.close()
     return outfile
 
-# To be removed
-def get_matching_stream(item, pref, streams):
-    """
-    tries to return a media object for requested stream,
-    falling back on a lower stream if requested one is not available. if there are no lower ones, it will
-    return the first stream it finds.
-    """
-    media = item.get_media_for(pref)
-
-    for i, stream in enumerate(streams):
-        if pref == stream:
-            break
-
-    while not media and i < len(streams)-1:
-        i += 1
-        utils.log('Stream %s not available, falling back to %s stream' % (pref, streams[i]),xbmc.LOGINFO)
-        pref = streams[i]
-        media = item.get_media_for(pref)
-
-    # problem - no media found for default or lower
-    if not media:
-        # find the first available stream in reverse order
-        for apref in reversed(streams):
-            media = item.get_media_for(apref)
-            if media:
-                pref=apref
-                break
-
-    return (media, pref)
-
 def watch(feed, pid, resume=False):
 
     subtitles_file = None
