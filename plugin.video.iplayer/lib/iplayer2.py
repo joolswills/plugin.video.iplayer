@@ -655,7 +655,12 @@ class programme(object):
         utils.log('Found programme: %s' % tree.find('title').text,xbmc.LOGINFO)
         self.meta['title'] = tree.find('title').text
         self.meta['summary'] = tree.find('summary').text
-        self.meta['thumbnail'] = re.findall("<link rel=\"holding\" href=\"(.*?)\".*?/>", xmlstr, re.DOTALL)[0]
+
+        for link in tree.findall('link'):
+            if link.attrib['rel'] == 'holding':
+                self.meta['thumbnail'] = link.attrib['href']
+                break
+
         # Live radio feeds have no text node in the summary node
         if self.meta['summary'] is not None:
             self.meta['summary'].lstrip(' ')
