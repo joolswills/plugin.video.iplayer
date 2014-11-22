@@ -62,8 +62,6 @@ rss_cache = {}
 self_closing_tags = ['alternate', 'mediator']
 
 re_selfclose = re.compile('<([a-zA-Z0-9]+)( ?.*)/>', re.M | re.S)
-#re_pips = re.compile('PIPS:([0-9a-z]{8})')
-re_pips = re.compile('([0-9a-z]{8})')
 re_concept_id = re.compile('concept_pid:([a-z0-9]{8})')
 
 def get_proxy():
@@ -167,12 +165,6 @@ def httpget(url):
         utils.log('Network Error. Failed to fetch URL %s' % url,xbmc.LOGINFO)
 
     return data
-
-def parse_entry_id(entry_id):
-    # tag:bbc.co.uk,2008:PIPS:b00808sc
-    matches = re_pips.findall(entry_id)
-    if not matches: return None
-    return matches[0]
 
 def get_provider():
     provider = None
@@ -880,6 +872,7 @@ class feed(object):
             self.tvradio = tvradio
         else:
             self.tvradio = None
+        self.format = 'xml'
         self.channel = channel
         self.category = category
         self.searchcategory = searchcategory
@@ -918,7 +911,7 @@ class feed(object):
 
         if self.tvradio:
             params += [ 'service_type', self.tvradio]
-        params = params + [ 'format', 'xml' ]
+        params = params + [ 'format', self.format ]
         url = "http://www.bbc.co.uk/iplayer/ion/" + '/'.join(params)
         return url
 
@@ -1064,22 +1057,20 @@ class feed(object):
 
     @classmethod
     def read_rss(self, url):
-        utils.log('Read RSS: %s' % url,xbmc.LOGINFO)
+        utils.log('Read File: %s' % url,xbmc.LOGINFO)
         if url not in rss_cache:
-            utils.log('Feed URL not in cache, requesting...',xbmc.LOGINFO)
+            utils.log('File not in cache, requesting...',xbmc.LOGINFO)
             xml = httpget(url)
-            # utils.log("Received xml: %s" % xml,xbmc.LOGDEBUG)
             progs = listparser.parse(xml)
             if not progs: return []
             d = []
             for entry in progs.entries:
-                pid = parse_entry_id(entry.id)
-                p = programme_simple(pid, entry)
+                p = programme_simple(entry.id, entry)
                 d.append(p)
             utils.log('Found %d entries' % len(d),xbmc.LOGINFO)
             rss_cache[url] = d
         else:
-            utils.log('RSS found in cache',xbmc.LOGINFO)
+            utils.log('File found in cache',xbmc.LOGINFO)
         return rss_cache[url]
 
     def popular(self):
