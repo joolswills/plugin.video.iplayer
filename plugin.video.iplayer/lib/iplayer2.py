@@ -1247,7 +1247,7 @@ class IPlayer(xbmc.Player):
         Method is run every second to perform housekeeping tasks, e.g. updating the current seek time of the player.
         Heartbeat will continue until player stops playing.
         """
-        if self.isPlaying()
+        if self.isPlaying():
             utils.log("Heartbeat %d" % time.time(),xbmc.LOGDEBUG)
             self.heartbeat = threading.Timer(5.0, self.run_heartbeat)
             self.heartbeat.setDaemon(True)
