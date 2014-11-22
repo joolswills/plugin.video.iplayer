@@ -917,7 +917,7 @@ class feed(object):
 
         if self.tvradio:
             params += [ 'service_type', self.tvradio]
-        params = params + [ 'block_type', 'episodes' ]
+        params = params + [ 'block_type', 'episode' ]
         params = params + [ 'format', self.format ]
         url = "http://www.bbc.co.uk/iplayer/ion/" + '/'.join(params)
         return url
