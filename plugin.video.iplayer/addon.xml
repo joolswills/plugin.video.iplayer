@@ -2,7 +2,7 @@
 <addon
     id="plugin.video.iplayer"
     name="iPlayer"
-    version="2.6.6"
+    version="2.6.7"
     provider-name="Alastair, BuZz, Dink, dlake02">
     <requires>
         <import addon="xbmc.python" version="2.1.0"/>

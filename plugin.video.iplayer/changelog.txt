@@ -1,5 +1,14 @@
 Changes
 
+2.6.7
+  * support for mediaselector v5 (and settings to fallback to 4)
+  * fixed live radio
+  * new elementtree based listparser to replace horrible regexp hackery
+  * fixed radio shows missing summary info
+  * include aired / episode number for episodes
+  * drop script.module.elementtree dependency and python 2.4 support
+  * various code cleanups / fixes
+
 2.6.6
   * use SetResolvedUrl for playback - fixes playback from information window
     and will allow easier calling from other plugins / web service etc
