@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import os, sys
+import os, sys, re
 import xbmc, xbmcaddon
 
 __addonid__ = "plugin.video.iplayer"
@@ -36,3 +36,8 @@ def log(message,loglevel=xbmc.LOGNOTICE):
 
 def encode(string):
     return string.encode('UTF-8','replace')
+
+def xml_strip_namespace(xml):
+    # remove namespace
+    xml = re.sub(' xmlns="[^"]+"', '', xml, count = 1)
+    return xml

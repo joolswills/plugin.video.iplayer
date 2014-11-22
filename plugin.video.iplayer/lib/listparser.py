@@ -2,7 +2,7 @@
 # Provides a simple and very quick way to parse list feeds
 #
 
-import re
+import re, utils
 from xml.etree import ElementTree as ET
 
 class listentry(object):
@@ -24,8 +24,7 @@ def parse(xml):
     
     datematch = re.compile(':\s+([0-9]+)/([0-9]+)/([0-9]{4})')
 
-    # remove namespace
-    xml = re.sub(' xmlns="[^"]+"', '', xml, count=1)
+    xml = utils.xml_strip_namespace(xml)
 
     try:
         root = ET.fromstring(xml)

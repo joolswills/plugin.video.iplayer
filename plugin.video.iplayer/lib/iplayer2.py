@@ -168,12 +168,6 @@ def httpget(url):
 
     return data
 
-# ElementTree addes {namespace} as a prefix for each element tag
-# This function removes these prefixes
-def xml_strip_namespace(tree):
-    for elem in tree.getiterator():
-        elem.tag = elem.tag.split('}')[1]
-
 def parse_entry_id(entry_id):
     # tag:bbc.co.uk,2008:PIPS:b00808sc
     matches = re_pips.findall(entry_id)
@@ -604,8 +598,8 @@ class item(object):
             url = self.mediaselector_url()
             utils.log("Stream XML URL: %s" % url,xbmc.LOGINFO)
             xml = httpget(url)
+            xml = utils.xml_strip_namespace(xml)
             tree = ET.XML(xml)
-            xml_strip_namespace(tree)
             self.medias = []
             for m in tree.findall('media'):
                 self.medias.extend(media.create_from_media_xml(self, m))
@@ -651,13 +645,8 @@ class programme(object):
             raise
 
     def parse_playlist(self, xmlstr):
-        #utils.log('Parsing playlist XML... %s' % xml,xbmc.LOGINFO)
-        #xml.replace('<summary/>', '<summary></summary>')
-        #xml = fix_selfclosing(xml)
-
-        #soup = BeautifulStoneSoup(xml, selfClosingTags=self_closing_tags)
+        xmlstr = utils.xml_strip_namespace(xmlstr)
         tree = ET.XML(xmlstr)
-        xml_strip_namespace(tree)
 
         self.meta = {}
         self._items = []
