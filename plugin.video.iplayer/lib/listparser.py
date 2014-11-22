@@ -27,7 +27,10 @@ def parse(xml):
     # remove namespace
     xml = re.sub(' xmlns="[^"]+"', '', xml, count=1)
 
-    root = ET.fromstring(xml)
+    try:
+        root = ET.fromstring(xml)
+    except:
+        return None
 
     elist = listentries()
     for entry in root.getiterator('episode'):
