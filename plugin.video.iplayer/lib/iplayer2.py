@@ -14,6 +14,11 @@ except:
     import md5
     _md5 = md5.new
 
+if sys.version_info >= (2, 7):
+    import json as _json
+else:
+    import simplejson as _json
+
 # XBMC libs
 import xbmc, xbmcgui
 
@@ -1087,23 +1092,37 @@ class feed(object):
         return self.read_rss(self.create_url('latest'))
 
     def categories(self):
-        # quick and dirty category extraction and count
-        url = self.create_url('list')
-
-        xml = httpget(url)
-
-        # remove namespace
-        xml = re.sub(' xmlns="[^"]+"', '', xml, count=1)
-
-        root = ET.fromstring(xml)
         categories = []
-        for category in root.getiterator('category'):
-            id = category.find('id').text
-            text = category.find('text').text
-            categories.append([ text, id ])
+        url = self.create_url('list')
+        data = httpget(url)
+
+        if self.format == 'xml':
+            # remove namespace
+            data = utils.xml_strip_namespace(data)
+
+            root = ET.fromstring(data)
+            categories = []
+            for category in root.getiterator('category'):
+                id = category.find('id').text
+                text = category.find('text').text
+                categories.append([ text, id ])
+
+        if self.format == 'json':
+            json = _json.loads(data)
+
+            for parent in json['blocklist']:
+                id = parent['id']
+                text = parent['text']
+                categories.append([ text, id ])
+                if 'child_categories' in parent:
+                    for child in parent['child_categories']:
+                        id = child['id']
+                        text = child['text']
+                        categories.append([ text, id ])
 
         return categories
 
+    
     @property
     def is_radio(self):
         """ True if this feed is for radio. """
