@@ -644,17 +644,6 @@ def list_feed_listings(feed, listing, category=None, series=None, channels=None)
     xbmcplugin.setContent(handle=__plugin_handle__, content='episodes')
     xbmcplugin.endOfDirectory(handle=__plugin_handle__, succeeded=True)
 
-
-def get_item(pid):
-    #print "Getting %s" % (pid)
-    p = iplayer.programme(pid)
-    #print "%s is %s" % (pid, p.title)
-
-    #for i in p.items:
-    #    if i.kind in ['programme', 'radioProgrammme']:
-    #        return i
-    return p.programme
-
 re_subtitles = re.compile('^\s*<p.*?begin=\"(.*?)\.([0-9]+)\"\s+.*?end=\"(.*?)\.([0-9]+)\"\s*>(.*?)</p>')
 
 def download_subtitles(url):
@@ -738,7 +727,7 @@ def download_subtitles(url):
 def watch(feed, pid, resume=False):
 
     subtitles_file = None
-    item      = get_item(pid)
+    item      = iplayer.programme(pid).programme
     thumbnail = item.programme.thumbnail
     title     = item.programme.title
     summary   = item.programme.summary
