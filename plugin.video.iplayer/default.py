@@ -350,8 +350,9 @@ def add_programme(feed, programme, totalItems=None, tracknumber=None, thumbnail_
                                 thumbnailImage=thumbnail)
 
     datestr = programme.updated[:10]
-    date=datestr[8:10] + '/' + datestr[5:7] + '/' +datestr[:4]#date ==dd/mm/yyyy
-
+    date = datestr[8:10] + '/' + datestr[5:7] + '/' +datestr[:4]#date ==dd/mm/yyyy
+    aired = datestr[:4] + '-' + datestr[5:7] + '-' + datestr[8:10]
+    
     if programme.categories and len(programme.categories) > 0:
         genre = ''
         for cat in programme.categories:
@@ -365,8 +366,11 @@ def add_programme(feed, programme, totalItems=None, tracknumber=None, thumbnail_
         'Plot': programme.summary,
         'PlotOutline': programme.summary,
         'Genre': genre,
-        "Date": date,
+        'Date': date,
+        'Aired': aired,
+        'Episode': programme.episode,
     })
+
     listitem.setProperty('Title', str(title))
     listitem.setProperty('IsPlayable','true')
     if tracknumber: listitem.setProperty('tracknumber', str(tracknumber))
@@ -596,8 +600,8 @@ def list_feed_listings(feed, listing, category=None, series=None, channels=None)
                 temp_prog.append(p)
         programmes = temp_prog
 
-    programmes = sort_by_attr(programmes, 'episode')
-
+    if listing == 'list':
+        programmes = sort_by_attr(programmes, 'episode')
 
     # add each programme
     total = len(programmes)
