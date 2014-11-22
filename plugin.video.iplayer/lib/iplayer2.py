@@ -668,8 +668,8 @@ class programme(object):
         self.meta['summary'] = tree.find('summary').text
         self.meta['thumbnail'] = re.findall("<link rel=\"holding\" href=\"(.*?)\".*?/>", xmlstr, re.DOTALL)[0]
         # Live radio feeds have no text node in the summary node
-        if self.meta['summary']:
-            self.meta['summary'] = string.lstrip(self.meta['summary'], ' ')
+        if self.meta['summary'] is not None:
+            self.meta['summary'].lstrip(' ')
         self.meta['updated'] = tree.find('updated').text
 
         if tree.find('noitems'):
@@ -766,7 +766,8 @@ class programme_simple(object):
         self.pid = pid
         self.meta = {}
         self.meta['title'] = entry.title
-        self.meta['summary'] = string.lstrip(entry.summary, ' ')
+        if entry.summary is not None:
+            self.meta['summary'] = string.lstrip(entry.summary, ' ')
         self.meta['updated'] = entry.updated
         self.meta['thumbnail'] = entry.thumbnail
         self.categories = []
