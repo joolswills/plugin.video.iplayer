@@ -37,7 +37,10 @@ def parse(data, format):
     return ret
 
 def parse_json(json):
-    json = _json.loads(json)
+    try:
+        json = _json.loads(json)
+    except:
+        return None
     
     elist = listentries()
     for entry in json['blocklist']:
