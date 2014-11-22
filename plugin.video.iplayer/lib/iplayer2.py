@@ -872,7 +872,8 @@ class feed(object):
             self.tvradio = tvradio
         else:
             self.tvradio = None
-        self.format = 'xml'
+
+        self.format = 'json'
         self.channel = channel
         self.category = category
         self.searchcategory = searchcategory
@@ -911,6 +912,7 @@ class feed(object):
 
         if self.tvradio:
             params += [ 'service_type', self.tvradio]
+        params = params + [ 'block_type', 'episodes' ]
         params = params + [ 'format', self.format ]
         url = "http://www.bbc.co.uk/iplayer/ion/" + '/'.join(params)
         return url
@@ -1055,13 +1057,12 @@ class feed(object):
         # TODO handle properly oh pants
         return None
 
-    @classmethod
     def read_rss(self, url):
         utils.log('Read File: %s' % url,xbmc.LOGINFO)
         if url not in rss_cache:
             utils.log('File not in cache, requesting...',xbmc.LOGINFO)
             xml = httpget(url)
-            progs = listparser.parse(xml)
+            progs = listparser.parse(xml, self.format)
             if not progs: return []
             d = []
             for entry in progs.entries:

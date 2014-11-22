@@ -2,8 +2,16 @@
 # Provides a simple and very quick way to parse list feeds
 #
 
-import re, utils
+import re, utils, sys
+
 from xml.etree import ElementTree as ET
+
+if sys.version_info >= (2, 7):
+    import json as _json
+else:
+    import simplejson as _json
+
+datematch = re.compile(':\s+([0-9]+)/([0-9]+)/([0-9]{4})')
 
 class listentry(object):
      def __init__(self, title=None, id=None, updated=None, summary=None, categories=None, series=None, episode=None, thumbnail=None):
@@ -20,9 +28,52 @@ class listentries(object):
      def __init__(self):
          self.entries = []
 
-def parse(xml):
+def parse(data, format):
+    ret = None
+    if format == 'xml':
+        ret = parse_xml(data)
+    if format == 'json':
+        ret = parse_json(data)
+    return ret
+
+def parse_json(json):
+    json = _json.loads(json)
     
-    datematch = re.compile(':\s+([0-9]+)/([0-9]+)/([0-9]{4})')
+    elist = listentries()
+    for entry in json['blocklist']:
+        title = entry['complete_title']
+        id = entry['id']
+        updated = entry['updated']
+        
+        if 'synopsis' in entry:
+            summary = entry['synopsis']
+        else:
+            summary = None
+
+        thumbnail = entry['my_image_base_url'] + id + "_640_360.jpg"
+        
+        series = entry['toplevel_container_title']
+        
+        if 'position' in entry and len(entry['position']) > 0:
+            episode = entry['position']
+            episode = int(episode)
+        else:
+            episode = None
+
+        match = datematch.search(title)
+        if match:
+            # if the title contains a data at the end use that as the updated date YYYY-MM-DD
+            updated = "%s-%s-%s" % ( match.group(3), match.group(2), match.group(1) )
+
+        e_categories = []
+        for category in entry['categories']:
+            e_categories.append(category['short_name'])
+
+        elist.entries.append(listentry(title, id, updated, summary, e_categories, series, episode, thumbnail))
+
+    return elist
+
+def parse_xml(xml):
 
     xml = utils.xml_strip_namespace(xml)
 
