@@ -356,7 +356,7 @@ class media(object):
         self.mimetype  = None
         self.encoding  = None
         self.connection_protocol = None
-        if media_node:
+        if media_node is not None:
             self.read_media_node(media_node, connection)
 
     @staticmethod
