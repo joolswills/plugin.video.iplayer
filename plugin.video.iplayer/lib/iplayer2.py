@@ -3,16 +3,9 @@
 # Python libs
 import re, time, os, string, sys
 import urllib, urllib2
-import xml.dom.minidom as dom
 import traceback
 from socket import timeout as SocketTimeoutError
-
-# XBMC libs
-import xbmc, xbmcgui
-
-# external libs
-import listparser
-import stations
+from xml.etree import ElementTree as ET
 
 try:
     from hashlib import md5 as _md5
@@ -21,15 +14,15 @@ except:
     import md5
     _md5 = md5.new
 
-try:
-    # python >= 2.5
-    from xml.etree import ElementTree as ET
-except:
-    # python 2.4 has to use the plugin's version of elementtree
-    from elementtree import ElementTree as ET
+# XBMC libs
+import xbmc, xbmcgui
+
+# external libs
+import listparser
+import stations
+import utils
 import httplib2
 
-import utils
 __addoninfo__ = utils.get_addoninfo()
 __addon__ = __addoninfo__["addon"]
 __plugin_handle__ = utils.__plugin_handle__
