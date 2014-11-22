@@ -405,6 +405,8 @@ class media(object):
         self.connection_method = None
 
         self.connection_kind = conn.get('kind')
+        if not self.connection_kind:
+            self.connection_kind = conn.get('supplier')
         self.connection_protocol = conn.get('protocol')
 
         # some akamai rtmp streams (radio) don't specify rtmp protocol
@@ -591,10 +593,14 @@ class item(object):
         medias.reverse()
         return [ medias, False ]
 
-    def mediaselector_url(self, suffix):
-        if suffix == None:
-            return "http://open.live.bbc.co.uk/mediaselector/4/mtis/stream/%s" % self.identifier
-        return "http://open.live.bbc.co.uk/mediaselector/4/mtis/stream/%s/%s" % (self.identifier, suffix)
+    def mediaselector_url(self):
+        v = __addon__.getSetting('mediaselector')
+        if v == '0':
+            url = "http://open.live.bbc.co.uk/mediaselector/5/select/version/2.0/mediaset/pc/vpid/%s"
+        else:
+            url = "http://open.live.bbc.co.uk/mediaselector/4/mtis/stream/%s"
+
+        return url % self.identifier
 
     def get_media_list_for(self, stream, provider_pref):
         """
@@ -602,7 +608,7 @@ class item(object):
         preferred provider first if it exists
         """
         if not self.medias:
-            url = self.mediaselector_url(None)
+            url = self.mediaselector_url()
             utils.log("Stream XML URL: %s" % url,xbmc.LOGINFO)
             xml = httpget(url)
             tree = ET.XML(xml)
