@@ -835,7 +835,7 @@ def watch(feed, pid, resume=False):
 
         xbmcplugin.setResolvedUrl(__plugin_handle__, succeeded = True, listitem = listitem)
 
-        xbmc.sleep(2000)
+        xbmc.sleep(500)
         # Successfully started playing something?
         if player.isPlaying():
             break;
