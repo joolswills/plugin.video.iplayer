@@ -1,5 +1,9 @@
 Changes
 
+2.6.8
+  * use json format for api output to speed up data parsing
+  * various code changes / cleanups
+
 2.6.7
   * support for mediaselector v5 (and settings to fallback to 4)
   * fixed live radio
