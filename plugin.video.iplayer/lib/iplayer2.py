@@ -30,7 +30,6 @@ import httplib2
 
 __addoninfo__ = utils.get_addoninfo()
 __addon__ = __addoninfo__["addon"]
-__plugin_handle__ = utils.__plugin_handle__
 
 sys.path.append(os.path.join(__addoninfo__["path"], 'lib', 'httplib2'))
 import socks
