@@ -85,6 +85,16 @@ radio_station_info = [
      'logo': None,
      'type': 'national',
      'webcam': 'http://www.bbc.co.uk/asiannetwork/webcams/birmingham.jpg'},
+     
+    {'id': 'bbc_world_service',
+     'name': 'World Service',
+     'logo': None,
+     'type': 'national'},
+
+    {'id': 'bbc_school_radio',
+     'name': 'School Radio',
+     'logo': None,
+     'type': 'national'},
 
     {'id': 'bbc_radio_scotland',
      'name': 'BBC Scotland',
@@ -110,11 +120,6 @@ radio_station_info = [
      'name': 'BBC Cymru',
      'logo': None,
      'type': 'regional'},
-
-    {'id': 'bbc_world_service',
-     'name': 'World Service',
-     'logo': None,
-     'type': 'national'},
 
     {'id': 'bbc_radio_nan_gaidheal',
      'name': 'BBC nan Gaidheal',
