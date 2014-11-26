@@ -236,7 +236,7 @@ def parse_asx(radio_url):
 
 def list_tvradio():
     """
-    Lists five folders - one for TV and one for Radio, plus A-Z, highlights and popular
+    Lists three folders - one for TV and one for Radio, plus settings
     """
     xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_TRACKNUM)
 
