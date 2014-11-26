@@ -358,7 +358,7 @@ def add_programme(feed, programme, totalItems=None, tracknumber=None, thumbnail_
         'Episode': programme.episode,
     })
 
-    listitem.setProperty('Title', str(title))
+    listitem.setProperty('Title', title)
     listitem.setProperty('IsPlayable','true')
     if tracknumber: listitem.setProperty('tracknumber', str(tracknumber))
 
