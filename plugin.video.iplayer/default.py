@@ -629,7 +629,6 @@ def list_feed_listings(feed, listing, category=None, series=None, channels=None)
             listitem.setProperty('tracknumber', str(count))
             count = count + 1
             url = make_url(feed=f, listing=listing, tvradio=feed.tvradio, category=category)
-            print url
             ok = xbmcplugin.addDirectoryItem(
                 handle=__plugin_handle__,
                 url=url,
