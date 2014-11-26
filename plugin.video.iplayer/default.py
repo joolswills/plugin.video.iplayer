@@ -135,10 +135,8 @@ def read_url():
     content_type = args.get('content_type', [None])[0]
 
     feed = None
-    if feed_channel:
-        feed = iplayer.feed('auto', channel=feed_channel, atoz=feed_atoz, radio=radio)
-    elif feed_atoz:
-        feed = iplayer.feed(tvradio or 'auto', atoz=feed_atoz, radio=radio)
+    if listing:
+        feed = iplayer.feed(tvradio=tvradio, channel=feed_channel, atoz=feed_atoz,  radio=radio, listing=listing)
 
     if content_type:
         if content_type == 'video':
@@ -444,10 +442,7 @@ def list_series(feed, listing, category=None, progcount=True):
     name = feed.name
 
     d = {}
-    d['list'] = feed.list
-    d['popular'] = feed.popular
-    d['highlights'] = feed.highlights
-    programmes = d[listing]()
+    programmes = feed.list()
 
     ## filter by category
     if category:
@@ -578,11 +573,7 @@ def list_feed_listings(feed, listing, category=None, series=None, channels=None)
     xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_NONE)
 
     d = {}
-    d['list'] = feed.list
-    d['popular'] = feed.popular
-    d['highlights'] = feed.highlights
-    d['latest'] = feed.latest
-    programmes = d[listing]()
+    programmes = feed.list()
 
     ## filter by series
     if series:
@@ -638,6 +629,7 @@ def list_feed_listings(feed, listing, category=None, series=None, channels=None)
             listitem.setProperty('tracknumber', str(count))
             count = count + 1
             url = make_url(feed=f, listing=listing, tvradio=feed.tvradio, category=category)
+            print url
             ok = xbmcplugin.addDirectoryItem(
                 handle=__plugin_handle__,
                 url=url,
@@ -958,10 +950,10 @@ if __name__ == "__main__":
             feed = feed or iplayer.feed(tvradio or 'tv', category=category, radio=radio)
             list_series(feed, listing, category=category, progcount=progcount)
         elif listing:
-            channels=None
             if not feed:
-                feed = feed or iplayer.feed(tvradio or 'tv', category=category, radio=radio)
-                channels=feed.channels_feed()
+                feed = feed or iplayer.feed(tvradio or 'tv', category=category, radio=radio, listing=listing)
+            
+            channels=feed.channels_feed()
             list_feed_listings(feed, listing, category=category, series=series, channels=channels)
 
     except:

@@ -853,7 +853,7 @@ class programme_simple(object):
 
 
 class feed(object):
-    def __init__(self, tvradio=None, channel=None, category=None, searchcategory=None, atoz=None, searchterm=None, radio=None, live=False):
+    def __init__(self, tvradio=None, channel=None, category=None, searchcategory=None, atoz=None, searchterm=None, radio=None, live=False, listing=None):
         """
         Creates a feed for the specified channel/category/whatever.
         tvradio: type of channel - 'tv' or 'radio'. If a known channel is specified, use 'auto'.
@@ -885,23 +885,20 @@ class feed(object):
         self.searchterm = searchterm
         self.radio = radio
         self.live = live
+        self.listing = listing
 
-    def create_url(self, listing):
-        """
-        <channel>/['list'|'popular'|'highlights']
-        'categories'/<category>(/<subcategory>)(/['tv'/'radio'])/['list'|'popular'|'highlights']
-        """
-        assert listing in ['list', 'popular', 'highlights', 'latest'], "Unknown listing type"
+    def create_url(self):
 
-        if listing == 'popular':
+        params = []
+        if self.listing == 'categories':
+            params = [ 'categorynav' ] 
+        if self.listing == 'popular':
             params = [ 'mostpopular' ]
-        if listing == 'highlights':
+        elif self.listing == 'highlights':
             params = [ 'featured' ]
-        if listing == 'latest':
+        elif self.listing == 'latest':
             params = [ 'latest' ]
             params += [ 'limit', '20' ]
-        if self.searchcategory:
-            params = [ 'categorynav' ]
         elif self.category:
             params = [ 'listview' ]
             params += [ 'category', self.category ]
@@ -910,11 +907,15 @@ class feed(object):
         elif self.searchterm:
             params = [ 'search' ]
             params += [ 'q', urllib.quote_plus(self.searchterm) ]
-        elif self.channel:
+        elif self.listing == 'list' and self.channel:
             params = [ 'listview' ]
             params += [ 'masterbrand', self.channel]
             if __addon__.getSetting('listings_cache_disable') == 'false':
                 return "http://iplayer.xbmc4xbox.org.uk/" + self.channel + '.json'
+
+        if self.channel:
+            params += [ 'masterbrand', self.channel ]
+
         if self.tvradio:
             params += [ 'service_type', self.tvradio]
         params = params + [ 'block_type', 'episode' ]
@@ -979,7 +980,6 @@ class feed(object):
         Return a list of available channels as a list of feeds.
         """
         if self.channel:
-            utils.log("%s doesn\'t have any channels!" % self.channel,xbmc.LOGSEVERE)
             return None
         if self.tvradio == 'tv':
             if self.live:
@@ -1079,21 +1079,12 @@ class feed(object):
             utils.log('File found in cache',xbmc.LOGINFO)
         return rss_cache[url]
 
-    def popular(self):
-        return self.read_rss(self.create_url('popular'))
-
-    def highlights(self):
-        return self.read_rss(self.create_url('highlights'))
-
     def list(self):
-        return self.read_rss(self.create_url('list'))
-
-    def latest(self):
-        return self.read_rss(self.create_url('latest'))
+        return self.read_rss(self.create_url())
 
     def categories(self):
         categories = []
-        url = self.create_url('list')
+        url = self.create_url()
         data = httpget(url)
 
         if self.format == 'xml':
