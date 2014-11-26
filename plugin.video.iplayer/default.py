@@ -127,14 +127,14 @@ def read_url():
     if listing:
         feed = iplayer.feed(tvradio=tvradio, channel=feed_channel, atoz=feed_atoz,  radio=radio, listing=listing)
 
-    if content_type:
+    section = __addon__.getSetting('start_section')
+    if content_type and section != '3':
         if content_type == 'video':
             tvradio = 'tv'
         elif content_type == 'audio':
             tvradio = 'radio'
 
     if not (feed or listing):
-        section = __addon__.getSetting('start_section')
         if   section == '1': tvradio = 'tv'
         elif section == '2': tvradio = 'radio'
 

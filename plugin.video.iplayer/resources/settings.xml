@@ -4,7 +4,7 @@
     <setting id="progcount" label="30110" type="bool" default="true" />
     <setting id="thumbnail_size" label="30120" type="enum" values="Biggest|Large|Small|Smallest|None" default="1" />
     <setting id="subtitles_control" label="30130"  type="enum" values="None|Download and Play|Download to File" default="0" />
-    <setting id="start_section" label="30140" type="enum" values="Main Screen|TV|Radio" default="0" />
+    <setting id="start_section" label="30140" type="enum" values="Auto|TV|Radio|Both" default="0" />
   </category>
   <!-- Streams -->
   <category label="30200">
