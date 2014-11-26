@@ -208,7 +208,8 @@ def list_live_feeds(feeds, tvradio='tv'):
 
         listitem.setIconImage(get_feed_thumbnail(f))
         listitem.setThumbnailImage(get_feed_thumbnail(f))
-        listitem.setProperty('IsPlayable','true')
+        if utils.get_os() != "xbox":
+            listitem.setProperty('IsPlayable','true')
         listitem.setInfo('video', {'title': f.name} )
         if tvradio == 'radio':
             listitem.setProperty('tracknumber', str(i + j))
@@ -359,7 +360,8 @@ def add_programme(feed, programme, totalItems=None, tracknumber=None, thumbnail_
     })
 
     listitem.setProperty('Title', title)
-    listitem.setProperty('IsPlayable','true')
+    if utils.get_os() != "xbox":
+        listitem.setProperty('IsPlayable','true')
     if tracknumber: listitem.setProperty('tracknumber', str(tracknumber))
 
     #print "Getting URL for %s ..." % (programme.title)
@@ -799,9 +801,11 @@ def watch(feed, pid):
             listitem.setIconImage(thumbfile)
             listitem.setThumbnailImage(thumbfile)
 
-        listitem.setPath(path = url)
-
-        xbmcplugin.setResolvedUrl(__plugin_handle__, succeeded = True, listitem = listitem)
+        if utils.get_os() != "xbox":
+            listitem.setPath(path = url)
+            xbmcplugin.setResolvedUrl(__plugin_handle__, succeeded = True, listitem = listitem)
+        else:
+            xbmc.Player().play(url)
 
         xbmc.sleep(500)
         # Successfully started playing something?
