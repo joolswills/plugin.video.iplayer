@@ -31,9 +31,6 @@
     <setting id="socket_timeout" label="30410" type="number" default="60" />
     <setting id="stream_timeout" label="30420" type="number" default="60" />
     <setting id="enhanceddebug" label="30440" type="bool" default="false" />
-    <setting id="resume_days_to_keep" label="30450" type="number" default="40" />
-    <setting id="playaction" label="30470" type="enum" values="Resume|Play from start" default="0" />
-    <setting label="30460" type="action" action="XBMC.RunPlugin(plugin://plugin.video.iplayer/?force_resume_unlock=1)" />
   </category>
 
 </settings>
