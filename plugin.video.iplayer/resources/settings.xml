@@ -26,6 +26,7 @@
   </category>
   <!-- Advanced -->
   <category label="30400">
+    <setting id="listings_cache_disable" label="30401" type="bool" default="false" />
     <setting id="http_cache_disable" label="30405" type="bool" default="false" />
     <setting id="socket_timeout" label="30410" type="number" default="60" />
     <setting id="stream_timeout" label="30420" type="number" default="60" />

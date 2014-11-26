@@ -913,7 +913,8 @@ class feed(object):
         elif self.channel:
             params = [ 'listview' ]
             params += [ 'masterbrand', self.channel]
-
+            if __addon__.getSetting('listings_cache_disable') == 'false':
+                return "http://iplayer.xbmc4xbox.org.uk/" + self.channel + '.json'
         if self.tvradio:
             params += [ 'service_type', self.tvradio]
         params = params + [ 'block_type', 'episode' ]

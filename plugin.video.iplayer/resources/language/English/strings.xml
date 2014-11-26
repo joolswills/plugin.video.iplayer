@@ -23,6 +23,7 @@
   <!-- <string id="30360">Resolve host on Proxy</string> -->
 
   <string id="30400">Advanced</string>
+  <string id="30401">Disable Listings Cache</string>
   <string id="30405">Disable HTTP Cache</string>
   <string id="30410">Socket timeout (seconds) [0=disabled]</string>
   <string id="30420">Stream timeout (seconds)</string>
