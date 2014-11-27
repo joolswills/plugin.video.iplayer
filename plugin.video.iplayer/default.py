@@ -108,7 +108,6 @@ def make_url(feed=None, listing=None, pid=None, tvradio=None, category=None, ser
 
 def read_url():
     args = cgi.parse_qs(sys.argv[2][1:])
-    print args
     feed_channel = args.get('feed_channel', [None])[0]
     listing      = args.get('listing', [None])[0]
     pid          = args.get('pid', [None])[0]
