@@ -199,6 +199,9 @@ def list_live_feeds(feeds, tvradio='tv'):
     i = 0
 
     for j, f in enumerate(feeds):
+        
+        # no live feed for school radio
+        if f.channel == 'bbc_school_radio': continue
 
         try: utils.log('Processing feed %s' % str(f.name),xbmc.LOGINFO)
         except: continue
