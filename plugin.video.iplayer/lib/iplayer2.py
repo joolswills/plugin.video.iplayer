@@ -322,6 +322,7 @@ class media(object):
         ('audio', 'audio/wma',  'wma', 'http', None)   : 'wma',
         ('audio', 'audio/mp4', 'aac', 'rtmp', 320)     : 'aac320',
         ('audio', 'audio/mp4', 'aac', 'rtmp', 128)     : 'aac128',
+        ('audio', 'audio/mp4', 'aac', 'rtmp', 64)      : 'aac64',
         ('audio', 'audio/wma', 'wma9', 'http', 96)     : 'wma9 96',
         ('audio', 'audio/wma', 'wma9', 'http', 48)     : 'wma9 48',
         ('audio', 'audio/x-ms-asf', 'wma', 'http', 128) : 'wma+asx',
@@ -528,7 +529,7 @@ class item(object):
             streams = ['h264 2800', 'h264 1520', 'h264 1500', 'h264 820', 'h264 800', 'h264 480', 'h264 400']
             rate = get_setting_videostream()
         else:
-            streams = ['aac320', 'aac128', 'wma9 96', 'mp3 80', 'wma+asx', 'aac48', 'wma9 48', 'aac32' ]
+            streams = ['aac320', 'aac128', 'wma9 96', 'mp3 80', 'wma+asx', 'aac64', 'aac48', 'wma9 48', 'aac32' ]
             rate = get_setting_audiostream()
 
         provider = get_provider()
