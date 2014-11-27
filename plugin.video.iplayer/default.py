@@ -933,6 +933,8 @@ if __name__ == "__main__":
             
             channels=feed.channels_feed()
             list_feed_listings(feed, listing, category=category, series=series, channels=channels)
+            if xbmc.getSkinDir() == 'skin.confluence':
+                xbmc.executebuiltin('Container.SetViewMode(504)')
 
     except:
         # Make sure the text from any script errors are logged
