@@ -1,5 +1,17 @@
 Changes
 
+2.6.9
+  * restored xbmc4xbox compatibility (since setresolvedurl changes)
+  * removed old custom resume functionality as native resume now works for
+    video playback (and watched flags set)
+  * allow starting screen with radio and tv - useful for audio programme
+    information which works only from video view
+  * added bbc school radio ondemand streams
+  * added bbc sport ondemand streams
+  * use self hosted cache for ondemand streams. Fixes performance and 
+    timeout issues for channels and brings back radio 4 / world service
+    lists.
+
 2.6.8
   * use json format for api output to speed up data parsing
   * various code changes / cleanups
