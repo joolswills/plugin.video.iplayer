@@ -14,6 +14,7 @@ channels_tv_list = [
     ('bbc_news24', 'BBC News Channel'),
     ('bbc_parliament', 'BBC Parliament'),
     ('bbc_alba', 'BBC Alba'),
+    ('s4cpbs', 'S4C'),
     ('bbc_sport', 'BBC Sport'),
 ]
 
