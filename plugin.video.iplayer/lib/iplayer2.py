@@ -893,7 +893,10 @@ class feed(object):
         params = []
         if self.listing == 'categories':
             params = [ 'categorynav' ] 
-        if self.listing == 'popular':
+        elif self.listing == 'atoz':
+            params = [ 'atoz']
+            params += [ 'letter', self.atoz ]
+        elif self.listing == 'popular':
             params = [ 'mostpopular' ]
         elif self.listing == 'highlights':
             params = [ 'featured' ]
@@ -980,7 +983,7 @@ class feed(object):
         """
         Return a list of available channels as a list of feeds.
         """
-        if self.channel:
+        if self.channel or self.atoz:
             return None
         if self.tvradio == 'tv':
             if self.live:

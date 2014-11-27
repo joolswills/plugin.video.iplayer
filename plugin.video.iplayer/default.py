@@ -89,15 +89,12 @@ def get_feed_thumbnail(feed):
 
     return url
 
-def make_url(feed=None, listing=None, pid=None, tvradio=None, category=None, series=None, url=None, label=None, radio=None):
+def make_url(feed=None, listing=None, pid=None, tvradio=None, category=None, series=None, url=None, label=None, radio=None, atoz=None):
     base = sys.argv[0]
     d = {}
     if series: d['series'] = series
-    if feed:
-        if feed.channel:
-            d['feed_channel'] = feed.channel
-        if feed.atoz:
-            d['feed_atoz'] = feed.atoz
+    if feed and feed.channel:
+        d['feed_channel'] = feed.channel
     if category: d['category'] = category
     if listing: d['listing'] = listing
     if pid: d['pid'] = pid
@@ -105,17 +102,19 @@ def make_url(feed=None, listing=None, pid=None, tvradio=None, category=None, ser
     if url: d['url'] = url
     if label: d['label'] = label
     if radio: d['radio'] = radio
+    if atoz: d['atoz'] = atoz
     params = urllib.urlencode(d, True)
     return base + '?' + params
 
 def read_url():
     args = cgi.parse_qs(sys.argv[2][1:])
+    print args
     feed_channel = args.get('feed_channel', [None])[0]
-    feed_atoz    = args.get('feed_atoz', [None])[0]
     listing      = args.get('listing', [None])[0]
     pid          = args.get('pid', [None])[0]
     tvradio      = args.get('tvradio', [None])[0]
     category     = args.get('category', [None])[0]
+    atoz         = args.get('atoz', [None])[0]
     series       = args.get('series', [None])[0]
     url          = args.get('url', [None])[0]
     label        = args.get('label', [None])[0]
@@ -125,7 +124,7 @@ def read_url():
 
     feed = None
     if listing:
-        feed = iplayer.feed(tvradio=tvradio, channel=feed_channel, atoz=feed_atoz,  radio=radio, listing=listing)
+        feed = iplayer.feed(tvradio=tvradio, channel=feed_channel, atoz=atoz, radio=radio, listing=listing)
 
     section = __addon__.getSetting('start_section')
     if content_type and section != '3':
@@ -138,7 +137,7 @@ def read_url():
         if   section == '1': tvradio = 'tv'
         elif section == '2': tvradio = 'radio'
 
-    return (feed, listing, pid, tvradio, category, series, url, label, deletesearch, radio)
+    return (feed, listing, pid, tvradio, category, series, url, label, deletesearch, radio, atoz)
 
 def list_feeds(feeds, tvradio='tv', radio=None):
     xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_TRACKNUM )
@@ -184,6 +183,7 @@ def list_feeds(feeds, tvradio='tv', radio=None):
     xbmcplugin.endOfDirectory(handle=__plugin_handle__, succeeded=True)
 
 def add_featured_feeds(folders, tvradio):
+    folders.append(('A to Z', 'atoz', make_url(listing='atoz', tvradio=tvradio)))
     folders.append(('Categories', 'categories', make_url(listing='categories', tvradio=tvradio)))
     folders.append(('Highlights', 'highlights', make_url(listing='highlights', tvradio=tvradio)))
     folders.append(('Popular', 'popular', make_url(listing='popular', tvradio=tvradio)))
@@ -405,6 +405,24 @@ def list_categories(tvradio='tv', feed=None, channels=None, progcount=True):
 
     xbmcplugin.endOfDirectory(handle=__plugin_handle__, succeeded=True)
 
+def list_atoz(tvradio='tv'):
+    xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_NONE)
+    letters = ['0-9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+    for label in letters:
+        url = make_url(listing='atoz', tvradio=tvradio, atoz=label)
+        listitem = xbmcgui.ListItem(label=label)
+        if tvradio == 'tv':
+            listitem.setThumbnailImage(get_plugin_thumbnail('tv'))
+        else:
+            listitem.setThumbnailImage(get_plugin_thumbnail('radio'))
+        ok = xbmcplugin.addDirectoryItem(
+            handle=__plugin_handle__,
+            url=url,
+            listitem=listitem,
+            isFolder=True,
+        )
+
+    xbmcplugin.endOfDirectory(handle=__plugin_handle__, succeeded=True)
 
 re_series_match = [re.compile('^(Late\s+Kick\s+Off\s+)'), \
                    re.compile('^(Inside\s+Out\s+)'), \
@@ -870,8 +888,8 @@ if __name__ == "__main__":
         if __addon__.getSetting('progcount') == 'false':  progcount = False
 
         # get current state parameters
-        (feed, listing, pid, tvradio, category, series, url, label, deletesearch, radio) = read_url()
-        utils.log( str((feed, listing, pid, tvradio, category, series, url, label, deletesearch, radio)),xbmc.LOGINFO )
+        (feed, listing, pid, tvradio, category, series, url, label, deletesearch, radio, atoz) = read_url()
+        utils.log( str((feed, listing, pid, tvradio, category, series, url, label, deletesearch, radio, atoz)),xbmc.LOGINFO )
 
         # update feed category
         if feed and category:
@@ -896,6 +914,9 @@ if __name__ == "__main__":
             channels = None
             feed = feed or iplayer.feed(tvradio or 'tv',  searchcategory=True, category=category, radio=radio)
             list_categories(tvradio, feed)
+        elif listing == 'atoz' and atoz is None:
+            feed = feed or iplayer.feed(tvradio or 'tv',  searchcategory=True, category=category, radio=radio)
+            list_atoz(tvradio)
         elif listing == 'searchlist':
             search_list(tvradio or 'tv')
         elif listing == 'search':
