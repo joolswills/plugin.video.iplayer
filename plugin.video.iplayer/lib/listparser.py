@@ -44,6 +44,8 @@ def parse_json(json):
     
     elist = listentries()
     for entry in json['blocklist']:
+        if 'episode' in entry:
+            entry = entry['episode']
         title = entry['complete_title']
         id = entry['id']
         updated = entry['updated']

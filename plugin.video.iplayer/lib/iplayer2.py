@@ -854,7 +854,7 @@ class programme_simple(object):
 
 
 class feed(object):
-    def __init__(self, tvradio=None, channel=None, category=None, atoz=None, searchterm=None, radio=None, live=False, listing=None):
+    def __init__(self, tvradio=None, channel=None, category=None, atoz=None, date=None, searchterm=None, radio=None, live=False, listing=None):
         """
         Creates a feed for the specified channel/category/whatever.
         tvradio: type of channel - 'tv' or 'radio'. If a known channel is specified, use 'auto'.
@@ -882,6 +882,7 @@ class feed(object):
         self.channel = channel
         self.category = category
         self.atoz = atoz
+        self.date = date
         self.searchterm = searchterm
         self.radio = radio
         self.live = live
@@ -899,6 +900,10 @@ class feed(object):
         elif self.listing == 'atoz':
             params = [ 'atoz']
             params += [ 'letter', self.atoz ]
+        elif self.listing == 'bydate':
+            params = [ 'schedule']
+            params += [ 'date', self.date ]
+            params += [ 'allow_unavailable', '0' ]
         elif self.listing == 'popular':
             params = [ 'mostpopular' ]
         elif self.listing == 'highlights':
@@ -913,6 +918,8 @@ class feed(object):
             params = [ 'listview' ]
             if self.category:
                 params += [ 'category', self.category ]
+            if self.date:
+                params += [ 'date', self.category ]
 
         if self.channel: params += [ 'masterbrand', self.channel ]
         if self.tvradio: params += [ 'service_type', self.tvradio ]
