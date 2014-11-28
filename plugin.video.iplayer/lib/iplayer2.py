@@ -889,6 +889,10 @@ class feed(object):
 
     def create_url(self):
 
+        if __addon__.getSetting('listings_cache_disable') == 'false':
+            if self.listing == 'list' and self.channel:
+                return "http://iplayer.xbmc4xbox.org.uk/" + self.channel + '.json'
+
         params = []
         if self.listing == 'categories':
             params = [ 'categorynav' ] 
@@ -902,27 +906,20 @@ class feed(object):
         elif self.listing == 'latest':
             params = [ 'latest' ]
             params += [ 'limit', '20' ]
-        elif self.category:
-            params = [ 'listview' ]
-            params += [ 'category', self.category ]
-            if self.channel:
-                params += [ 'masterbrand', self.channel ]
         elif self.searchterm:
             params = [ 'search' ]
             params += [ 'q', urllib.quote_plus(self.searchterm) ]
-        elif self.listing == 'list' and self.channel:
+        elif self.listing == 'list':
             params = [ 'listview' ]
-            params += [ 'masterbrand', self.channel]
-            if __addon__.getSetting('listings_cache_disable') == 'false':
-                return "http://iplayer.xbmc4xbox.org.uk/" + self.channel + '.json'
+            if self.category:
+                params += [ 'category', self.category ]
 
-        if self.channel:
-            params += [ 'masterbrand', self.channel ]
+        if self.channel: params += [ 'masterbrand', self.channel ]
+        if self.tvradio: params += [ 'service_type', self.tvradio ]
 
-        if self.tvradio:
-            params += [ 'service_type', self.tvradio]
         params = params + [ 'block_type', 'episode' ]
         params = params + [ 'format', self.format ]
+
         url = "http://www.bbc.co.uk/iplayer/ion/" + '/'.join(params)
         return url
 
