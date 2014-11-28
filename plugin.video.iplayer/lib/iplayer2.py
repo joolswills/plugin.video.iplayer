@@ -854,7 +854,7 @@ class programme_simple(object):
 
 
 class feed(object):
-    def __init__(self, tvradio=None, channel=None, category=None, searchcategory=None, atoz=None, searchterm=None, radio=None, live=False, listing=None):
+    def __init__(self, tvradio=None, channel=None, category=None, atoz=None, searchterm=None, radio=None, live=False, listing=None):
         """
         Creates a feed for the specified channel/category/whatever.
         tvradio: type of channel - 'tv' or 'radio'. If a known channel is specified, use 'auto'.
@@ -881,7 +881,6 @@ class feed(object):
         self.format = 'json'
         self.channel = channel
         self.category = category
-        self.searchcategory = searchcategory
         self.atoz = atoz
         self.searchterm = searchterm
         self.radio = radio
@@ -938,28 +937,10 @@ class feed(object):
         # if got a channel, don't need tv/radio distinction
         if self.channel:
             assert self.channel in stations.channels_tv or self.channel in stations.channels_radio, 'Unknown channel'
-            #print self.tvradio
             if self.tvradio == 'tv':
                 path.append(stations.channels_tv.get(self.channel, '(TV)'))
             else:
                 path.append(stations.channels_radio.get(self.channel, '(Radio)'))
-        elif self.tvradio:
-            # no channel
-            medium = 'TV'
-            if self.tvradio == 'radio': medium = 'Radio'
-            path.append(medium)
-
-        if self.searchterm:
-            path += ['Search results for %s' % self.searchterm]
-
-        if self.searchcategory:
-            if self.category:
-                path += ['Category %s' % self.category]
-            else:
-                path += ['Categories']
-
-        if self.atoz:
-            path.append("beginning with %s" % self.atoz.upper())
 
         if separator != None:
             return separator.join(path)
@@ -999,71 +980,6 @@ class feed(object):
                 return [feed('radio', channel=ch) for (ch, title) in stations.channels_radio_type_list[self.radio]]
             else:
                 return [feed('radio', channel=ch) for (ch, title) in stations.channels_radio_list]
-        return None
-
-
-    def subcategories(self):
-        raise NotImplementedError('Sub-categories not yet supported')
-
-    @classmethod
-    def is_atoz(self, letter):
-        """
-        Return False if specified letter is not a valid 'A to Z' directory entry.
-        Otherwise returns the directory name.
-
-        >>> feed.is_atoz('a'), feed.is_atoz('z')
-        ('a', 'z')
-        >>> feed.is_atoz('0'), feed.is_atoz('9')
-        ('0-9', '0-9')
-        >>> feed.is_atoz('123'), feed.is_atoz('abc')
-        (False, False)
-        >>> feed.is_atoz('big british castle'), feed.is_atoz('')
-        (False, False)
-        """
-        l = letter.lower()
-        if len(l) != 1 and l != '0-9':
-            return False
-        if l in '0123456789': l = "0-9"
-        if l not in 'abcdefghijklmnopqrstuvwxyz0-9':
-            return False
-        return l
-
-    def sub(self, *args, **kwargs):
-        """
-        Clones this feed, altering the specified parameters.
-
-        >>> feed('tv').sub(channel='bbc_one').channel
-        'bbc_one'
-        >>> feed('tv', channel='bbc_one').sub(channel='bbc_two').channel
-        'bbc_two'
-        >>> feed('tv', channel='bbc_one').sub(category='drama').category
-        'drama'
-        >>> feed('tv', channel='bbc_one').sub(channel=None).channel
-        >>>
-        """
-        d = self.__dict__.copy()
-        d.update(kwargs)
-        return feed(**d)
-
-    def get(self, subfeed):
-        """
-        Returns a child/subfeed of this feed.
-        child: can be channel/cat/subcat/letter, e.g. 'bbc_one'
-        """
-        if self.channel and subfeed in categories:
-            # no children: channel feeds don't support categories
-            return None
-        elif self.category:
-            # no children: TODO support subcategories
-            return None
-        elif subfeed in categories:
-            return self.sub(category=subfeed)
-        elif self.is_atoz(subfeed):
-            return self.sub(atoz=self.is_atoz(subfeed))
-        else:
-            if subfeed in stations.channels_tv: return feed('tv', channel=subfeed)
-            if subfeed in stations.channels_radiot: return feed('radio', channel=subfeed)
-        # TODO handle properly oh pants
         return None
 
     def read_rss(self, url):

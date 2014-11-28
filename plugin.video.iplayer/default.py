@@ -910,11 +910,8 @@ if __name__ == "__main__":
                 feed = iplayer.feed(tvradio, radio=radio).channels_feed()
                 list_feeds(feed, tvradio, radio)
         elif listing == 'categories':
-            channels = None
-            feed = feed or iplayer.feed(tvradio or 'tv',  searchcategory=True, category=category, radio=radio)
             list_categories(tvradio, feed)
         elif listing == 'atoz' and atoz is None:
-            feed = feed or iplayer.feed(tvradio or 'tv',  searchcategory=True, category=category, radio=radio)
             list_atoz(tvradio)
         elif listing == 'searchlist':
             search_list(tvradio or 'tv')
