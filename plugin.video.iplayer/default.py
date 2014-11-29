@@ -50,9 +50,9 @@ def file_write(filename, data):
     finally:
         fh.close()
 
-def sort_by_attr(seq, attr):
+def sort_by_attr(seq, attr, reverse =  False):
     intermed = map(None, map(getattr, seq, (attr,)*len(seq)), xrange(len(seq)), seq)
-    intermed.sort()
+    intermed.sort(reverse = reverse)
     return map(operator.getitem, intermed, (-1,) * len(intermed))
 
 def get_plugin_thumbnail(image):
@@ -612,8 +612,6 @@ def search_list(tvradio):
     xbmcplugin.endOfDirectory(handle=__plugin_handle__, succeeded=True)
 
 def list_feed_listings(feed, listing, category=None, series=None, channels=None):
-    xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_NONE)
-
     d = {}
     programmes = feed.list()
 
@@ -633,8 +631,26 @@ def list_feed_listings(feed, listing, category=None, series=None, channels=None)
                 temp_prog.append(p)
         programmes = temp_prog
 
-    if listing == 'list':
-        programmes = sort_by_attr(programmes, 'episode')
+    if listing == 'latest':
+        programmes = sort_by_attr(programmes, 'updated', True)
+    elif listing == 'highlights' or listing == 'popular':
+        programmes = sort_by_attr(programmes, 'title')
+
+    if feed.date:
+        xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_UNSORTED)
+        xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_TITLE)
+    elif feed.atoz:
+        xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_TITLE)
+        xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_DATE)
+    elif listing == 'list' and series:
+        xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_EPISODE)
+        xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_TITLE)
+    elif feed.searchterm is not None:
+        xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_TITLE)
+        xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_DATE)
+        xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_EPISODE)
+    else:
+        xbmcplugin.addSortMethod(handle=__plugin_handle__, sortMethod=xbmcplugin.SORT_METHOD_NONE)
 
     # add each programme
     total = len(programmes)
