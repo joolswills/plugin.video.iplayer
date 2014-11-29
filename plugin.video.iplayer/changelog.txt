@@ -1,5 +1,16 @@
 Changes
 
+2.6.10
+  * a to z listings for tv/radio. note some listing may time out currently
+    for radio.
+  * added aac64 radio stream support
+  * if using confluence skin try to switch to mediainfo view for programme
+    listings
+  * fix script.module.simplejson dependency for python < 2.7
+  * per channel "By Date" browsing at the top of each channel.
+  * more logical sorting / sort options for listings
+  * various code fixes / cleanups
+
 2.6.9
   * restored xbmc4xbox compatibility (since setresolvedurl changes)
   * removed old custom resume functionality as native resume now works for
