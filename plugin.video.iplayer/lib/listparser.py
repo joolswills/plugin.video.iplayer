@@ -14,10 +14,10 @@ else:
 datematch = re.compile(':\s+([0-9]+)/([0-9]+)/([0-9]{4})')
 
 class listentry(object):
-     def __init__(self, title=None, id=None, actual_start=None, summary=None, categories=None, series=None, episode=None, thumbnail=None):
+     def __init__(self, title=None, id=None, date=None, summary=None, categories=None, series=None, episode=None, thumbnail=None):
          self.title      = title
          self.id         = id
-         self.date       = actual_start
+         self.date       = date
          self.summary    = summary
          self.categories = categories
          self.series     = series
