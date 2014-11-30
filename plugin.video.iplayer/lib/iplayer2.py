@@ -661,7 +661,7 @@ class programme(object):
         # Live radio feeds have no text node in the summary node
         if self.meta['summary'] is not None:
             self.meta['summary'].lstrip(' ')
-        self.meta['updated'] = tree.find('updated').text
+        self.meta['date'] = tree.find('updated').text
 
         if tree.find('noitems'):
             utils.log('No playlist items: %s' % tree.find('noitems').get('reason'),xbmc.LOGINFO)
@@ -709,8 +709,8 @@ class programme(object):
     def playlist(self):
         return self.get_playlist_xml()
 
-    def get_updated(self):
-        return self.meta['updated']
+    def get_date(self):
+        return self.meta['date']
 
     @loaded_by(read_playlist)
     def get_title(self):
@@ -739,7 +739,7 @@ class programme(object):
 
     title = property(get_title)
     summary = property(get_summary)
-    updated = property(get_updated)
+    date = property(get_date)
     thumbnail = property(get_thumbnail)
     related = property(get_related)
     items = property(get_items)
@@ -759,7 +759,7 @@ class programme_simple(object):
         self.meta['title'] = entry.title
         if entry.summary is not None:
             self.meta['summary'] = string.lstrip(entry.summary, ' ')
-        self.meta['updated'] = entry.updated
+        self.meta['date'] = entry.date
         self.meta['thumbnail'] = entry.thumbnail
         self.categories = []
         for c in entry.categories:
@@ -816,8 +816,8 @@ class programme_simple(object):
     def playlist(self):
         return self.get_playlist_xml()
 
-    def get_updated(self):
-        return self.meta['updated']
+    def get_date(self):
+        return self.meta['date']
 
     @loaded_by(read_playlist)
     def get_title(self):
@@ -846,7 +846,7 @@ class programme_simple(object):
 
     title = property(get_title)
     summary = property(get_summary)
-    updated = property(get_updated)
+    date = property(get_date)
     thumbnail = property(get_thumbnail)
     #thumbnail = "http://http://ichef.bbci.co.uk/images/ic/640x360/p029dgg5.jpg"
     related = property(get_related)

@@ -14,10 +14,10 @@ else:
 datematch = re.compile(':\s+([0-9]+)/([0-9]+)/([0-9]{4})')
 
 class listentry(object):
-     def __init__(self, title=None, id=None, updated=None, summary=None, categories=None, series=None, episode=None, thumbnail=None):
+     def __init__(self, title=None, id=None, actual_start=None, summary=None, categories=None, series=None, episode=None, thumbnail=None):
          self.title      = title
          self.id         = id
-         self.updated    = updated
+         self.date       = actual_start
          self.summary    = summary
          self.categories = categories
          self.series     = series
@@ -48,7 +48,7 @@ def parse_json(json):
             entry = entry['episode']
         title = entry['complete_title']
         id = entry['id']
-        updated = entry['updated']
+        date = entry['actual_start']
         
         if 'synopsis' in entry:
             summary = entry['synopsis']
@@ -67,14 +67,14 @@ def parse_json(json):
 
         match = datematch.search(title)
         if match:
-            # if the title contains a data at the end use that as the updated date YYYY-MM-DD
-            updated = "%s-%s-%s" % ( match.group(3), match.group(2), match.group(1) )
+            # if the title contains a data at the end use that as the date YYYY-MM-DD
+            date = "%s-%s-%s" % ( match.group(3), match.group(2), match.group(1) )
 
         e_categories = []
         for category in entry['categories']:
             e_categories.append(category['short_name'])
 
-        elist.entries.append(listentry(title, id, updated, summary, e_categories, series, episode, thumbnail))
+        elist.entries.append(listentry(title, id, date, summary, e_categories, series, episode, thumbnail))
 
     return elist
 
@@ -91,7 +91,7 @@ def parse_xml(xml):
     for entry in root.getiterator('episode'):
         title = entry.find('complete_title').text
         id = entry.find('id').text
-        updated = entry.find('updated').text
+        date = entry.find('actual_start').text
         summary = entry.find('synopsis').text
         thumbnail = entry.find('my_image_base_url').text + id + "_640_360.jpg"
 
@@ -102,13 +102,13 @@ def parse_xml(xml):
 
         match = datematch.search(title)
         if match:
-            # if the title contains a data at the end use that as the updated date YYYY-MM-DD
-            updated = "%s-%s-%s" % ( match.group(3), match.group(2), match.group(1) )
+            # if the title contains a data at the end use that as the date YYYY-MM-DD
+            date = "%s-%s-%s" % ( match.group(3), match.group(2), match.group(1) )
 
         e_categories = []
         for category in entry.find('categories').findall('category'):
             e_categories.append(category.find('short_name').text)
 
-        elist.entries.append(listentry(title, id, updated, summary, e_categories, series, episode, thumbnail))
+        elist.entries.append(listentry(title, id, date, summary, e_categories, series, episode, thumbnail))
 
     return elist

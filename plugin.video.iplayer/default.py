@@ -341,7 +341,7 @@ def add_programme(feed, programme, totalItems=None, tracknumber=None, thumbnail_
                                 iconImage='defaultVideo.png',
                                 thumbnailImage=thumbnail)
 
-    datestr = programme.updated[:10]
+    datestr = programme.date[:10]
     date = datestr[8:10] + '/' + datestr[5:7] + '/' +datestr[:4]#date ==dd/mm/yyyy
     aired = datestr[:4] + '-' + datestr[5:7] + '-' + datestr[8:10]
     
@@ -517,7 +517,7 @@ def list_series(feed, listing, category=None, progcount=True):
             seriesname = p.title
 
         series[seriesname] = thumb
-        datestr = p.updated[:10]
+        datestr = p.date[:10]
         if not episodes.has_key(seriesname):
             episodes[seriesname] = 0
             dates[seriesname] = datestr
@@ -632,7 +632,7 @@ def list_feed_listings(feed, listing, category=None, series=None, channels=None)
         programmes = temp_prog
 
     if listing == 'latest':
-        programmes = sort_by_attr(programmes, 'updated', True)
+        programmes = sort_by_attr(programmes, 'date', True)
     elif listing == 'highlights' or listing == 'popular':
         programmes = sort_by_attr(programmes, 'title')
 
@@ -784,7 +784,7 @@ def watch(feed, pid):
     thumbnail = item.programme.thumbnail
     title     = item.programme.title
     summary   = item.programme.summary
-    updated   = item.programme.updated
+    date      = item.programme.date
     channel   = None
     thumbfile = None
     if feed and feed.name:
@@ -849,7 +849,7 @@ def watch(feed, pid):
             if not item.live:
                 listitem.setInfo('video', {
                                            "TVShowTitle": title,
-                                           'Plot': summary + ' ' + updated,
+                                           'Plot': summary + ' ' + date,
                                            'PlotOutline': summary,})
             play=xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
 
