@@ -11,8 +11,6 @@ if sys.version_info >= (2, 7):
 else:
     import simplejson as _json
 
-datematch = re.compile(':\s+([0-9]+)/([0-9]+)/([0-9]{4})')
-
 class listentry(object):
      def __init__(self, title=None, id=None, date=None, summary=None, categories=None, series=None, episode=None, thumbnail=None):
          self.title      = title
@@ -65,11 +63,6 @@ def parse_json(json):
         else:
             episode = None
 
-        match = datematch.search(title)
-        if match:
-            # if the title contains a data at the end use that as the date YYYY-MM-DD
-            date = "%s-%s-%s" % ( match.group(3), match.group(2), match.group(1) )
-
         e_categories = []
         for category in entry['categories']:
             e_categories.append(category['short_name'])
@@ -99,11 +92,6 @@ def parse_xml(xml):
         episode = entry.find('position').text
         if episode is not None:
             episode = int(episode)
-
-        match = datematch.search(title)
-        if match:
-            # if the title contains a data at the end use that as the date YYYY-MM-DD
-            date = "%s-%s-%s" % ( match.group(3), match.group(2), match.group(1) )
 
         e_categories = []
         for category in entry.find('categories').findall('category'):
