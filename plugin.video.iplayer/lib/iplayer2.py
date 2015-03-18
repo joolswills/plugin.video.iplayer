@@ -318,6 +318,8 @@ class media(object):
         ('video', 'video/x-flv', 'spark', 'rtmp', 800) : 'flashwii',
         ('video', 'video/mpeg', 'h264', 'http', 184)   : 'mobile',
         ('audio', 'audio/mpeg', 'mp3', 'rtmp', 80)     : 'mp3 80',
+        ('audio', 'audio/x-scpls', 'mp3', 'http', 48 ) : 'mp3 48',
+        ('audio', 'audio/x-scpls', 'mp3', 'http', 128 ): 'mp3 128',
         ('audio', 'audio/mp4',  'aac', 'rtmp', None)   : 'aac',
         ('audio', 'audio/wma',  'wma', 'http', None)   : 'wma',
         ('audio', 'audio/mp4', 'aac', 'rtmp', 320)     : 'aac320',
@@ -325,7 +327,7 @@ class media(object):
         ('audio', 'audio/mp4', 'aac', 'rtmp', 64)      : 'aac64',
         ('audio', 'audio/wma', 'wma9', 'http', 96)     : 'wma9 96',
         ('audio', 'audio/wma', 'wma9', 'http', 48)     : 'wma9 48',
-        ('audio', 'audio/x-ms-asf', 'wma', 'http', 128) : 'wma+asx',
+        ('audio', 'audio/x-ms-asf', 'wma', 'http', 128): 'wma+asx',
         ('audio', 'audio/mp4', 'aac', 'rtmp', 48)      : 'aac48',
         ('audio', 'audio/mp4', 'aac', 'rtmp', 32)      : 'aac32',
         ('video', 'video/mp4', 'h264', 'http', 516)    : 'iphonemp3'}
@@ -397,9 +399,23 @@ class media(object):
         if self.connection_protocol == None and self.connection_kind == 'akamai':
             self.connection_protocol = 'rtmp'
 
-        if self.connection_kind in ['http', 'sis', 'asx']:
+        if self.connection_kind == 'll_icy':
             self.connection_href = conn.get('href')
             self.connection_protocol = 'http'
+
+
+        if self.connection_kind in ['http', 'sis', 'asx', 'll_icy']:#
+            # world service returns a list to a pls file
+            if "worldservice" in self.connection_href:
+                pls = httpget(self.connection_href)
+                match = re.search("^File1=(.+)$", pls, re.MULTILINE)
+                if match:
+                    self.connection_href = match.group(1)
+                    self.connection_protocol = 'http'
+            else:
+                self.connection_href = conn.get('href')
+                self.connection_protocol = 'http'
+
             if self.kind == 'captions':
                 self.connection_method = None
 
@@ -529,7 +545,7 @@ class item(object):
             streams = ['h264 2800', 'h264 1520', 'h264 1500', 'h264 820', 'h264 800', 'h264 480', 'h264 400']
             rate = get_setting_videostream()
         else:
-            streams = ['aac320', 'aac128', 'wma9 96', 'mp3 80', 'wma+asx', 'aac64', 'aac48', 'wma9 48', 'aac32' ]
+            streams = ['aac320', 'aac128', 'wma9 96', 'mp3 128', 'mp3 80', 'mp3 48', 'wma+asx', 'aac64', 'aac48', 'wma9 48', 'aac32' ]
             rate = get_setting_audiostream()
 
         provider = get_provider()
@@ -580,7 +596,12 @@ class item(object):
     def mediaselector_url(self):
         v = __addon__.getSetting('mediaselector')
         if v == '0':
-            url = "http://open.live.bbc.co.uk/mediaselector/5/select/version/2.0/mediaset/pc/vpid/%s"
+            mediaset="pc"
+            if self.is_live and self.is_radio:
+                mediaset="http-icy-mp3-a"
+
+            url = "http://open.live.bbc.co.uk/mediaselector/5/select/version/2.0/mediaset/%s/vpid/%s"
+            return url % (mediaset, self.identifier)
         else:
             url = "http://open.live.bbc.co.uk/mediaselector/4/mtis/stream/%s"
 
