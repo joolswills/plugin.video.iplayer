@@ -1,5 +1,11 @@
 Changes
 
+2.7.0
+  * fixed up live radio streams
+  * fixed up thumbnail handling.
+  * episode ordering fixes - thanks to blaise.
+  * moved to github.
+
 2.6.10
   * a to z listings for tv/radio. note some listing may time out currently
     for radio.
