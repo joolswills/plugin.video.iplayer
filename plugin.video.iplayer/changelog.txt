@@ -1,5 +1,9 @@
 Changes
 
+2.7.1
+  * last minute code fixes
+  * updated repository urls in addon.xml
+
 2.7.0
   * fixed up live radio streams
   * fixed up thumbnail handling.
