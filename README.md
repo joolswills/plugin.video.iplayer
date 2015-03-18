@@ -4,7 +4,9 @@ This Kodi/XBMC4Xbox plugin enables UK users to playback TV & Radio content from 
 
 Installation
 
-Unpack the zip and copy to your Kodi addons folder. (On linux it is found in $HOME/.xbmc/addons/). Alternatively, you can install Hitcher's addon repo from http://wiki.xbmc.org/index.php?title=Unofficial_Add-on_Repositories that should contain an up to date release.
+The most recent versions are available for download from https://drive.google.com/folderview?id=0B_knGioK16E6RWZvb1dnRFNZQkk&usp=sharing
+
+Unpack the zip and copy to your Kodi addons folder. (On linux it is found in ~/.kodi/addons/).
 
 Plugin Issues
 
