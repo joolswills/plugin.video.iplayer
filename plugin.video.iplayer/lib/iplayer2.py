@@ -404,7 +404,9 @@ class media(object):
             self.connection_protocol = 'http'
 
 
-        if self.connection_kind in ['http', 'sis', 'asx', 'll_icy']:#
+        if self.connection_kind in ['http', 'sis', 'asx', 'll_icy']:
+            self.connection_href = conn.get('href')
+            self.connection_protocol = 'http'
             # world service returns a list to a pls file
             if "worldservice" in self.connection_href:
                 pls = httpget(self.connection_href)
@@ -412,9 +414,9 @@ class media(object):
                 if match:
                     self.connection_href = match.group(1)
                     self.connection_protocol = 'http'
-            else:
-                self.connection_href = conn.get('href')
-                self.connection_protocol = 'http'
+                else:
+                    self.connection_href = None
+                    self.connection_protocol = None
 
             if self.kind == 'captions':
                 self.connection_method = None
