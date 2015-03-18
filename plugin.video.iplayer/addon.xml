@@ -19,7 +19,7 @@
         </description>
         <license>GNU GENERAL PUBLIC LICENSE. Version 2, June 1991</license>
         <email>buzz at exotica org uk</email>
-        <website>http://code.google.com/p/xbmc-iplayerv2/</website>
-        <source>http://code.google.com/p/xbmc-iplayerv2/source/checkout</source>
+        <website>https://github.com/joolswills/plugin.video.iplayer</website>
+        <source>https://github.com/joolswills/plugin.video.iplayer.git</source>
     </extension>
 </addon>
