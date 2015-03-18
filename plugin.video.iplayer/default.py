@@ -331,7 +331,7 @@ def get_setting_subtitles():
 
 def add_programme(feed, programme, totalItems=None, tracknumber=None, thumbnail_size='large', tvradio='tv'):
     title     = programme.title
-    thumbnail = programme.get_thumbnail(thumbnail_size, tvradio)
+    thumbnail = programme.get_thumbnail(thumbnail_size)
     summary   = programme.summary
 
     utils.log("Adding program: %s" % programme.__dict__,xbmc.LOGDEBUG)
