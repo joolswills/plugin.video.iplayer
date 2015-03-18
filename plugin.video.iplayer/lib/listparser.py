@@ -12,15 +12,15 @@ else:
     import simplejson as _json
 
 class listentry(object):
-     def __init__(self, title=None, id=None, date=None, summary=None, categories=None, series=None, episode=None, thumbnail=None):
+     def __init__(self, title=None, id=None, image_base=None, date=None, summary=None, categories=None, series=None, episode=None):
          self.title      = title
          self.id         = id
+         self.image_base = image_base
          self.date       = date
          self.summary    = summary
          self.categories = categories
          self.series     = series
          self.episode    = episode
-         self.thumbnail  = thumbnail
 
 class listentries(object):
      def __init__(self):
@@ -38,14 +38,13 @@ def process_entry(elist, entry):
 
     title = entry['complete_title']
     id = entry['id']
+    image_base = entry['my_image_base_url']
     updated = entry['updated']
 
     if 'synopsis' in entry:
         summary = entry['synopsis']
     else:
         summary = None
-
-    thumbnail = entry['my_image_base_url'] + id + "_640_360.jpg"
 
     series = entry['toplevel_container_title']
 
@@ -59,7 +58,7 @@ def process_entry(elist, entry):
     for category in entry['categories']:
         e_categories.append(category['short_name'])
 
-    elist.entries.append(listentry(title, id, updated, summary, e_categories, series, episode, thumbnail))
+    elist.entries.append(listentry(title, id, image_base, updated, summary, e_categories, series, episode))
 
 def parse_json(json):
     try:
@@ -107,6 +106,6 @@ def parse_xml(xml):
         for category in entry.find('categories').findall('category'):
             e_categories.append(category.find('short_name').text)
 
-        elist.entries.append(listentry(title, id, date, summary, e_categories, series, episode, thumbnail))
+        elist.entries.append(listentry(title, id, date, summary, e_categories, series, episode))
 
     return elist

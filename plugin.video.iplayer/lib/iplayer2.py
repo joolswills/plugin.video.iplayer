@@ -611,7 +611,27 @@ class item(object):
 
         return result
 
-class programme(object):
+class programme_base(object):
+
+    def __init__(self, pid):
+        self.pid = pid
+
+    def get_thumbnail(self, size='large'):
+        """
+        Returns the URL of a thumbnail.
+        size: '640x360'/'biggest'/'largest' or '512x288'/'big'/'large' or None
+        """
+        template = self.image_base + "%s_%s.jpg"
+        if size in ['640x360', '640x', 'x360', 'biggest', 'largest']:
+            return template % (self.pid, '640_360')
+        elif size in ['512x288', '512x', 'x288', 'big', 'large']:
+            return template % (self.pid, '512_288')
+        elif size in ['178x100', '178x', 'x100', 'small']:
+            return template % (self.pid, '178_100')
+        elif size in ['150x84', '150x', 'x84', 'smallest']:
+            return template % (self.pid, '150_84')
+
+class programme(programme_base):
     """
     Represents an individual iPlayer programme, as identified by an 8-letter PID,
     and contains the programme title, subtitle, broadcast time and list of playlist
@@ -619,12 +639,10 @@ class programme(object):
     """
 
     def __init__(self, pid):
-        self.pid = pid
+        super(programme, self).__init__(pid)
         self.meta = {}
         self._items = []
         self._related = []
-
-        self.re_newbaseurl = re.compile("^(.*?)_.*?_.*?.jpg", re.DOTALL)
 
     @call_once
     def read_playlist(self):
@@ -677,29 +695,17 @@ class programme(object):
             i['programme'] = programme(i['pid'])
             self._related.append(i)
 
-    def get_thumbnail(self, size='large', tvradio='tv'):
-        """
-        Returns the URL of a thumbnail.
-        size: '640x360'/'biggest'/'largest' or '512x288'/'big'/'large' or None
-        """
-        newbaseurl = self.re_newbaseurl.findall(self.meta['thumbnail'])[0]
-        if size in ['640x360', '640x', 'x360', 'biggest', 'largest']:
-            return "%s_640_360.jpg" % newbaseurl
-        elif size in ['512x288', '512x', 'x288', 'big', 'large']:
-            return "%s_512_288.jpg" % newbaseurl
-        elif size in ['178x100', '178x', 'x100', 'small']:
-            return "%s_178_100.jpg" % newbaseurl
-        elif size in ['150x84', '150x', 'x84', 'smallest']:
-            return "%s_150_84.jpg" % newbaseurl
-        else:
-            return os.path.join(get_thumb_dir(), '%s.png' % tvradio)
-
-
     def get_url(self):
         """
         Returns the programmes episode page.
         """
         return "http://www.bbc.co.uk/iplayer/episode/%s" % (self.pid)
+
+    def get_thumbnail(self, size='large'):
+        if self.meta['thumbnail']:
+            return self.meta['thumbnail'] 
+        else:
+            return super(programme, self).get_thumbnail(size)
 
     @property
     def playlist_url(self):
@@ -747,20 +753,19 @@ class programme(object):
 #programme = memoize(programme)
 
 
-class programme_simple(object):
+class programme_simple(programme_base):
     """
     Represents an individual iPlayer programme, as identified by an 8-letter PID,
     and contains the programme pid, title, subtitle etc
     """
 
     def __init__(self, pid, entry):
-        self.pid = pid
+        super(programme_simple, self).__init__(pid)
         self.meta = {}
         self.meta['title'] = entry.title
         if entry.summary is not None:
             self.meta['summary'] = string.lstrip(entry.summary, ' ')
         self.meta['date'] = entry.date
-        self.meta['thumbnail'] = entry.thumbnail
         self.categories = []
         for c in entry.categories:
             #if c != 'TV':
@@ -769,8 +774,7 @@ class programme_simple(object):
         self._related = []
         self.series = entry.series
         self.episode = entry.episode
-
-        self.re_newbaseurl = re.compile("^(.*?)_.*?_.*?.jpg", re.DOTALL)
+        self.image_base = entry.image_base
 
     @call_once
     def read_playlist(self):
@@ -781,26 +785,6 @@ class programme_simple(object):
 
     def parse_playlist(self, xml):
         pass
-
-    def get_thumbnail(self, size='large', tvradio='tv'):
-        """
-        Returns the URL of a thumbnail.
-        size: '640x360'/'biggest'/'largest' or '512x288'/'big'/'large' or None
-        """
-
-        newbaseurl = self.re_newbaseurl.findall(self.meta['thumbnail'])[0]
-        if size in ['640x360', '640x', 'x360', 'biggest', 'largest']:
-            return "%s_640_360.jpg" % newbaseurl
-        elif size in ['512x288', '512x', 'x288', 'big', 'large']:
-            return "%s_512_288.jpg" % newbaseurl
-        elif size in ['178x100', '178x', 'x100', 'small']:
-            return "%s_178_100.jpg" % newbaseurl
-        elif size in ['150x84', '150x', 'x84', 'smallest']:
-            return "%s_150_84.jpg" % newbaseurl
-
-        else:
-            return os.path.join(get_thumb_dir(), '%s.png' % tvradio)
-
 
     def get_url(self):
         """
@@ -815,6 +799,9 @@ class programme_simple(object):
     @property
     def playlist(self):
         return self.get_playlist_xml()
+
+    def get_thumbnail(self, size='large'):
+        return super(programme_simple, self).get_thumbnail(size, tvradio)
 
     def get_date(self):
         return self.meta['date']
@@ -848,7 +835,6 @@ class programme_simple(object):
     summary = property(get_summary)
     date = property(get_date)
     thumbnail = property(get_thumbnail)
-    #thumbnail = "http://http://ichef.bbci.co.uk/images/ic/640x360/p029dgg5.jpg"
     related = property(get_related)
     items = property(get_items)
 
