@@ -34,6 +34,33 @@ def parse(data, format):
         ret = parse_json(data)
     return ret
 
+def process_entry(elist, entry):
+
+    title = entry['complete_title']
+    id = entry['id']
+    updated = entry['updated']
+
+    if 'synopsis' in entry:
+        summary = entry['synopsis']
+    else:
+        summary = None
+
+    thumbnail = entry['my_image_base_url'] + id + "_640_360.jpg"
+
+    series = entry['toplevel_container_title']
+
+    if 'position' in entry and len(entry['position']) > 0:
+        episode = entry['position']
+        episode = int(episode)
+    else:
+        episode = None
+
+    e_categories = []
+    for category in entry['categories']:
+        e_categories.append(category['short_name'])
+
+    elist.entries.append(listentry(title, id, updated, summary, e_categories, series, episode, thumbnail))
+
 def parse_json(json):
     try:
         json = _json.loads(json)
@@ -41,33 +68,16 @@ def parse_json(json):
         return None
     
     elist = listentries()
-    for entry in json['blocklist']:
-        if 'episode' in entry:
-            entry = entry['episode']
-        title = entry['complete_title']
-        id = entry['id']
-        date = entry['actual_start']
-        
-        if 'synopsis' in entry:
-            summary = entry['synopsis']
+    for block in json['blocklist']:
+        if 'series' in block:
+            for series in block['series']:
+                for entry in series['child_episodes']:
+                    process_entry(elist, entry)
+        elif 'child_episodes' in block:
+            for entry in block['child_episodes']:
+                process_entry(elist, entry)
         else:
-            summary = None
-
-        thumbnail = entry['my_image_base_url'] + id + "_640_360.jpg"
-        
-        series = entry['toplevel_container_title']
-        
-        if 'position' in entry and len(entry['position']) > 0:
-            episode = entry['position']
-            episode = int(episode)
-        else:
-            episode = None
-
-        e_categories = []
-        for category in entry['categories']:
-            e_categories.append(category['short_name'])
-
-        elist.entries.append(listentry(title, id, date, summary, e_categories, series, episode, thumbnail))
+            process_entry(elist, block)
 
     return elist
 
