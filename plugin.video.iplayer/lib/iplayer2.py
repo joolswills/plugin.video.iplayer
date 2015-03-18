@@ -801,7 +801,7 @@ class programme_simple(programme_base):
         return self.get_playlist_xml()
 
     def get_thumbnail(self, size='large'):
-        return super(programme_simple, self).get_thumbnail(size, tvradio)
+        return super(programme_simple, self).get_thumbnail(size)
 
     def get_date(self):
         return self.meta['date']

@@ -508,7 +508,7 @@ def list_series(feed, listing, category=None, progcount=True):
     for p in programmes:
 
         match = series_match(p.title)
-        thumb = p.get_thumbnail(thumbnail_size, feed.tvradio)
+        thumb = p.get_thumbnail(thumbnail_size)
 
         if match:
             seriesname = match.group(1)
