@@ -1,3 +1,6 @@
+# WARNING
+**This plugin is now currently non-functional. Please use [plugin.video.iplayerwww](https://github.com/vonH/plugin.video.iplayerwww) instead**
+
 Introduction
 
 This Kodi/XBMC4Xbox plugin enables UK users to playback TV & Radio content from the BBC iPlayer website.
